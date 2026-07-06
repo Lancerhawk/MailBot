@@ -26,11 +26,11 @@ export const errorHandler = (err: any, req: Request, res: Response, next: NextFu
   const response = {
     success: false,
     message: error.message,
-    ...(env.NODE_ENV === 'development' && { stack: error.stack }),
+    ...(env.NODE_ENV === 'development' && error.statusCode >= 500 && { stack: error.stack }),
     ...(err instanceof ZodError && { errors: err.errors }),
   };
 
-  if (env.NODE_ENV === 'development') {
+  if (env.NODE_ENV === 'development' && error.statusCode >= 500) {
     logger.error(error);
   }
 
