@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v0.2.0] - Express Foundation & AI Strategy
+
+### Added
+- **Express Skeleton:** Production-ready REST API architecture with separation of concerns.
+- **Server Initialization:** Centralized entry point (`server.ts`) and Express app (`app.ts`) with Graceful Shutdown.
+- **Middlewares:** Configured Helmet, CORS, Compression, and express-rate-limit.
+- **Logging:** Structured JSON logging via Pino for production and pino-pretty for development.
+- **Validation:** Strict environment configuration validation using Zod.
+- **Database:** Singleton Prisma client instance wrapper to prevent connection exhaustion.
+- **Utilities:** Custom `ApiError`, `ApiResponse`, and `catchAsync` wrappers.
+- **Health Check:** `GET /api/v1/health` endpoint integrated with Prisma for live database connectivity checks.
+
+### Changed
+- **Schema Refinement:** Updated `AiProvider` enum to include `GROQ` and set `UserSetting` default to Groq for MailBot Version 1.
+
 ## [Backend v0.1.0] - Database Schema Architecture
 
 ### Added

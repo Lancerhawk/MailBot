@@ -4,12 +4,18 @@ MailBot is a production-quality, AI-powered email management platform.
 
 ## Current Status
 
-**Backend Version 0.1.0 (Phase 1 Completed)**
+**Backend Version 0.2.0 (Phase 2 Completed)**
 The project is currently configured as a modular monolith. The frontend and backend are completely decoupled into distinct projects, each with their own versioning (`backend/package.json` vs `frontend/package.json`), allowing for a clean separation of concerns.
 
 ## Database Architecture
 
 MailBot uses a comprehensive PostgreSQL schema orchestrated via Prisma, featuring AI embedding capabilities via `pgvector`.
+
+## AI Integration Strategy
+
+*   **MailBot Version 1 uses Groq as its default inference provider.**
+*   The database schema remains completely **provider-agnostic** to support future integrations.
+*   Future versions can seamlessly switch between providers (OpenAI, Anthropic, Gemini, Custom) without requiring any schema redesign or migrations.
 
 ```mermaid
 erDiagram
