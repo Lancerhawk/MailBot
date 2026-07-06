@@ -1,40 +1,296 @@
 "use client";
 
-import * as React from "react";
-import { LayoutDashboard } from "lucide-react";
-import { EmptyState } from "@/components/common/EmptyState";
+import React, { useEffect, useState } from "react";
+import {
+  Inbox,
+  Sparkles,
+  BarChart3,
+  Mail,
+  Clock,
+  ArrowRight,
+  CheckCircle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/providers/AuthProvider";
+import { formatDistanceToNow } from "date-fns";
+import Link from "next/link";
+import api from "@/lib/api";
+
+interface DashboardStats {
+  totalThreads: number;
+  totalEmails: number;
+  lastSyncAt: string | null;
+  syncStatus: string;
+  recentThreads: {
+    id: string;
+    subject: string;
+    lastMessageAt: string;
+    messageCount: number;
+    emails: {
+      snippet: string;
+      isRead: boolean;
+      participants: { emailAddress: string; displayName: string | null; role: string }[];
+    }[];
+  }[];
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+  accent,
+  isLoading,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  accent: string;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
+      <div className="flex items-center gap-4">
+        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+            {label}
+          </p>
+          {isLoading ? (
+            <Skeleton className="mt-1 h-6 w-16" />
+          ) : (
+            <p className="mt-0.5 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+              {value}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchDashboardData = async () => {
+    try {
+      setIsLoading(true);
+      const [threadsRes, statusRes] = await Promise.all([
+        api.get("/gmail/threads?limit=5"),
+        api.get("/gmail/status"),
+      ]);
+
+      const threadsData = threadsRes.data.data;
+      const statusData = statusRes.data.data;
+
+      setStats({
+        totalThreads: threadsData.pagination.total,
+        totalEmails: threadsData.pagination.totalEmails || 0,
+        lastSyncAt: statusData.lastSuccessfulSyncAt,
+        syncStatus: statusData.connectionStatus,
+        recentThreads: threadsData.threads,
+      });
+    } catch (e) {
+      // Silently ignore
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+
+    const handleSyncCompleted = () => {
+      fetchDashboardData();
+    };
+
+    window.addEventListener('sync-completed', handleSyncCompleted);
+    return () => {
+      window.removeEventListener('sync-completed', handleSyncCompleted);
+    };
+  }, []);
+
+  const greeting = getGreeting();
+  const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
-          Dashboard
+    <div className="flex h-full flex-col gap-8">
+      <div className="animate-fade-in">
+        <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+          {greeting}, {firstName}
         </h1>
-        <p className="text-zinc-500 dark:text-zinc-400">
-          Overview of your email management and AI statistics.
+        <p className="mt-1 text-zinc-500 dark:text-zinc-400">
+          Here's what's happening with your email today.
         </p>
       </div>
-      
-      {user ? (
-        <EmptyState
-          icon={LayoutDashboard}
-          title="Account Connected"
-          description={`Your Google account (${user.email}) is successfully connected. MailBot features will be available here soon.`}
-          action={<Button disabled>Syncing Data...</Button>}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          icon={Mail}
+          label="Conversations"
+          value={stats?.totalThreads?.toString() || "0"}
+          accent="bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400"
+          isLoading={isLoading}
         />
-      ) : (
-        <EmptyState
-          icon={LayoutDashboard}
-          title="Welcome to MailBot"
-          description="Your dashboard is currently empty. Connect your email account to see your statistics."
-          action={<Button>Connect Account</Button>}
+        <StatCard
+          icon={Inbox}
+          label="Total Emails"
+          value={stats?.totalEmails?.toString() || "0"}
+          accent="bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400"
+          isLoading={isLoading}
         />
-      )}
+        <StatCard
+          icon={CheckCircle}
+          label="Sync Status"
+          value={stats?.syncStatus === "IDLE" ? "Connected" : stats?.syncStatus || "—"}
+          accent="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+          isLoading={isLoading}
+        />
+        <StatCard
+          icon={Clock}
+          label="Last Sync"
+          value={
+            stats?.lastSyncAt
+              ? formatDistanceToNow(new Date(stats.lastSyncAt), { addSuffix: true }).replace("about ", "")
+              : "Never"
+          }
+          accent="bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
+          isLoading={isLoading}
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="animate-fade-in lg:col-span-2 rounded-xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+          <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              Recent Conversations
+            </h2>
+            <Link href="/inbox">
+              <Button variant="ghost" size="sm" className="h-8 text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
+                View All
+                <ArrowRight className="ml-1 h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+          <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+            {isLoading ? (
+              Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-3 px-5 py-3.5">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-3.5 w-32" />
+                    <Skeleton className="h-3 w-48" />
+                  </div>
+                  <Skeleton className="h-3 w-12" />
+                </div>
+              ))
+            ) : stats?.recentThreads.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-2 py-12">
+                <Mail className="h-8 w-8 text-zinc-300 dark:text-zinc-600" />
+                <p className="text-sm text-zinc-400 dark:text-zinc-500">
+                  No conversations yet
+                </p>
+              </div>
+            ) : (
+              stats?.recentThreads.map((thread) => {
+                const sender = thread.emails[0]?.participants.find(
+                  (p) => p.role === "SENDER"
+                );
+                const senderName =
+                  sender?.displayName || sender?.emailAddress || "Unknown";
+                const isUnread = !thread.emails[0]?.isRead;
+
+                return (
+                  <Link
+                    key={thread.id}
+                    href="/inbox"
+                    className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                      {senderName.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className={`truncate text-sm ${isUnread ? "font-bold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-700 dark:text-zinc-300"}`}>
+                          {senderName}
+                        </p>
+                        {isUnread && (
+                          <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
+                        )}
+                      </div>
+                      <p className="truncate text-xs text-zinc-400 dark:text-zinc-500">
+                        {thread.subject || "(No Subject)"}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
+                      {formatDistanceToNow(new Date(thread.lastMessageAt), {
+                        addSuffix: false,
+                      })}
+                    </span>
+                  </Link>
+                );
+              })
+            )}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              Quick Actions
+            </h2>
+            <div className="mt-4 flex flex-col gap-2.5">
+              <Link href="/inbox">
+                <Button className="w-full justify-start gap-2 bg-orange-500 text-white hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700">
+                  <Inbox className="h-4 w-4" />
+                  Go to Inbox
+                </Button>
+              </Link>
+            </div>
+          </div>
+
+          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+              Coming Soon
+            </h2>
+            <div className="mt-4 space-y-3">
+              <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/30">
+                <Sparkles className="h-5 w-5 text-indigo-400" />
+                <div>
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                    AI Summaries
+                  </p>
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                    Smart email digests
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/30">
+                <BarChart3 className="h-5 w-5 text-emerald-400" />
+                <div>
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                    Email Analytics
+                  </p>
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                    Insights & trends
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

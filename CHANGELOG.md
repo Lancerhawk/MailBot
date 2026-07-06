@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.3.0] & [Backend v0.4.0] - Gmail Sync Engine & Inbox Overhaul
+
+### Added
+- **Gmail Sync Engine:** Robust incremental synchronization via Gmail History API, handling pagination, batching, and history expiration fallbacks.
+- **Inbox UI Overhaul:** Complete redesign of the Inbox interface featuring color-coded avatars, unread indicators, stagger animations, and skeleton loaders.
+- **Thread Viewer:** Advanced email viewer with thread collapsing, HTML body isolation (safe dark mode), and proper overflow handling.
+- **Live Dashboard:** Dynamic stats grid pulling realtime sync status and recent conversations.
+- **Performance:** Optimized backend sync to reduce API calls and frontend polling logic for real-time sync progress updates.
+
 ## [Frontend v0.2.0] & [Backend v0.3.0] - Authentication & OAuth
 
 ### Added

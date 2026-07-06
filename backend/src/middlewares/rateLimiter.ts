@@ -6,4 +6,5 @@ export const apiLimiter = rateLimit({
   standardHeaders: 'draft-7',
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again after 15 minutes',
+  skip: (req) => req.path.includes('/status'),
 });

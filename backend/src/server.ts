@@ -7,6 +7,10 @@ import { Server } from 'http';
 let server: Server;
 
 const startServer = async () => {
+  (BigInt.prototype as any).toJSON = function () {
+    return this.toString();
+  };
+
   try {
     await prisma.$connect();
     logger.info('Connected to PostgreSQL Database via Prisma');

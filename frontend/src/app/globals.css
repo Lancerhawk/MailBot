@@ -127,3 +127,86 @@
     @apply font-sans;
   }
 }
+
+/* === Fade-in animation === */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s ease-out both;
+}
+
+.animate-fade-in-scale {
+  animation: fadeInScale 0.2s ease-out both;
+}
+
+/* Stagger children fade-in */
+.stagger-children > * {
+  animation: fadeIn 0.2s ease-out both;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 20ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 40ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 60ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 80ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 120ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 140ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 160ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 180ms; }
+
+/* === Custom scrollbars === */
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.7 0 0 / 30%) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: oklch(0.7 0 0 / 30%);
+  border-radius: 9999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background-color: oklch(0.5 0 0 / 50%);
+}
+
+/* === Email body content isolation === */
+.email-body-content {
+  overflow-x: auto;
+  overflow-y: visible;
+  max-width: 100%;
+  word-break: break-word;
+}
+
+.email-body-content img {
+  max-width: 100%;
+  height: auto;
+}
+
+.email-body-content table {
+  max-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.email-body-content pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}

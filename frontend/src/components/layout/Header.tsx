@@ -6,6 +6,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/providers/AuthProvider";
+import { SyncIndicator } from "@/components/dashboard/SyncIndicator";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -53,6 +54,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
           />
         </form>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
+          <SyncIndicator />
           <Button
             variant="ghost"
             size="icon"
