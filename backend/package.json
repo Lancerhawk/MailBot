@@ -1,6 +1,6 @@
 {
   "name": "mailbot-backend",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon",
@@ -10,7 +10,9 @@
     "format": "prettier --write \"src/**/*.ts\""
   },
   "nodemonConfig": {
-    "watch": ["src"],
+    "watch": [
+      "src"
+    ],
     "ext": "ts",
     "exec": "tsx src/index.ts"
   },

@@ -6,3 +6,686 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+// -----------------------------------------------------------------------------
+// ENUMS
+// -----------------------------------------------------------------------------
+
+enum EmailProvider {
+  GMAIL
+  OUTLOOK
+  IMAP
+}
+
+enum SyncStatus {
+  IDLE
+  SYNCING
+  ERROR
+  EXPIRED
+}
+
+enum DeliveryStatus {
+  PENDING
+  DELIVERED
+  BOUNCED
+  FAILED
+}
+
+enum JobType {
+  EMAIL_SYNC
+  AI_ANALYSIS
+  DRAFT_GENERATION
+  DOCUMENT_EMBEDDING
+  ATTACHMENT_PROCESSING
+  EMAIL_SEND
+  EMAIL_CLASSIFICATION
+  EMAIL_SUMMARIZATION
+  THREAD_SYNC
+}
+
+enum ProcessingEntityType {
+  EMAIL
+  ATTACHMENT
+  DOCUMENT
+  THREAD
+  CONTACT
+}
+
+enum Severity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum EmailCategory {
+  PRIMARY
+  SOCIAL
+  PROMOTIONS
+  UPDATES
+  FORUMS
+  SPAM
+  TRASH
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum ProcessingStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  SKIPPED
+}
+
+enum ReplyStatus {
+  NOT_NEEDED
+  PENDING
+  DRAFTED
+  SENT
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  MIXED
+}
+
+enum Intent {
+  INQUIRY
+  SUPPORT
+  MEETING
+  FEEDBACK
+  SPAM
+  OTHER
+}
+
+enum ParticipantRole {
+  SENDER
+  TO
+  CC
+  BCC
+}
+
+enum KnowledgeSource {
+  UPLOAD
+  WEB
+  EMAIL_HISTORY
+}
+
+enum NotificationType {
+  NEW_EMAIL
+  DRAFT_READY
+  ERROR
+  ALERT
+  SYSTEM
+}
+
+enum ActivityType {
+  LOGIN
+  SETTINGS_CHANGE
+  EMAIL_SENT
+  DRAFT_APPROVED
+  DATA_EXPORT
+  SYSTEM_ERROR
+}
+
+enum PromptType {
+  SYSTEM
+  USER_CUSTOM
+  SUMMARIZATION
+  EXTRACTION
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  AUTO_APPROVED
+}
+
+enum AiProvider {
+  OPENAI
+  ANTHROPIC
+  GEMINI
+  CUSTOM
+}
+
+enum DraftApprovalMode {
+  MANUAL
+  AUTO
+}
+
+enum ContactRelationship {
+  CLIENT
+  CUSTOMER
+  SUPPLIER
+  PARTNER
+  INTERNAL
+  OTHER
+}
+
+enum AttachmentCategory {
+  IMAGE
+  VIDEO
+  AUDIO
+  PDF
+  DOCUMENT
+  SPREADSHEET
+  ARCHIVE
+  OTHER
+}
+
+enum EmailLabelType {
+  SYSTEM
+  USER
+  CATEGORY
+  FOLDER
+  CUSTOM
+}
+
+enum StorageProvider {
+  SUPABASE
+  S3
+  LOCAL
+  OTHER
+}
+
+// -----------------------------------------------------------------------------
+// MODELS
+// -----------------------------------------------------------------------------
+
+model User {
+  id        String    @id @default(uuid())
+  email     String    @unique
+  name      String?
+  avatarUrl String?
+  timezone  String    @default("UTC")
+  locale    String    @default("en-US")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  settings      UserSetting?
+  connections   EmailAccountConnection[]
+  threads       EmailThread[]
+  emails        Email[]
+  contacts      Contact[]
+  organizations Organization[]
+  drafts        AiDraftReply[]
+  documents     KnowledgeBaseDocument[]
+  prompts       PromptTemplate[]
+  notifications Notification[]
+  jobs          ProcessingJob[]
+  analytics     Analytics[]
+  activityLogs  ActivityLog[]
+  apiKeys       ApiKey[]
+
+  @@index([email])
+}
+
+model EmailAccountConnection {
+  id                    String        @id @default(uuid())
+  userId                String
+  provider              EmailProvider @default(GMAIL)
+  providerAccountId     String
+  emailAddress          String
+  encryptedAccessToken  String
+  encryptedRefreshToken String
+  accessTokenExpiresAt  DateTime
+  scope                 String
+
+  syncToken            String?
+  lastHistoryId        BigInt?
+  lastSuccessfulSyncAt DateTime?
+  watchExpiration      DateTime?
+  syncStatus           SyncStatus @default(IDLE)
+  lastSyncError        String?    @db.Text
+
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  threads EmailThread[]
+  emails  Email[]
+
+  @@unique([userId, providerAccountId])
+  @@index([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Organization {
+  id             String    @id @default(uuid())
+  userId         String
+  domain         String
+  name           String
+  industry       String?
+  companyWebsite String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+
+  @@unique([userId, domain])
+  @@index([userId])
+}
+
+model Contact {
+  id               String               @id @default(uuid())
+  userId           String
+  organizationId   String?
+  emailAddress     String
+  displayName      String?
+  avatarUrl        String?
+  jobTitle         String?
+  phoneNumber      String?
+  preferredTone    String?
+  relationship     ContactRelationship?
+  interactionCount Int                  @default(0)
+  lastInteraction  DateTime?
+  customNotes      String?              @db.Text
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  deletedAt        DateTime?
+
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization?      @relation(fields: [organizationId], references: [id])
+  participants EmailParticipant[]
+
+  @@unique([userId, emailAddress])
+  @@index([userId, displayName])
+  @@index([organizationId])
+}
+
+model EmailThread {
+  id                  String    @id @default(uuid())
+  userId              String
+  accountConnectionId String
+  providerThreadId    String
+  subject             String?
+  messageCount        Int       @default(1)
+  lastMessageAt       DateTime  @default(now())
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  deletedAt           DateTime?
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection EmailAccountConnection @relation(fields: [accountConnectionId], references: [id], onDelete: Cascade)
+  emails     Email[]
+
+  @@unique([accountConnectionId, providerThreadId])
+  @@index([userId, lastMessageAt])
+}
+
+model Email {
+  id                  String @id @default(uuid())
+  userId              String
+  accountConnectionId String
+  emailThreadId       String
+
+  providerMessageId      String
+  providerConversationId String?
+  internetMessageId      String?
+  inReplyTo              String?
+  referencesHeader       String[]
+
+  subject   String?
+  plainBody String? @db.Text
+  htmlBody  String? @db.Text
+  snippet   String? @db.Text
+
+  providerInternalDate DateTime
+  receivedAt           DateTime
+  sentAt               DateTime?
+
+  isRead      Boolean @default(false)
+  isStarred   Boolean @default(false)
+  isImportant Boolean @default(false)
+  isDraft     Boolean @default(false)
+  isDeleted   Boolean @default(false)
+  isArchived  Boolean @default(false)
+  isSpam      Boolean @default(false)
+
+  category    EmailCategory @default(PRIMARY)
+  priority    Priority      @default(NORMAL)
+  needsReply  Boolean       @default(false)
+  replyStatus ReplyStatus   @default(NOT_NEEDED)
+
+  summary          String?          @db.Text
+  sentiment        Sentiment?
+  intent           Intent?
+  confidence       Float?
+  processingStatus ProcessingStatus @default(PENDING)
+
+  hasAttachments    Boolean @default(false)
+  providerHistoryId BigInt?
+  metadata          Json?   @default("{}")
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user         User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  connection   EmailAccountConnection @relation(fields: [accountConnectionId], references: [id], onDelete: Cascade)
+  thread       EmailThread            @relation(fields: [emailThreadId], references: [id], onDelete: Cascade)
+  participants EmailParticipant[]
+  attachments  Attachment[]
+  labels       EmailLabel[]
+  drafts       AiDraftReply[]
+  sentReplies  SentReply[]
+
+  @@unique([accountConnectionId, providerMessageId])
+  @@index([userId, receivedAt])
+  @@index([userId, processingStatus])
+  @@index([userId, needsReply])
+  @@index([userId, category])
+  @@index([userId, priority])
+  @@index([emailThreadId])
+  @@index([needsReply, replyStatus])
+}
+
+model EmailLabel {
+  id              String          @id @default(uuid())
+  emailId         String
+  providerLabelId String
+  name            String
+  type            EmailLabelType?
+  color           String?
+  createdAt       DateTime        @default(now())
+
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@unique([emailId, providerLabelId])
+  @@index([emailId])
+}
+
+model EmailParticipant {
+  id           String          @id @default(uuid())
+  emailId      String
+  contactId    String?
+  emailAddress String
+  displayName  String?
+  role         ParticipantRole
+
+  email   Email    @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([emailId])
+  @@index([contactId])
+}
+
+model Attachment {
+  id               String             @id @default(uuid())
+  emailId          String
+  filename         String
+  mimeType         String
+  mimeCategory     AttachmentCategory @default(OTHER)
+  sizeBytes        Int
+  storagePath      String?
+  storageProvider  StorageProvider?
+  checksum         String?
+  processingStatus ProcessingStatus   @default(PENDING)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  deletedAt        DateTime?
+
+  email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
+
+  @@index([emailId])
+}
+
+model AiDraftReply {
+  id            String @id @default(uuid())
+  emailId       String
+  userId        String
+  generatedText String @db.Text
+
+  provider            AiProvider
+  modelName           String
+  promptVersion       String?
+  temperature         Float?
+  promptTokens        Int?
+  completionTokens    Int?
+  totalTokens         Int?
+  generationLatencyMs Int?
+  cost                Decimal?
+  confidence          Float
+
+  approvalStatus    ApprovalStatus @default(PENDING)
+  editedText        String?        @db.Text
+  isFinal           Boolean        @default(false)
+  reasoningMetadata Json?          @default("{}")
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+
+  email     Email      @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sentReply SentReply?
+
+  @@index([emailId, approvalStatus])
+  @@index([userId, approvalStatus])
+}
+
+model SentReply {
+  id                String         @id @default(uuid())
+  originalEmailId   String
+  draftId           String?        @unique
+  sentEmailId       String?
+  providerMessageId String?
+  deliveryStatus    DeliveryStatus @default(PENDING)
+  failureReason     String?        @db.Text
+  sentAt            DateTime       @default(now())
+
+  originalEmail Email         @relation(fields: [originalEmailId], references: [id], onDelete: Cascade)
+  draft         AiDraftReply? @relation(fields: [draftId], references: [id], onDelete: SetNull)
+
+  @@index([originalEmailId])
+}
+
+model KnowledgeBaseDocument {
+  id               String           @id @default(uuid())
+  userId           String
+  title            String
+  description      String?          @db.Text
+  fileType         String
+  mimeType         String?
+  fileSize         Int?
+  checksum         String?
+  storagePath      String?
+  storageProvider  StorageProvider?
+  source           KnowledgeSource  @default(UPLOAD)
+  processingStatus ProcessingStatus @default(PENDING)
+  version          Int              @default(1)
+  isEmbedded       Boolean          @default(false)
+  embeddedAt       DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  deletedAt        DateTime?
+
+  user   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  chunks KnowledgeBaseChunk[]
+
+  @@index([userId])
+}
+
+model KnowledgeBaseChunk {
+  id             String                       @id @default(uuid())
+  documentId     String
+  chunkIndex     Int
+  content        String                       @db.Text
+  tokenCount     Int?
+  embeddingModel String?
+  embedding      Unsupported("vector(1536)")?
+  metadata       Json?                        @default("{}")
+
+  document KnowledgeBaseDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, chunkIndex])
+}
+
+model PromptTemplate {
+  id          String     @id @default(uuid())
+  userId      String
+  name        String
+  description String?    @db.Text
+  type        PromptType
+  content     String     @db.Text
+  version     Int        @default(1)
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  deletedAt   DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+model UserSetting {
+  id     String @id @default(uuid())
+  userId String @unique
+
+  autoReply             Boolean @default(false)
+  businessHoursStart    String  @default("09:00")
+  businessHoursEnd      String  @default("17:00")
+  businessHoursTimezone String  @default("UTC")
+  replySignature        String? @db.Text
+
+  preferredAiProvider AiProvider @default(OPENAI)
+  preferredAiModel    String     @default("gpt-4o")
+  theme               String     @default("system")
+
+  notifyOnNewEmail   Boolean @default(true)
+  notifyOnDraftReady Boolean @default(true)
+  notifyOnErrors     Boolean @default(true)
+
+  confidenceThreshold Float             @default(0.85)
+  draftApprovalMode   DraftApprovalMode @default(MANUAL)
+
+  dynamicConfig Json? @default("{}")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  isRead    Boolean          @default(false)
+  linkUrl   String?
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model ProcessingJob {
+  id          String               @id @default(uuid())
+  userId      String
+  jobType     JobType
+  entityType  ProcessingEntityType
+  entityId    String
+  status      ProcessingStatus     @default(PENDING)
+  priority    Int                  @default(0)
+  attempts    Int                  @default(0)
+  maxAttempts Int                  @default(3)
+  errorLog    String?              @db.Text
+  workerId    String?
+
+  nextRetryAt DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, priority])
+  @@index([status, nextRetryAt])
+  @@index([userId, status])
+}
+
+model Analytics {
+  id     String   @id @default(uuid())
+  userId String
+  date   DateTime @db.Date
+
+  emailsReceived   Int @default(0)
+  emailsClassified Int @default(0)
+  emailsSummarized Int @default(0)
+  emailsReplied    Int @default(0)
+
+  draftsGenerated Int @default(0)
+  draftsApproved  Int @default(0)
+  draftsRejected  Int @default(0)
+
+  averageConfidence          Float @default(0.0)
+  averageLatency             Float @default(0.0)
+  averageReplyGenerationTime Float @default(0.0)
+
+  totalPromptTokens     Int     @default(0)
+  totalCompletionTokens Int     @default(0)
+  estimatedCost         Decimal @default(0)
+  timeSavedSeconds      Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+model ActivityLog {
+  id         String       @id @default(uuid())
+  userId     String
+  action     ActivityType
+  entityType String?
+  entityId   String?
+  severity   Severity     @default(INFO)
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?        @default("{}")
+  createdAt  DateTime     @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model ApiKey {
+  id            String    @id @default(uuid())
+  userId        String
+  keyHash       String    @unique
+  name          String
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  lastUsedAt    DateTime?
+  lastRotatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
