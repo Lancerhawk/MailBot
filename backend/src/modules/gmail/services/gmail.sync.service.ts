@@ -174,8 +174,11 @@ export class GmailSyncService {
     startHistoryId: string,
     gmail: gmail_v1.Gmail,
     state: SyncProgress
-  ) {
+  ): Promise<string[]> {
     state.currentStage = "Checking for updates...";
+    const processedEmailIds: string[] = [];
+    const deletedMessageIds = new Set<string>();
+
     try {
       console.time(`Gmail-HistoryList`);
       const res = await gmail.users.history.list({ userId: "me", startHistoryId });
@@ -199,12 +202,49 @@ export class GmailSyncService {
             }
           }
         }
+        if (record.labelsAdded) {
+          for (const labelAdded of record.labelsAdded) {
+            if (labelAdded.message?.id && labelAdded.message?.threadId) {
+              if (!threadsToProcess.has(labelAdded.message.threadId)) {
+                threadsToProcess.set(labelAdded.message.threadId, new Set());
+              }
+              threadsToProcess.get(labelAdded.message.threadId)!.add(labelAdded.message.id);
+            }
+          }
+        }
+        if (record.labelsRemoved) {
+          for (const labelRemoved of record.labelsRemoved) {
+            if (labelRemoved.message?.id && labelRemoved.message?.threadId) {
+              if (!threadsToProcess.has(labelRemoved.message.threadId)) {
+                threadsToProcess.set(labelRemoved.message.threadId, new Set());
+              }
+              threadsToProcess.get(labelRemoved.message.threadId)!.add(labelRemoved.message.id);
+            }
+          }
+        }
+        if (record.messagesDeleted) {
+          for (const msgDeleted of record.messagesDeleted) {
+            if (msgDeleted.message?.id) {
+              deletedMessageIds.add(msgDeleted.message.id);
+              if (msgDeleted.message.threadId && threadsToProcess.has(msgDeleted.message.threadId)) {
+                threadsToProcess.get(msgDeleted.message.threadId)!.delete(msgDeleted.message.id);
+                if (threadsToProcess.get(msgDeleted.message.threadId)!.size === 0) {
+                  threadsToProcess.delete(msgDeleted.message.threadId);
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (deletedMessageIds.size > 0) {
+        await this.dbService.markMessagesAsDeleted(userId, connectionId, Array.from(deletedMessageIds));
       }
 
       if (threadsToProcess.size === 0) {
         await new Promise(resolve => setTimeout(resolve, 800));
         state.currentStage = "Up to date";
-        return;
+        return [];
       }
 
       state.totalEmailsEstimated = Array.from(threadsToProcess.values()).reduce((sum, set) => sum + set.size, 0);
@@ -217,7 +257,7 @@ export class GmailSyncService {
         }
         try {
           console.time(`Prisma-ThreadCheck-${threadId}`);
-          const existingThread = await this.dbService.getThread(userId, threadId);
+          const existingThread = await this.dbService.getThreadByProviderId(userId, threadId);
           console.timeEnd(`Prisma-ThreadCheck-${threadId}`);
 
           if (existingThread) {
@@ -230,7 +270,10 @@ export class GmailSyncService {
 
             const parsedEmails = fetchedMessages.map(m => this.parserService.parseMessage(m));
             parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
-            await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
+            const savedEmails = await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
+            if (savedEmails) {
+               processedEmailIds.push(...savedEmails.map((e: any) => e.id));
+            }
             state.emailsProcessed += parsedEmails.length;
           } else {
             console.time(`Gmail-FullThread-${threadId}`);
@@ -239,7 +282,10 @@ export class GmailSyncService {
             const threadMessages = threadRes.data.messages || [];
             const parsedEmails = threadMessages.map(m => this.parserService.parseMessage(m));
             parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
-            await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
+            const savedEmails = await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
+            if (savedEmails) {
+               processedEmailIds.push(...savedEmails.map((e: any) => e.id));
+            }
             state.emailsProcessed += parsedEmails.length;
           }
 
@@ -249,13 +295,84 @@ export class GmailSyncService {
       }
 
       state.currentStage = "Finalizing...";
+      return processedEmailIds;
     } catch (error: any) {
       if (error.code === 404) {
         console.log(`History expired for user ${userId}. Restarting First Sync.`);
         await this.dbService.updateLastHistoryId(userId, null);
         await this.performFirstSync(userId, connectionId, gmail, state);
+        return [];
       } else {
         throw error;
+      }
+    }
+  }
+  async processWebhook(emailAddress: string, newHistoryId: bigint) {
+    const connection = await this.dbService.getConnectionByEmail(emailAddress);
+    if (!connection) {
+      console.error(`No connection found for webhook email ${emailAddress}`);
+      return;
+    }
+
+    // Webhook Idempotency: Ignore duplicate or stale notifications
+    if (connection.lastHistoryId && newHistoryId <= connection.lastHistoryId) {
+      console.log(`Ignoring duplicate webhook for ${emailAddress} (historyId: ${newHistoryId} <= ${connection.lastHistoryId})`);
+      return;
+    }
+
+    const userId = connection.userId;
+    if (this.isSyncRunning(userId)) {
+      console.log(`Sync already running for ${userId}, skipping concurrent webhook execution.`);
+      return;
+    }
+
+    const state: SyncProgress = {
+      status: "SYNCING",
+      currentStage: "Processing Webhook...",
+      emailsProcessed: 0,
+      threadsProcessed: 0,
+      totalEmailsEstimated: 0,
+      startedAt: new Date(),
+      lastError: null
+    };
+    syncMemoryMap.set(userId, state);
+
+    const { emitToUser } = require('../../../socket');
+    emitToUser(userId, 'sync:started', { source: 'webhook' });
+
+    let processedEmailIds: string[] = [];
+
+    try {
+      const gmail = await this.clientService.getAuthenticatedClient(userId);
+      // Pass the previous lastHistoryId to performIncrementalSync, falling back to newHistoryId - 1n if none exists (unlikely)
+      const startHistoryId = connection.lastHistoryId ? connection.lastHistoryId.toString() : (newHistoryId - BigInt(1)).toString();
+      
+      // Stage 1: Incremental Sync (Persistence)
+      processedEmailIds = await this.performIncrementalSync(userId, connection.id, startHistoryId, gmail, state);
+
+      state.status = "IDLE";
+      state.currentStage = "Sync complete";
+      
+      emitToUser(userId, 'sync:completed', { 
+        emailsProcessed: state.emailsProcessed 
+      });
+
+    } catch (error: any) {
+      console.error(`Webhook Sync failed for user ${userId}:`, error);
+      state.status = "ERROR";
+      state.lastError = error.message;
+      emitToUser(userId, 'sync:error', { error: error.message });
+    } finally {
+      syncMemoryMap.delete(userId);
+    }
+
+    // Stage 2: AI Pipeline (Only after successful persistence)
+    if (processedEmailIds && processedEmailIds.length > 0) {
+      const { AiPipelineService } = require('../../ai/ai.pipeline.service');
+      const aiPipeline = new AiPipelineService();
+      
+      for (const emailId of processedEmailIds) {
+        aiPipeline.scheduleAnalysis(userId, emailId);
       }
     }
   }

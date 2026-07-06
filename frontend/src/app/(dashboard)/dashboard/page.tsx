@@ -16,6 +16,7 @@ import { useAuth } from "@/providers/AuthProvider";
 import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import api from "@/lib/api";
+import { useSocket } from "@/providers/SocketProvider";
 
 interface DashboardStats {
   totalThreads: number;
@@ -80,12 +81,12 @@ function StatCard({
 
 export default function DashboardPage() {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchDashboardData = async () => {
     try {
-      setIsLoading(true);
       const [threadsRes, statusRes] = await Promise.all([
         api.get("/gmail/threads?limit=5"),
         api.get("/gmail/status"),
@@ -111,15 +112,24 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
 
+    if (!socket) return;
+
+    const handleSyncStarted = () => {
+      setStats(prev => prev ? { ...prev, syncStatus: "SYNCING" } : null);
+    };
+
     const handleSyncCompleted = () => {
       fetchDashboardData();
     };
 
-    window.addEventListener('sync-completed', handleSyncCompleted);
+    socket.on('sync:started', handleSyncStarted);
+    socket.on('sync:completed', handleSyncCompleted);
+
     return () => {
-      window.removeEventListener('sync-completed', handleSyncCompleted);
+      socket.off('sync:started', handleSyncStarted);
+      socket.off('sync:completed', handleSyncCompleted);
     };
-  }, []);
+  }, [socket]);
 
   const greeting = getGreeting();
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";

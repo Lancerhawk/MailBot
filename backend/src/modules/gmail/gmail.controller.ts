@@ -6,6 +6,35 @@ export class GmailController {
   private syncService = new GmailSyncService();
   private dbService = new GmailDbService();
 
+  async webhook(req: Request, res: Response) {
+    try {
+      const message = req.body?.message;
+      if (!message || !message.data) {
+        return res.status(400).send('Bad Request');
+      }
+
+      const decodedData = Buffer.from(message.data, 'base64').toString('utf8');
+      const payload = JSON.parse(decodedData);
+
+      const emailAddress = payload.emailAddress;
+      const historyId = payload.historyId;
+
+      if (!emailAddress || !historyId) {
+        return res.status(400).send('Invalid payload');
+      }
+
+      res.status(200).send('OK');
+
+      this.syncService.processWebhook(emailAddress, BigInt(historyId)).catch(err => {
+        console.error(`Webhook processing failed for ${emailAddress}:`, err);
+      });
+
+    } catch (error) {
+      console.error('Webhook error:', error);
+      res.status(200).send('OK');
+    }
+  }
+
   async sync(req: Request, res: Response) {
     const userId = req.session.userId!;
 
@@ -47,17 +76,13 @@ export class GmailController {
   async getStatus(req: Request, res: Response) {
     const userId = req.session.userId!;
     try {
-      console.time(`API GET /status dbCheck`);
       const dbStatus = await this.dbService.getConnectionStatus(userId);
-      console.timeEnd(`API GET /status dbCheck`);
 
       if (!dbStatus) {
         return res.status(404).json({ status: "error", message: "Gmail connection not found" });
       }
 
-      console.time(`API GET /status memCheck`);
       const activeSync = this.syncService.getSyncStatus(userId);
-      console.timeEnd(`API GET /status memCheck`);
 
       res.json({
         status: "success",
@@ -84,9 +109,7 @@ export class GmailController {
     const limit = parseInt(req.query.limit as string) || 20;
 
     try {
-      console.time(`API GET /threads dbQuery`);
       const threads = await this.dbService.listThreads(userId, page, limit);
-      console.timeEnd(`API GET /threads dbQuery`);
       res.json({ status: "success", data: threads });
     } catch (error) {
       res.status(500).json({ status: "error", message: "Failed to list threads" });

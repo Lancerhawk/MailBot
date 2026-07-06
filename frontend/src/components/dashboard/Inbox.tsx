@@ -60,7 +60,10 @@ function ThreadSkeleton() {
   );
 }
 
+import { useSocket } from "@/providers/SocketProvider";
+
 export function Inbox() {
+  const { socket } = useSocket();
   const [threads, setThreads] = useState<EmailThread[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -69,16 +72,18 @@ export function Inbox() {
   useEffect(() => {
     fetchThreads();
 
+    if (!socket) return;
+
     const handleSyncCompleted = () => {
       fetchThreads();
     };
 
-    window.addEventListener('sync-completed', handleSyncCompleted);
+    socket.on('sync:completed', handleSyncCompleted);
 
     return () => {
-      window.removeEventListener('sync-completed', handleSyncCompleted);
+      socket.off('sync:completed', handleSyncCompleted);
     };
-  }, []);
+  }, [socket]);
 
   const fetchThreads = async () => {
     try {

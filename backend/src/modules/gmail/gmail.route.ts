@@ -5,6 +5,8 @@ import { GmailController } from "./gmail.controller";
 const router = Router();
 const gmailController = new GmailController();
 
+router.post("/webhook", gmailController.webhook.bind(gmailController));
+
 router.use(requireAuth);
 
 router.post("/sync", gmailController.sync.bind(gmailController));

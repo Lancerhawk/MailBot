@@ -14,6 +14,12 @@ export class GmailDbService {
     });
   }
 
+  async getConnectionByEmail(emailAddress: string) {
+    return prisma.emailAccountConnection.findFirst({
+      where: { emailAddress, provider: 'GMAIL' }
+    });
+  }
+
   async updateSyncStatus(userId: string, status: SyncStatus, error?: string | null) {
     await prisma.emailAccountConnection.updateMany({
       where: { userId, provider: 'GMAIL' },
@@ -37,8 +43,13 @@ export class GmailDbService {
   async listThreads(userId: string, page: number, limit: number) {
     const skip = (page - 1) * limit;
 
+    const whereClause = {
+      userId,
+      emails: { some: { isDeleted: false } }
+    };
+
     const threads = await prisma.emailThread.findMany({
-      where: { userId },
+      where: whereClause,
       orderBy: { lastMessageAt: 'desc' },
       take: limit,
       skip,
@@ -48,6 +59,7 @@ export class GmailDbService {
         lastMessageAt: true,
         messageCount: true,
         emails: {
+          where: { isDeleted: false },
           orderBy: { providerInternalDate: 'desc' },
           take: 1,
           select: {
@@ -67,8 +79,8 @@ export class GmailDbService {
       }
     });
 
-    const total = await prisma.emailThread.count({ where: { userId } });
-    const totalEmails = await prisma.email.count({ where: { userId } });
+    const total = await prisma.emailThread.count({ where: whereClause });
+    const totalEmails = await prisma.email.count({ where: { userId, isDeleted: false } });
 
     return {
       threads,
@@ -87,6 +99,7 @@ export class GmailDbService {
       where: { id: threadId, userId },
       include: {
         emails: {
+          where: { isDeleted: false },
           orderBy: { providerInternalDate: 'asc' },
           include: {
             participants: true,
@@ -96,6 +109,51 @@ export class GmailDbService {
         }
       }
     });
+  }
+
+  async getThreadByProviderId(userId: string, providerThreadId: string) {
+    return prisma.emailThread.findFirst({
+      where: { providerThreadId, userId },
+      include: {
+        emails: {
+          orderBy: { providerInternalDate: 'asc' },
+          include: {
+            participants: true,
+            attachments: true,
+            labels: true
+          }
+        }
+      }
+    });
+  }
+
+  async markMessagesAsDeleted(userId: string, accountConnectionId: string, messageIds: string[]) {
+    if (messageIds.length === 0) return;
+    
+    const emailsToUpdate = await prisma.email.findMany({
+      where: { userId, accountConnectionId, providerMessageId: { in: messageIds } },
+      select: { emailThreadId: true }
+    });
+
+    await prisma.email.updateMany({
+      where: {
+        userId,
+        accountConnectionId,
+        providerMessageId: { in: messageIds }
+      },
+      data: { isDeleted: true }
+    });
+
+    const threadIds = [...new Set(emailsToUpdate.map(e => e.emailThreadId))];
+    for (const tid of threadIds) {
+      const actualMessageCount = await prisma.email.count({ 
+        where: { emailThreadId: tid, isDeleted: false } 
+      });
+      await prisma.emailThread.update({
+        where: { id: tid },
+        data: { messageCount: actualMessageCount }
+      });
+    }
   }
 
   async upsertThreadAndEmails(
@@ -111,7 +169,8 @@ export class GmailDbService {
     );
 
     console.time(`Prisma-Tx-${threadId}`);
-    await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
+      const createdEmails: any[] = [];
       // 1. Upsert Thread
       const thread = await tx.emailThread.upsert({
         where: {
@@ -145,6 +204,12 @@ export class GmailDbService {
           },
           update: {
             providerHistoryId: parsed.historyId ? BigInt(parsed.historyId) : null,
+            isRead: !parsed.labels.includes("UNREAD"),
+            isStarred: parsed.labels.includes("STARRED"),
+            isImportant: parsed.labels.includes("IMPORTANT"),
+            isSpam: parsed.labels.includes("SPAM"),
+            isArchived: !parsed.labels.includes("INBOX"),
+            isDeleted: parsed.labels.includes("TRASH"),
           },
           create: {
             userId,
@@ -168,6 +233,8 @@ export class GmailDbService {
             isArchived: !parsed.labels.includes("INBOX"),
           }
         });
+
+        createdEmails.push(email);
 
         const existingParticipants = await tx.emailParticipant.count({ where: { emailId: email.id } });
 
@@ -258,15 +325,21 @@ export class GmailDbService {
         }
       }
 
-      const actualMessageCount = await tx.email.count({ where: { emailThreadId: thread.id } });
+      const actualMessageCount = await tx.email.count({ 
+        where: { emailThreadId: thread.id, isDeleted: false } 
+      });
       await tx.emailThread.update({
         where: { id: thread.id },
         data: { messageCount: actualMessageCount }
       });
+
+      return createdEmails;
     }, {
       maxWait: 15000,
       timeout: 45000
     });
     console.timeEnd(`Prisma-Tx-${threadId}`);
+
+    return result;
   }
 }

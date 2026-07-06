@@ -3,6 +3,7 @@ import { env } from './config/env';
 import { logger } from './config/logger';
 import { prisma } from './lib/prisma';
 import { Server } from 'http';
+import { initSocket } from './socket';
 
 let server: Server;
 
@@ -18,6 +19,16 @@ const startServer = async () => {
     server = app.listen(env.PORT, () => {
       logger.info(`Server is running on port ${env.PORT} in ${env.NODE_ENV} mode`);
     });
+
+    initSocket(server);
+
+    const WatchRenewalService = require('./modules/gmail/services/watch-renewal.service').WatchRenewalService;
+    const renewalService = new WatchRenewalService();
+    renewalService.runRenewalJob().catch((e: any) => logger.error({ err: e }, 'Failed initial watch renewal'));
+    setInterval(() => {
+      renewalService.runRenewalJob().catch((e: any) => logger.error({ err: e }, 'Failed scheduled watch renewal'));
+    }, 24 * 60 * 60 * 1000);
+
   } catch (error) {
     logger.fatal({ error }, 'Failed to start server');
     process.exit(1);

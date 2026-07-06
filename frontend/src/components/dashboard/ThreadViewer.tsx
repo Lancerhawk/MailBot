@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import DOMPurify from "isomorphic-dompurify";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
+import { useSocket } from "@/providers/SocketProvider";
 
 interface Email {
   id: string;
@@ -19,6 +20,12 @@ interface Email {
     displayName: string | null;
     role: string;
   }[];
+  summary?: string;
+  sentiment?: string;
+  intent?: string;
+  needsReply?: boolean;
+  priority?: string;
+  processingStatus?: string;
 }
 
 interface Thread {
@@ -129,6 +136,41 @@ function EmailCard({ email, isLast }: { email: Email; isLast: boolean }) {
 
       {!isCollapsed && (
         <div className="border-t border-zinc-100 dark:border-zinc-800">
+          {email.processingStatus === "COMPLETED" && email.summary && (
+            <div className="bg-orange-50/50 px-5 py-3 border-b border-orange-100/50 dark:bg-orange-500/5 dark:border-orange-500/10">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">AI Summary</span>
+                <div className="flex gap-1.5 ml-auto">
+                  {email.intent && (
+                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-semibold dark:bg-blue-900/30 dark:text-blue-400">
+                      {email.intent}
+                    </span>
+                  )}
+                  {email.sentiment && (
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+                      email.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                      email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
+                      'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                    }`}>
+                      {email.sentiment}
+                    </span>
+                  )}
+                  {email.needsReply && (
+                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold dark:bg-amber-900/30 dark:text-amber-400">
+                      Needs Reply
+                    </span>
+                  )}
+                </div>
+              </div>
+              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{email.summary}</p>
+            </div>
+          )}
+          {email.processingStatus === "PROCESSING" && (
+             <div className="bg-blue-50/50 px-5 py-2 border-b border-blue-100/50 dark:bg-blue-500/5 dark:border-blue-500/10 flex items-center gap-2">
+                <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">AI Analysis in progress...</span>
+             </div>
+          )}
           <div className="px-5 py-4 text-sm">
             {cleanHtml ? (
               <div
@@ -169,6 +211,31 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
 
     fetchThread();
   }, [threadId]);
+
+  const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!socket || !threadId) return;
+
+    const handleUpdate = (data: any) => {
+      if (data.threadId === threadId || (data.result && !data.threadId)) {
+        // Simple re-fetch to get new emails or AI fields
+        api.get(`/gmail/threads/${threadId}`).then(res => setThread(res.data.data)).catch(() => {});
+      }
+    };
+
+    const handleSyncComplete = () => {
+      api.get(`/gmail/threads/${threadId}`).then(res => setThread(res.data.data)).catch(() => {});
+    };
+
+    socket.on('analysis:completed', handleUpdate);
+    socket.on('sync:completed', handleSyncComplete);
+
+    return () => {
+      socket.off('analysis:completed', handleUpdate);
+      socket.off('sync:completed', handleSyncComplete);
+    };
+  }, [socket, threadId]);
 
   if (isLoading) {
     return <ThreadSkeleton />;

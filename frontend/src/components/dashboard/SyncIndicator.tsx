@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from "react";
 import { Loader2, CheckCircle, AlertTriangle, RefreshCw } from "lucide-react";
 import api from "@/lib/api";
+import { useSocket } from "@/providers/SocketProvider";
 
 interface SyncMetadata {
   status: "SYNCING" | "IDLE" | "ERROR";
@@ -26,56 +27,51 @@ export function SyncIndicator() {
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
 
+  const { socket } = useSocket();
+
   const fetchStatus = useCallback(async () => {
     try {
       const res = await api.get("/gmail/status");
       if (!mountedRef.current) return;
 
       const newStatus = res.data.data;
-      const isCurrentlySyncing = newStatus.activeSync?.status === "SYNCING" || newStatus.connectionStatus === "SYNCING";
-
-      if (prevStatusRef.current === "SYNCING" && !isCurrentlySyncing) {
-        isSyncingRef.current = false;
-        if (newStatus.activeSync && newStatus.activeSync.emailsProcessed > 0) {
-          window.dispatchEvent(new CustomEvent('sync-completed'));
-        }
-      }
-
-      prevStatusRef.current = isCurrentlySyncing ? "SYNCING" : "IDLE";
       setStatus(newStatus);
     } catch (e) {
-    }
-  }, []);
-
-  const startPolling = useCallback(() => {
-    if (pollIntervalRef.current) return;
-    pollIntervalRef.current = setInterval(fetchStatus, 1000);
-  }, [fetchStatus]);
-
-  const stopPolling = useCallback(() => {
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current);
-      pollIntervalRef.current = null;
     }
   }, []);
 
   useEffect(() => {
     mountedRef.current = true;
     fetchStatus();
+
+    if (!socket) return;
+
+    const handleSyncStarted = (data: any) => {
+      setStatus(prev => prev ? {
+        ...prev,
+        connectionStatus: "SYNCING",
+        activeSync: {
+          status: "SYNCING",
+          currentStage: data.source === 'webhook' ? "Fetching new emails..." : "Syncing...",
+          emailsProcessed: 0,
+          totalEmailsEstimated: 0,
+        }
+      } : null);
+    };
+
+    const handleSyncCompleted = () => {
+      fetchStatus();
+    };
+
+    socket.on('sync:started', handleSyncStarted);
+    socket.on('sync:completed', handleSyncCompleted);
+
     return () => {
       mountedRef.current = false;
-      stopPolling();
+      socket.off('sync:started', handleSyncStarted);
+      socket.off('sync:completed', handleSyncCompleted);
     };
-  }, [fetchStatus, stopPolling]);
-
-  useEffect(() => {
-    const isSyncing = status?.activeSync?.status === "SYNCING" || status?.connectionStatus === "SYNCING";
-    if (isSyncing) {
-      startPolling();
-    } else {
-      stopPolling();
-    }
-  }, [status?.activeSync?.status, status?.connectionStatus, startPolling, stopPolling]);
+  }, [fetchStatus, socket]);
 
   const handleManualSync = async () => {
     if (isSyncingRef.current) return;
@@ -170,15 +166,6 @@ export function SyncIndicator() {
         <>
           <CheckCircle className="h-4 w-4 text-emerald-500" />
           <span className="text-zinc-600 dark:text-zinc-400">Up to date</span>
-          {isHovered && (
-            <button
-              onClick={handleManualSync}
-              className="ml-2 flex items-center gap-1 text-orange-500 hover:text-orange-600"
-            >
-              <RefreshCw className="h-3 w-3" />
-              Sync Now
-            </button>
-          )}
         </>
       )}
     </div>

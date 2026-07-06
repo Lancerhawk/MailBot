@@ -4,8 +4,8 @@ MailBot is a production-quality, AI-powered email management platform.
 
 ## Current Status
 
-**Backend Version 0.4.0 (Gmail Sync Engine)**
-**Frontend Version 0.3.0 (Inbox UI Overhaul)**
+**Backend Version 0.5.0 (AI Real-time Resiliency)**
+**Frontend Version 0.4.0 (AI UI State Management)**
 The project is currently configured as a modular monolith. The frontend and backend are completely decoupled into distinct projects, each with their own versioning (`backend/package.json` vs `frontend/package.json`), allowing for a clean separation of concerns.
 
 ## Database Architecture
@@ -216,10 +216,13 @@ mailbot/
 - **Start Backend:** `cd backend && npm run dev`
 
 ## Future Roadmap
-- Phase 1: Authentication & Core Architecture (Current)
-- Phase 2: Email Provider Integrations (Gmail/Outlook)
-- Phase 3: AI Categorization & Parsing
-- Phase 4: Migration to Microservices (Event-Driven Architecture)
+- Phase 1: Authentication & Core Architecture (Completed)
+- Phase 2: Email Provider Integrations (Completed)
+- Phase 3: Inbox UI & Rendering (Completed)
+- Phase 4: AI Pipeline Foundation (Completed)
+- Phase 5: Real-time UI & WebSockets (Completed)
+- Phase 6: AI Integration & Real-time Sync Bugfixes (Current)
+- Phase 7: Migration to Microservices (Event-Driven Architecture)
 
 ## License
 This project is licensed under the MIT License - see the LICENSE file for details.

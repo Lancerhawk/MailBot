@@ -61,6 +61,10 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
       });
     });
     
+    // Register Gmail watch in the background
+    const watchService = new (require('../modules/gmail/services/watch-renewal.service').WatchRenewalService)();
+    watchService.registerWatch(user.id).catch((err: any) => console.error("Watch registration error:", err));
+    
     res.redirect(`${env.FRONTEND_URL}/auth/callback?success=true`);
   } catch (err) {
     console.error('Callback handling error:', err);

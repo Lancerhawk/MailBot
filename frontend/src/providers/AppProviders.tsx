@@ -4,6 +4,8 @@ import * as React from "react";
 import { ThemeProvider } from "./ThemeProvider";
 import { AuthProvider } from "./AuthProvider";
 
+import { SocketProvider } from "./SocketProvider";
+
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <ThemeProvider
@@ -12,7 +14,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       enableSystem
     >
       <AuthProvider>
-        {children}
+        <SocketProvider>
+          {children}
+        </SocketProvider>
       </AuthProvider>
     </ThemeProvider>
   );

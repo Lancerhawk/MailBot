@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.4.0] & [Backend v0.5.0] - AI Integration & Real-time Sync Bugfixes
+
+### Added
+- **AI Eligibility Engine:** Advanced filtering to prevent Groq API token burns on historical imports and self-sent messages.
+- **Resilient AI Pipeline:** Implemented graceful failure handling and status management for AI summaries, preventing UI glitches on `FAILED` or `SKIPPED` states.
+- **Smart Message Counts:** Refactored Prisma count logic in `upsertThreadAndEmails` to actively filter out soft-deleted and trashed emails, ensuring UI thread counters always perfectly match visible emails.
+- **Hard Delete Synchronization:** Upgraded the `markMessagesAsDeleted` hook to instantly recalculate and sync parent thread counts when messages are permanently deleted via Webhook.
+- **Status Persistence Fix:** Patched a race condition where incremental syncs overwrote completed AI processing statuses when a user replied to a thread.
+
 ## [Frontend v0.3.0] & [Backend v0.4.0] - Gmail Sync Engine & Inbox Overhaul
 
 ### Added
