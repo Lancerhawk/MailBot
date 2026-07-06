@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.1.0] - Application Foundation & Architecture
+
+### Added
+- **Application Skeleton:** Complete Next.js 15 App Router foundation.
+- **State Management & Providers:** Configured `AppProviders` (Theme, Toast, future context).
+- **Global Layout:** Implemented responsive `MainLayout`, `Sidebar` (with mobile overlay), and `Header` components.
+- **Theming & Aesthetics:** Implemented Dark/Light mode using `next-themes` and a custom Tailwind v4 theme featuring an elegant Outfit font and an Orange/Red primary color scheme.
+- **Animations:** Added smooth Framer Motion transitions and layout animations for interactive elements.
+- **Components:** Built foundational UI components (`Button`, `Input`, `Sidebar`, `EmptyState`) according to modern SaaS design principles.
+
 ## [Backend v0.2.0] - Express Foundation & AI Strategy
 
 ### Added
