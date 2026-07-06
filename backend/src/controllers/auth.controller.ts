@@ -1,0 +1,104 @@
+import { Request, Response } from 'express';
+import { catchAsync } from '../utils/catchAsync';
+import { AuthService } from '../services/auth.service';
+import { env } from '../config/env';
+import { ApiError } from '../utils/ApiError';
+
+export const googleAuth = catchAsync(async (req: Request, res: Response) => {
+  const state = AuthService.generateState();
+  req.session.oauthState = state;
+  
+  try {
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error:", err);
+          return reject(new ApiError(500, 'Failed to save session state'));
+        }
+        resolve();
+      });
+    });
+    
+    const url = AuthService.generateAuthUrl(state);
+    res.redirect(url);
+  } catch (error) {
+    throw error;
+  }
+});
+
+export const googleCallback = catchAsync(async (req: Request, res: Response) => {
+  const { code, state, error } = req.query;
+
+  if (error) {
+    return res.redirect(`${env.FRONTEND_URL}/?error=oauth_denied`);
+  }
+
+  if (!code || typeof code !== 'string') {
+    return res.redirect(`${env.FRONTEND_URL}/?error=missing_code`);
+  }
+
+  if (!state || state !== req.session.oauthState) {
+    return res.redirect(`${env.FRONTEND_URL}/?error=invalid_state`);
+  }
+
+  req.session.oauthState = undefined;
+
+  const ipAddress = req.ip || req.socket.remoteAddress;
+  const userAgent = req.get('user-agent');
+
+  try {
+    const user = await AuthService.handleGoogleCallback(code, ipAddress, userAgent);
+    
+    req.session.userId = user.id;
+    
+    await new Promise<void>((resolve, reject) => {
+      req.session.save((err) => {
+        if (err) {
+          console.error("Session save error in callback:", err);
+          return reject(new ApiError(500, 'Failed to save authenticated session'));
+        }
+        resolve();
+      });
+    });
+    
+    res.redirect(`${env.FRONTEND_URL}/auth/callback?success=true`);
+  } catch (err) {
+    console.error('Callback handling error:', err);
+    res.redirect(`${env.FRONTEND_URL}/?error=auth_failed`);
+  }
+});
+
+export const getCurrentUser = catchAsync(async (req: Request, res: Response) => {
+  res.status(200).json({
+    status: 'success',
+    data: {
+      user: req.user,
+    }
+  });
+});
+
+export const logout = catchAsync(async (req: Request, res: Response) => {
+  if (req.session.userId) {
+    const ipAddress = req.ip || req.socket.remoteAddress;
+    const userAgent = req.get('user-agent');
+    
+    await AuthService.logLogout(req.session.userId, ipAddress, userAgent);
+  }
+
+  try {
+    await new Promise<void>((resolve, reject) => {
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+          return reject(new ApiError(500, 'Failed to destroy session'));
+        }
+        resolve();
+      });
+    });
+    
+    res.clearCookie('connect.sid');
+    res.status(200).json({ status: 'success', message: 'Logged out successfully' });
+  } catch (error) {
+    throw error;
+  }
+});

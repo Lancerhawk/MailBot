@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.2.0] & [Backend v0.3.0] - Authentication & OAuth
+
+### Added
+- **OAuth Integration:** Complete Google OAuth 2.0 flow integrated on the backend.
+- **Server-Side Sessions:** Secure HTTP-only sessions via `express-session` and `connect-pg-simple`.
+- **Token Encryption:** AES-256-GCM encryption for storing OAuth tokens in PostgreSQL.
+- **User Management:** Automatic user and `EmailAccountConnection` upserts during OAuth callback.
+- **Security Middlewares:** CSRF verification logic and `requireAuth` guards.
+- **Auth UI:** Integrated `AuthProvider` and `ProtectedRoute` components in Next.js.
+- **Landing Page Evolution:** Upgraded the root page to feature a hero section with a "Continue with Google" flow and authenticated user state tracking.
+
 ## [Frontend v0.1.0] - Application Foundation & Architecture
 
 ### Added

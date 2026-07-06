@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { ThemeProvider } from "./ThemeProvider";
+import { AuthProvider } from "./AuthProvider";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -10,7 +11,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       defaultTheme="system"
       enableSystem
     >
-      {children}
+      <AuthProvider>
+        {children}
+      </AuthProvider>
     </ThemeProvider>
   );
 }

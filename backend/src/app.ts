@@ -3,6 +3,9 @@ import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
 import cookieParser from 'cookie-parser';
+import session from 'express-session';
+import pgSession from 'connect-pg-simple';
+import pg from 'pg';
 import pinoHttp from 'pino-http';
 import morgan from 'morgan';
 
@@ -14,6 +17,10 @@ import { ApiError } from './utils/ApiError';
 import routes from './routes/v1';
 
 const app: Express = express();
+const PgStore = pgSession(session);
+const pgPool = new pg.Pool({
+  connectionString: env.DATABASE_URL,
+});
 
 app.set('trust proxy', 1);
 
@@ -27,6 +34,23 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+app.use(
+  session({
+    store: new PgStore({
+      pool: pgPool,
+      tableName: 'session',
+    }),
+    secret: env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      secure: env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: env.NODE_ENV === 'production' ? 'lax' : 'lax', // Use strict if possible, but OAuth redirect requires lax
+    },
+  })
+);
 app.use(compression());
 app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
 app.use(apiLimiter);

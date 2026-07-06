@@ -69,7 +69,7 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
                 href={item.href}
                 onClick={() => setMobileOpen && setMobileOpen(false)}
                 className={cn(
-                  "relative group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  "relative group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50",
                   isActive
                     ? "text-orange-700 dark:text-red-500"
                     : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
@@ -106,7 +106,7 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
                 href={item.href}
                 onClick={() => setMobileOpen && setMobileOpen(false)}
                 className={cn(
-                  "relative group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors",
+                  "relative group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium transition-colors cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-800/50",
                   isActive
                     ? "text-orange-700 dark:text-red-500"
                     : "text-zinc-600 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50"
@@ -143,7 +143,6 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
 
   return (
     <>
-      {/* Mobile overlay */}
       <AnimatePresence>
         {mobileOpen && (
           <div className="fixed inset-0 z-50 flex lg:hidden">
@@ -167,7 +166,6 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
         )}
       </AnimatePresence>
 
-      {/* Desktop sidebar */}
       <div className="hidden border-r border-zinc-200 bg-stone-50 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 lg:block lg:w-64 lg:shrink-0 lg:flex-col">
         <SidebarContent pathname={pathname} />
       </div>
