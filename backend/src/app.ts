@@ -45,10 +45,10 @@ app.use(
     resave: false,
     saveUninitialized: false,
     cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      maxAge: 30 * 24 * 60 * 60 * 1000,
       secure: env.NODE_ENV === 'production',
       httpOnly: true,
-      sameSite: env.NODE_ENV === 'production' ? 'lax' : 'lax', // Use strict if possible, but OAuth redirect requires lax
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
     },
   })
 );
