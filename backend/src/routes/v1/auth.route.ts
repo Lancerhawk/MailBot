@@ -5,11 +5,9 @@ import { authLimiter } from '../../middlewares/rateLimiter';
 
 const router = Router();
 
-router.use(authLimiter);
-
-router.get('/google', googleAuth);
-router.get('/google/callback', googleCallback);
+router.get('/google', authLimiter, googleAuth);
+router.get('/google/callback', authLimiter, googleCallback);
 router.get('/me', requireAuth, getCurrentUser);
-router.post('/logout', csrfProtection, requireAuth, logout);
+router.post('/logout', authLimiter, csrfProtection, requireAuth, logout);
 
 export default router;
