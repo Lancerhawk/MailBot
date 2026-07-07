@@ -20,7 +20,7 @@ const app: Express = express();
 const PgStore = pgSession(session);
 const pgPool = new pg.Pool({
   connectionString: env.DATABASE_URL,
-  max: 2,
+  max: 10,
 });
 
 app.set('trust proxy', 1);
