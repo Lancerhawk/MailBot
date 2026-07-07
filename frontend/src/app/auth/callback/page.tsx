@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "../../../providers/AuthProvider";
 
-export default function AuthCallbackPage() {
+function AuthCallbackContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshAuth } = useAuth();
@@ -35,5 +35,17 @@ export default function AuthCallbackPage() {
         Please wait while we securely connect your account.
       </p>
     </div>
+  );
+}
+
+export default function AuthCallbackPage() {
+  return (
+    <Suspense fallback={
+      <div className="flex min-h-screen flex-col items-center justify-center bg-stone-50 dark:bg-zinc-950">
+        <Loader2 className="mb-4 h-12 w-12 animate-spin text-orange-500 dark:text-red-600" />
+      </div>
+    }>
+      <AuthCallbackContent />
+    </Suspense>
   );
 }
