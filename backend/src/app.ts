@@ -28,7 +28,7 @@ app.set('trust proxy', 1);
 if (env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
-  app.use(pinoHttp({ logger }));
+  app.use(morgan('dev'));
 }
 
 app.use(helmet());
