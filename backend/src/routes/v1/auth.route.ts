@@ -1,8 +1,11 @@
 import { Router } from 'express';
 import { googleAuth, googleCallback, getCurrentUser, logout } from '../../controllers/auth.controller';
 import { requireAuth, csrfProtection } from '../../middlewares/auth.middleware';
+import { authLimiter } from '../../middlewares/rateLimiter';
 
 const router = Router();
+
+router.use(authLimiter);
 
 router.get('/google', googleAuth);
 router.get('/google/callback', googleCallback);

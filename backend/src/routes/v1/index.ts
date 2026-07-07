@@ -6,6 +6,8 @@ const router = Router();
 import authRoute from './auth.route';
 import gmailRoute from '../../modules/gmail/gmail.route';
 
+import draftRoute from '../../modules/draft/draft.route';
+
 const defaultRoutes = [
   {
     path: '/health',
@@ -18,6 +20,10 @@ const defaultRoutes = [
   {
     path: '/gmail',
     route: gmailRoute,
+  },
+  {
+    path: '/drafts',
+    route: draftRoute,
   }
 ];
 

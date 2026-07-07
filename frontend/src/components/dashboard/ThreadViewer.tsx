@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
@@ -8,6 +8,17 @@ import DOMPurify from "isomorphic-dompurify";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { useSocket } from "@/providers/SocketProvider";
+import { useThreadCache } from "@/providers/ThreadCacheProvider";
+import { DraftEditor } from "./DraftEditor";
+import { Archive, Star, Trash2, Mail, ShieldAlert, MoreVertical } from "lucide-react";
+import { toast } from "@/lib/toast";
+import { useAuth } from "@/providers/AuthProvider";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 interface Email {
   id: string;
@@ -15,6 +26,9 @@ interface Email {
   htmlBody: string | null;
   plainBody: string | null;
   receivedAt: string;
+  isRead?: boolean;
+  isSpam?: boolean;
+  isDeleted?: boolean;
   participants: {
     emailAddress: string;
     displayName: string | null;
@@ -26,6 +40,7 @@ interface Email {
   needsReply?: boolean;
   priority?: string;
   processingStatus?: string;
+  labels?: any[];
 }
 
 interface Thread {
@@ -147,11 +162,10 @@ function EmailCard({ email, isLast }: { email: Email; isLast: boolean }) {
                     </span>
                   )}
                   {email.sentiment && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
-                      email.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                      email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
-                      'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                    }`}>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${email.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                        email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
+                          'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      }`}>
                       {email.sentiment}
                     </span>
                   )}
@@ -166,10 +180,10 @@ function EmailCard({ email, isLast }: { email: Email; isLast: boolean }) {
             </div>
           )}
           {email.processingStatus === "PROCESSING" && (
-             <div className="bg-blue-50/50 px-5 py-2 border-b border-blue-100/50 dark:bg-blue-500/5 dark:border-blue-500/10 flex items-center gap-2">
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-                <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">AI Analysis in progress...</span>
-             </div>
+            <div className="bg-blue-50/50 px-5 py-2 border-b border-blue-100/50 dark:bg-blue-500/5 dark:border-blue-500/10 flex items-center gap-2">
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">AI Analysis in progress...</span>
+            </div>
           )}
           <div className="px-5 py-4 text-sm">
             {cleanHtml ? (
@@ -191,26 +205,35 @@ function EmailCard({ email, isLast }: { email: Email; isLast: boolean }) {
 }
 
 export function ThreadViewer({ threadId }: { threadId: string }) {
-  const [thread, setThread] = useState<Thread | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { user } = useAuth();
+  const { getThread, updateThreadInCache, cache } = useThreadCache();
+  const [thread, setThread] = useState<Thread | null>(() => cache[threadId] || null);
+  const [isLoading, setIsLoading] = useState(!cache[threadId]);
 
   useEffect(() => {
     if (!threadId) return;
 
     const fetchThread = async () => {
       try {
-        setIsLoading(true);
-        setThread(null);
-        const res = await api.get(`/gmail/threads/${threadId}`);
-        setThread(res.data.data);
+        if (!cache[threadId]) setIsLoading(true);
+        // Instant load if cached!
+        const data = await getThread(threadId);
+        setThread(data);
+
+        // Auto-mark thread as read when opened
+        const hasUnread = data?.emails?.some((e: Email) => !e.isRead);
+        if (hasUnread) {
+          api.post(`/gmail/threads/${threadId}/read`).catch(() => { });
+        }
       } catch (error) {
+        console.error(error);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchThread();
-  }, [threadId]);
+  }, [threadId, getThread]);
 
   const { socket } = useSocket();
 
@@ -220,22 +243,68 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
     const handleUpdate = (data: any) => {
       if (data.threadId === threadId || (data.result && !data.threadId)) {
         // Simple re-fetch to get new emails or AI fields
-        api.get(`/gmail/threads/${threadId}`).then(res => setThread(res.data.data)).catch(() => {});
+        api.get(`/gmail/threads/${threadId}`).then(res => {
+          setThread(res.data.data);
+          updateThreadInCache(threadId, res.data.data);
+          // Do not clear optimisticSentText here! Wait for sync:completed!
+        }).catch(() => { });
       }
     };
 
     const handleSyncComplete = () => {
-      api.get(`/gmail/threads/${threadId}`).then(res => setThread(res.data.data)).catch(() => {});
+      api.get(`/gmail/threads/${threadId}`).then(res => {
+        setThread(res.data.data);
+        updateThreadInCache(threadId, res.data.data);
+        setOptimisticSentText(null);
+      }).catch(() => { });
     };
 
+    socket.on('analysis:started', handleUpdate);
     socket.on('analysis:completed', handleUpdate);
     socket.on('sync:completed', handleSyncComplete);
+    socket.on('email:sent', handleUpdate);
 
     return () => {
+      socket.off('analysis:started', handleUpdate);
       socket.off('analysis:completed', handleUpdate);
       socket.off('sync:completed', handleSyncComplete);
+      socket.off('email:sent', handleUpdate);
     };
   }, [socket, threadId]);
+
+  const handleAction = async (action: string) => {
+    if (!thread) return;
+    try {
+      await api.post(`/gmail/threads/${threadId}/${action}`);
+      toast.success(`Action applied successfully`);
+    } catch (e) {
+      if (action === 'permanent') {
+        try {
+          await api.delete(`/gmail/threads/${threadId}/${action}`);
+          toast.success(`Deleted permanently`);
+        } catch (err) {
+          toast.error(`Failed to apply action`);
+        }
+      } else {
+        toast.error(`Failed to apply action`);
+      }
+    }
+  };
+
+  const [optimisticSentText, setOptimisticSentText] = useState<string | null>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-scroll to bottom when thread loads or emails change
+  useEffect(() => {
+    if (thread && scrollContainerRef.current) {
+      // Small delay to let the DOM render the emails first
+      setTimeout(() => {
+        if (scrollContainerRef.current) {
+          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
+      }, 100);
+    }
+  }, [thread?.id, thread?.emails?.length]);
 
   if (isLoading) {
     return <ThreadSkeleton />;
@@ -245,16 +314,62 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden animate-fade-in-scale">
-      <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          {thread.subject || "(No Subject)"}
-        </h2>
-        <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-          {thread.emails.length} message{thread.emails.length !== 1 ? "s" : ""} in this conversation
-        </p>
+      <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex items-center justify-between">
+        <div>
+          <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
+            {thread.subject || "(No Subject)"}
+          </h2>
+          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+            {thread.emails.length} message{thread.emails.length !== 1 ? "s" : ""} in this conversation
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {thread.emails[0]?.isSpam ? (
+            <Button variant="ghost" size="sm" onClick={() => handleAction('unspam')} title="Not Spam">
+              <ShieldAlert className="mr-2 h-4 w-4" /> Not Spam
+            </Button>
+          ) : thread.emails[0]?.isDeleted ? (
+            <Button variant="ghost" size="sm" onClick={() => handleAction('restore')} title="Restore">
+              <Trash2 className="mr-2 h-4 w-4" /> Restore
+            </Button>
+          ) : (
+            <>
+              <Button variant="ghost" size="icon" onClick={() => handleAction('archive')} title="Archive">
+                <Archive className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => handleAction('unread')} title="Mark unread">
+                <Mail className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" onClick={() => handleAction('delete')} title="Trash">
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </>
+          )}
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon">
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => handleAction('star')}>
+                <Star className="mr-2 h-4 w-4" /> Star
+              </DropdownMenuItem>
+              {!thread.emails[0]?.isSpam && (
+                <DropdownMenuItem onClick={() => handleAction('spam')}>
+                  <ShieldAlert className="mr-2 h-4 w-4" /> Report Spam
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onClick={() => handleAction('permanent')} className="text-red-600">
+                <Trash2 className="mr-2 h-4 w-4" /> Delete Permanently
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto scrollbar-thin">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto scrollbar-thin">
         <div className="space-y-3 p-5">
           {thread.emails.map((email, index) => (
             <EmailCard
@@ -263,6 +378,37 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
               isLast={index === thread.emails.length - 1}
             />
           ))}
+
+          {optimisticSentText && (
+            <div className="rounded-xl border border-zinc-200 bg-white p-5 opacity-60 dark:border-zinc-800 dark:bg-zinc-900 animate-fade-in">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${getAvatarColor(user?.name || user?.email || 'ME').bg} ${getAvatarColor(user?.name || user?.email || 'ME').text}`}>
+                  {(user?.name || user?.email || 'ME').charAt(0).toUpperCase()}
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="truncate text-sm font-semibold text-zinc-900 dark:text-zinc-100">
+                    {user?.name || user?.email || 'You'}
+                  </span>
+                  <span className="text-xs text-zinc-500 dark:text-zinc-400">Sending...</span>
+                </div>
+              </div>
+              <div className="mt-4 text-sm text-zinc-700 dark:text-zinc-300">
+                <p className="whitespace-pre-wrap">{optimisticSentText}</p>
+              </div>
+            </div>
+          )}
+
+          {!optimisticSentText && !thread.emails[0]?.isDeleted && (
+            <DraftEditor
+              emailId={
+                [...thread.emails].reverse().find(e => 
+                  !e.labels?.some((l: any) => l.providerLabelId === 'SENT')
+                )?.id || thread.emails[0]?.id
+              }
+              threadId={thread.id}
+              onSent={(text) => setOptimisticSentText(text)}
+            />
+          )}
         </div>
       </div>
     </div>

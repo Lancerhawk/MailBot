@@ -9,7 +9,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = React.useState(false);
   const pathname = usePathname();
 
-  const isFullWidth = pathname === "/inbox";
+  const isFullWidth = ["/inbox", "/spam", "/trash", "/drafts"].includes(pathname);
 
   return (
     <div className="flex h-screen w-full overflow-hidden bg-stone-50 transition-colors duration-300 dark:bg-zinc-950">

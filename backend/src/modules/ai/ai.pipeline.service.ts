@@ -1,10 +1,12 @@
-import { PrismaClient, Email, ProcessingStatus } from '@prisma/client';
+import { Email, ProcessingStatus } from '@prisma/client';
+import { prisma } from '../../lib/prisma';
 import { htmlToText } from 'html-to-text';
 import { GroqService } from './groq.service';
 import { logger } from '../../config/logger';
 import { emitToUser } from '../../socket';
+import { DraftService } from '../draft/draft.service';
+import { DraftDbService } from '../draft/draft.db.service';
 
-const prisma = new PrismaClient();
 const groqService = new GroqService();
 
 const userProcessingQueue: Record<string, Promise<void>> = {};
@@ -14,8 +16,8 @@ export class AiPipelineService {
     const run = async () => {
       try {
         await this.processEmail(userId, emailId);
-      } catch (error) {
-        logger.error({ error, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
+      } catch (error: any) {
+        logger.error({ error: error.message || error, stack: error.stack, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
       }
     };
 
@@ -30,19 +32,26 @@ export class AiPipelineService {
   private async processEmail(userId: string, emailId: string) {
     const email = await prisma.email.findUnique({
       where: { id: emailId },
-      include: { thread: true, labels: true }
+      include: { thread: true, labels: true, user: true, participants: true, connection: true }
     });
 
     if (!email) return;
 
-    const isSent = email.labels?.some((l: any) => l.providerLabelId === 'SENT');
+    const isSentLabel = email.labels?.some((l: any) => l.providerLabelId === 'SENT');
+    const sender = email.participants?.find((p: any) => p.role === 'SENDER');
+    const isSentByUser = sender && email.connection && sender.emailAddress.toLowerCase() === email.connection.emailAddress.toLowerCase();
+
+    const isSent = isSentLabel || isSentByUser;
+
+    const isOld = email.receivedAt.getTime() < email.user.createdAt.getTime();
 
     if (
       email.isDeleted ||
       email.isDraft ||
       email.isSpam ||
       email.category === 'TRASH' ||
-      isSent
+      isSent ||
+      isOld
     ) {
       logger.debug(`Skipping AI analysis for email ${emailId} - failed eligibility check.`);
       if (email.processingStatus === 'PENDING') {
@@ -91,7 +100,7 @@ export class AiPipelineService {
         }
       });
 
-      const MAX_CONTEXT_LENGTH = 15000;
+      const MAX_CONTEXT_LENGTH = 8000;
       let currentLength = 0;
       const contextMessages: string[] = [];
 
@@ -117,21 +126,51 @@ export class AiPipelineService {
 
       const result = await groqService.analyzeConversation(conversationContext);
 
+      const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED'];
+      const validIntents = ['INQUIRY', 'SUPPORT', 'MEETING', 'FEEDBACK', 'SPAM', 'OTHER'];
+      const validPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
+
+      const sentiment = validSentiments.includes(result.sentiment?.toUpperCase()) ? result.sentiment.toUpperCase() : 'NEUTRAL';
+      const intent = validIntents.includes(result.intent?.toUpperCase()) ? result.intent.toUpperCase() : 'OTHER';
+      const priority = validPriorities.includes(result.priority?.toUpperCase()) ? result.priority.toUpperCase() : 'NORMAL';
+      const needsReply = Boolean(result.needsReply);
+      const confidence = Number(result.confidence) || 0.5;
+
       await prisma.email.update({
         where: { id: emailId },
         data: {
           summary: result.summary,
-          sentiment: result.sentiment,
-          intent: result.intent,
-          needsReply: result.needsReply,
-          priority: result.priority,
-          confidence: result.confidence,
+          sentiment: sentiment as any,
+          intent: intent as any,
+          needsReply: needsReply,
+          priority: priority as any,
+          confidence: confidence,
           processingStatus: ProcessingStatus.COMPLETED
         }
       });
 
       logger.info(`AI analysis completed for email ${emailId}`);
-      emitToUser(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result });
+      emitToUser(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result: { ...result, sentiment, intent, priority, needsReply, confidence } });
+
+      if (result.needsReply === false) {
+        return;
+      }
+
+      const draftDbService = new DraftDbService();
+      const existingDraft = await draftDbService.getLatestFinalDraft(emailId, userId);
+      if (existingDraft) {
+        return;
+      }
+
+      const draftService = new DraftService();
+      await draftService.generateDraft(userId, emailId).catch(err => {
+        logger.error({ err, emailId }, 'Automatic draft generation failed');
+      });
+
+      await prisma.email.update({
+        where: { id: emailId },
+        data: { replyStatus: 'DRAFTED' }
+      });
 
     } catch (error) {
       logger.error({ error, emailId }, 'AI analysis failed and exhausted retries');

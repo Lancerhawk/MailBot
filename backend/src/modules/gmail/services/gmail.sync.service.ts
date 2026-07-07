@@ -272,7 +272,7 @@ export class GmailSyncService {
             parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
             const savedEmails = await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
             if (savedEmails) {
-               processedEmailIds.push(...savedEmails.map((e: any) => e.id));
+              processedEmailIds.push(...savedEmails.map((e: any) => e.id));
             }
             state.emailsProcessed += parsedEmails.length;
           } else {
@@ -284,7 +284,7 @@ export class GmailSyncService {
             parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
             const savedEmails = await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
             if (savedEmails) {
-               processedEmailIds.push(...savedEmails.map((e: any) => e.id));
+              processedEmailIds.push(...savedEmails.map((e: any) => e.id));
             }
             state.emailsProcessed += parsedEmails.length;
           }
@@ -314,7 +314,6 @@ export class GmailSyncService {
       return;
     }
 
-    // Webhook Idempotency: Ignore duplicate or stale notifications
     if (connection.lastHistoryId && newHistoryId <= connection.lastHistoryId) {
       console.log(`Ignoring duplicate webhook for ${emailAddress} (historyId: ${newHistoryId} <= ${connection.lastHistoryId})`);
       return;
@@ -344,17 +343,16 @@ export class GmailSyncService {
 
     try {
       const gmail = await this.clientService.getAuthenticatedClient(userId);
-      // Pass the previous lastHistoryId to performIncrementalSync, falling back to newHistoryId - 1n if none exists (unlikely)
       const startHistoryId = connection.lastHistoryId ? connection.lastHistoryId.toString() : (newHistoryId - BigInt(1)).toString();
-      
-      // Stage 1: Incremental Sync (Persistence)
+
       processedEmailIds = await this.performIncrementalSync(userId, connection.id, startHistoryId, gmail, state);
 
       state.status = "IDLE";
       state.currentStage = "Sync complete";
-      
-      emitToUser(userId, 'sync:completed', { 
-        emailsProcessed: state.emailsProcessed 
+      await this.dbService.updateSyncStatus(userId, "IDLE");
+
+      emitToUser(userId, 'sync:completed', {
+        emailsProcessed: state.emailsProcessed
       });
 
     } catch (error: any) {
@@ -366,11 +364,10 @@ export class GmailSyncService {
       syncMemoryMap.delete(userId);
     }
 
-    // Stage 2: AI Pipeline (Only after successful persistence)
     if (processedEmailIds && processedEmailIds.length > 0) {
       const { AiPipelineService } = require('../../ai/ai.pipeline.service');
       const aiPipeline = new AiPipelineService();
-      
+
       for (const emailId of processedEmailIds) {
         aiPipeline.scheduleAnalysis(userId, emailId);
       }

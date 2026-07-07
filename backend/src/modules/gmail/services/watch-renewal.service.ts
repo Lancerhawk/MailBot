@@ -1,8 +1,8 @@
-import { PrismaClient, SyncStatus } from '@prisma/client';
+import { SyncStatus } from '@prisma/client';
+import { prisma } from '../../../lib/prisma';
 import { GmailClientService } from './gmail.client.service';
 import { logger } from '../../../config/logger';
 
-const prisma = new PrismaClient();
 const gmailClient = new GmailClientService();
 
 export class WatchRenewalService {

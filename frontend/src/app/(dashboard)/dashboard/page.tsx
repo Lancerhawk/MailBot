@@ -9,6 +9,8 @@ import {
   Clock,
   ArrowRight,
   CheckCircle,
+  Loader2,
+  WifiOff
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -81,7 +83,7 @@ function StatCard({
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  const { socket } = useSocket();
+  const { socket, isConnected } = useSocket();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -99,7 +101,7 @@ export default function DashboardPage() {
         totalThreads: threadsData.pagination.total,
         totalEmails: threadsData.pagination.totalEmails || 0,
         lastSyncAt: statusData.lastSuccessfulSyncAt,
-        syncStatus: statusData.connectionStatus,
+        syncStatus: statusData.activeSync ? "SYNCING" : statusData.connectionStatus,
         recentThreads: threadsData.threads,
       });
     } catch (e) {
@@ -125,14 +127,38 @@ export default function DashboardPage() {
     socket.on('sync:started', handleSyncStarted);
     socket.on('sync:completed', handleSyncCompleted);
 
+    const ticker = setInterval(() => {
+      setStats(prev => prev ? { ...prev } : null); // Force re-render for formatDistanceToNow
+    }, 60000);
+
     return () => {
       socket.off('sync:started', handleSyncStarted);
       socket.off('sync:completed', handleSyncCompleted);
+      clearInterval(ticker);
     };
   }, [socket]);
 
   const greeting = getGreeting();
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
+
+  // Compute Sync Status Card values
+  let syncStatusLabel = "—";
+  let SyncIcon = CheckCircle;
+  let syncAccent = "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
+  
+  if (!isConnected) {
+    syncStatusLabel = "Disconnected";
+    syncAccent = "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400";
+    // We could import AlertTriangle or similar, but for now we'll just use CheckCircle as a fallback 
+    // Wait, let's actually import Loader2 and WifiOff at the top if possible. Since I can't easily add imports here safely without replacing the top, I'll use simple logic.
+    // I will replace the imports separately.
+  } else if (stats?.syncStatus === "SYNCING") {
+    syncStatusLabel = "Syncing...";
+    syncAccent = "bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400";
+  } else {
+    syncStatusLabel = "Connected";
+    syncAccent = "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400";
+  }
 
   return (
     <div className="flex h-full flex-col gap-8">
@@ -161,10 +187,10 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
         <StatCard
-          icon={CheckCircle}
+          icon={stats?.syncStatus === "SYNCING" ? (props: any) => <Loader2 {...props} className={`${props.className || ''} animate-spin`} /> : (!isConnected ? WifiOff : CheckCircle)}
           label="Sync Status"
-          value={stats?.syncStatus === "IDLE" ? "Connected" : stats?.syncStatus || "—"}
-          accent="bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400"
+          value={syncStatusLabel}
+          accent={syncAccent}
           isLoading={isLoading}
         />
         <StatCard
@@ -172,7 +198,9 @@ export default function DashboardPage() {
           label="Last Sync"
           value={
             stats?.lastSyncAt
-              ? formatDistanceToNow(new Date(stats.lastSyncAt), { addSuffix: true }).replace("about ", "")
+              ? formatDistanceToNow(new Date(stats.lastSyncAt), { addSuffix: true })
+                  .replace("about ", "")
+                  .replace("less than a minute ago", "Just now")
               : "Never"
           }
           accent="bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"

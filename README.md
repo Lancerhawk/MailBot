@@ -4,8 +4,8 @@ MailBot is a production-quality, AI-powered email management platform.
 
 ## Current Status
 
-**Backend Version 0.5.0 (AI Real-time Resiliency)**
-**Frontend Version 0.4.0 (AI UI State Management)**
+**Backend Version 0.6.0 (Full Email Client & Draft Generation)**
+**Frontend Version 0.5.0 (AI Composer & Background Caching)**
 The project is currently configured as a modular monolith. The frontend and backend are completely decoupled into distinct projects, each with their own versioning (`backend/package.json` vs `frontend/package.json`), allowing for a clean separation of concerns.
 
 ## Database Architecture

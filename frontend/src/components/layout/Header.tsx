@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/providers/AuthProvider";
 import { SyncIndicator } from "@/components/dashboard/SyncIndicator";
+import { ComposeModal } from "@/components/dashboard/ComposeModal";
+import { Edit } from "lucide-react";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -16,6 +18,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const [mounted, setMounted] = React.useState(false);
+  const [isComposeOpen, setIsComposeOpen] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -54,6 +57,10 @@ export function Header({ setSidebarOpen }: HeaderProps) {
           />
         </form>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
+          <Button onClick={() => setIsComposeOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
+            <Edit className="h-4 w-4" />
+            <span className="hidden sm:inline">Compose</span>
+          </Button>
           <SyncIndicator />
           <Button
             variant="ghost"
@@ -112,6 +119,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
           </div>
         </div>
       </div>
+      <ComposeModal isOpen={isComposeOpen} onClose={() => setIsComposeOpen(false)} />
     </header>
   );
 }

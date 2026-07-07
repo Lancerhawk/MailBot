@@ -7,7 +7,7 @@ import { ApiError } from '../utils/ApiError';
 export const googleAuth = catchAsync(async (req: Request, res: Response) => {
   const state = AuthService.generateState();
   req.session.oauthState = state;
-  
+
   try {
     await new Promise<void>((resolve, reject) => {
       req.session.save((err) => {
@@ -18,7 +18,7 @@ export const googleAuth = catchAsync(async (req: Request, res: Response) => {
         resolve();
       });
     });
-    
+
     const url = AuthService.generateAuthUrl(state);
     res.redirect(url);
   } catch (error) {
@@ -48,9 +48,9 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
 
   try {
     const user = await AuthService.handleGoogleCallback(code, ipAddress, userAgent);
-    
+
     req.session.userId = user.id;
-    
+
     await new Promise<void>((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
@@ -60,11 +60,10 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
         resolve();
       });
     });
-    
-    // Register Gmail watch in the background
+
     const watchService = new (require('../modules/gmail/services/watch-renewal.service').WatchRenewalService)();
     watchService.registerWatch(user.id).catch((err: any) => console.error("Watch registration error:", err));
-    
+
     res.redirect(`${env.FRONTEND_URL}/auth/callback?success=true`);
   } catch (err) {
     console.error('Callback handling error:', err);
@@ -85,7 +84,7 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
   if (req.session.userId) {
     const ipAddress = req.ip || req.socket.remoteAddress;
     const userAgent = req.get('user-agent');
-    
+
     await AuthService.logLogout(req.session.userId, ipAddress, userAgent);
   }
 
@@ -99,7 +98,7 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
         resolve();
       });
     });
-    
+
     res.clearCookie('connect.sid');
     res.status(200).json({ status: 'success', message: 'Logged out successfully' });
   } catch (error) {

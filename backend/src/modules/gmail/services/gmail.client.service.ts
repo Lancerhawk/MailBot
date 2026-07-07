@@ -1,8 +1,7 @@
 import { google, gmail_v1 } from "googleapis";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../../../lib/prisma";
 import { decryptToken } from "../../../utils/encryption";
 
-const prisma = new PrismaClient();
 
 export class GmailClientService {
   async getAuthenticatedClient(userId: string): Promise<gmail_v1.Gmail> {

@@ -17,7 +17,8 @@ declare global {
   }
 }
 
-const prisma = new PrismaClient();
+import { prisma } from '../lib/prisma';
+
 
 export const requireAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {

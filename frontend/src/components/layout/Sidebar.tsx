@@ -15,12 +15,16 @@ import {
   HelpCircle,
   Mail,
   X,
+  ShieldAlert,
+  Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { name: "Inbox", href: "/inbox", icon: Inbox },
+  { name: "Spam", href: "/spam", icon: ShieldAlert },
+  { name: "Trash", href: "/trash", icon: Trash2 },
   { name: "AI Drafts", href: "/drafts", icon: PenSquare },
   { name: "Knowledge Base", href: "/knowledge-base", icon: BookOpen },
   { name: "Contacts", href: "/contacts", icon: Users },

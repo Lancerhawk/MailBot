@@ -5,6 +5,7 @@ import { ThemeProvider } from "./ThemeProvider";
 import { AuthProvider } from "./AuthProvider";
 
 import { SocketProvider } from "./SocketProvider";
+import { ThreadCacheProvider } from "./ThreadCacheProvider";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
@@ -15,7 +16,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     >
       <AuthProvider>
         <SocketProvider>
-          {children}
+          <ThreadCacheProvider>
+            {children}
+          </ThreadCacheProvider>
         </SocketProvider>
       </AuthProvider>
     </ThemeProvider>

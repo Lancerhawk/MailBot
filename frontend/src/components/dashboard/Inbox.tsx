@@ -1,11 +1,17 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import api from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { ThreadViewer } from "./ThreadViewer";
-import { Search, Mail, Inbox as InboxIcon } from "lucide-react";
+import { Search, Mail, Inbox as InboxIcon, Filter, Loader2 } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 interface Participant {
   emailAddress: string;
@@ -61,40 +67,244 @@ function ThreadSkeleton() {
 }
 
 import { useSocket } from "@/providers/SocketProvider";
+import { useThreadCache } from "@/providers/ThreadCacheProvider";
 
-export function Inbox() {
+export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | "drafts" }) {
   const { socket } = useSocket();
+  const { prefetchThreads } = useThreadCache();
   const [threads, setThreads] = useState<EmailThread[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filter, setFilter] = useState("all");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
-    fetchThreads();
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-    if (!socket) return;
-
-    const handleSyncCompleted = () => {
-      fetchThreads();
-    };
-
-    socket.on('sync:completed', handleSyncCompleted);
-
-    return () => {
-      socket.off('sync:completed', handleSyncCompleted);
-    };
-  }, [socket]);
-
-  const fetchThreads = async () => {
+  const fetchThreads = async (silent = false, pageNum = 1, append = false) => {
     try {
-      setIsLoading(true);
-      const res = await api.get("/gmail/threads?limit=100");
-      setThreads(res.data.data.threads);
+      if (!silent && !append) setIsLoading(true);
+      if (append) setIsFetchingMore(true);
+      
+      let queryUrl = `/gmail/threads?limit=100&page=${pageNum}`;
+      
+      let actualFilter = filter;
+      if (mode === "spam") actualFilter = "spam";
+      if (mode === "trash") actualFilter = "trash";
+      if (mode === "drafts") actualFilter = "drafts";
+      
+      if (actualFilter !== "all") {
+        queryUrl += `&filter=${actualFilter}`;
+      }
+      if (debouncedSearch) {
+        queryUrl += `&search=${encodeURIComponent(debouncedSearch)}`;
+      }
+
+      const res = await api.get(queryUrl);
+      const newThreads = res.data.data.threads;
+      
+      if (append) {
+        setThreads(prev => [...prev, ...newThreads]);
+      } else {
+        setThreads(newThreads);
+        // If the selected thread is no longer in the refreshed list, clear it
+        if (selectedThreadId && !newThreads.some((t: any) => t.id === selectedThreadId)) {
+          setSelectedThreadId(null);
+        }
+      }
+      
+      setHasMore(pageNum < res.data.data.pagination.totalPages);
+      
+      // Background cache prefetching for 0ms load times!
+      prefetchThreads(newThreads.map((t: any) => t.id));
     } catch (error) {
+      console.error(error);
     } finally {
       setIsLoading(false);
+      setIsFetchingMore(false);
     }
   };
+
+  useEffect(() => {
+    setPage(1);
+    fetchThreads(false, 1, false);
+  }, [mode, filter, debouncedSearch]);
+
+  const loadMore = useCallback(() => {
+    if (isLoading || isFetchingMore || !hasMore) return;
+    const nextPage = page + 1;
+    setPage(nextPage);
+    fetchThreads(false, nextPage, true);
+  }, [isLoading, isFetchingMore, hasMore, page, filter, mode, debouncedSearch]);
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastElementRef = useCallback((node: HTMLDivElement) => {
+    if (isLoading || isFetchingMore) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMore();
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [isLoading, isFetchingMore, hasMore, loadMore]);
+
+  // Socket event handlers
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleSyncStarted = () => setIsSyncing(true);
+    // New email arrived via webhook sync → background refresh, new threads appear without flash
+    const handleSyncCompleted = () => {
+      setIsSyncing(false);
+      fetchThreads(true);
+    };
+
+    // Local optimistic updater for individual thread fields
+    const updateThread = (threadId: string, updater: (t: EmailThread) => EmailThread) => {
+      setThreads(prev => {
+        const idx = prev.findIndex(t => t.id === threadId);
+        if (idx === -1) return prev;
+        const newThreads = [...prev];
+        newThreads[idx] = updater(newThreads[idx]);
+        return newThreads;
+      });
+    };
+
+    // Per-message action events (legacy, kept for backwards compat)
+    const handleRead = (data: any) => updateThread(data.threadId, t => ({
+      ...t, emails: t.emails.map(e => ({ ...e, isRead: data.value }))
+    }));
+
+    const handleDeleted = (data: any) => {
+      if (mode === "inbox" && data.value === true) {
+        setThreads(prev => prev.filter(t => t.id !== data.threadId));
+        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+      } else if (mode === "trash" && data.value === false) {
+        setThreads(prev => prev.filter(t => t.id !== data.threadId));
+        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+      } else {
+        fetchThreads(true);
+      }
+    };
+
+    const handleSpam = (data: any) => {
+      if (mode === "inbox" && data.value === true) {
+        setThreads(prev => prev.filter(t => t.id !== data.threadId));
+        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+      } else if (mode === "spam" && data.value === false) {
+        setThreads(prev => prev.filter(t => t.id !== data.threadId));
+        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+      } else {
+        fetchThreads(true);
+      }
+    };
+
+    const handlePermDelete = (data: any) => {
+      setThreads(prev => prev.filter(t => t.id !== data.threadId));
+      if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+    };
+
+    // Thread-level action events
+    const handleThreadUpdated = (data: any) => {
+      const { threadId, field, value } = data;
+      if (field === 'isRead') {
+        // Pure optimistic — just flip the flag, no refetch needed
+        updateThread(threadId, t => ({
+          ...t, emails: t.emails.map(e => ({ ...e, isRead: value }))
+        }));
+      } else if (field === 'isDeleted') {
+        if (mode === 'inbox' && value === true) {
+          setThreads(prev => prev.filter(t => t.id !== threadId));
+          if (selectedThreadId === threadId) setSelectedThreadId(null);
+        } else if (mode === 'trash' && value === false) {
+          setThreads(prev => prev.filter(t => t.id !== threadId));
+          if (selectedThreadId === threadId) setSelectedThreadId(null);
+        } else {
+          fetchThreads(true);
+        }
+      } else if (field === 'isSpam') {
+        if (mode === 'inbox' && value === true) {
+          setThreads(prev => prev.filter(t => t.id !== threadId));
+          if (selectedThreadId === threadId) setSelectedThreadId(null);
+        } else if (mode === 'spam' && value === false) {
+          setThreads(prev => prev.filter(t => t.id !== threadId));
+          if (selectedThreadId === threadId) setSelectedThreadId(null);
+        } else {
+          fetchThreads(true);
+        }
+      } else if (field === 'isArchived') {
+        if (mode === 'inbox' && value === true) {
+          setThreads(prev => prev.filter(t => t.id !== threadId));
+          if (selectedThreadId === threadId) setSelectedThreadId(null);
+        } else {
+          fetchThreads(true);
+        }
+      } else {
+        fetchThreads(true);
+      }
+    };
+
+    const handleThreadPermDelete = (data: any) => {
+      setThreads(prev => prev.filter(t => t.id !== data.threadId));
+      if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+    };
+
+    socket.on('sync:started', handleSyncStarted);
+    socket.on('sync:completed', handleSyncCompleted);
+    socket.on('email:read', handleRead);
+    socket.on('email:unread', handleRead);
+    socket.on('email:deleted', handleDeleted);
+    socket.on('email:restored', handleDeleted);
+    socket.on('email:spam', handleSpam);
+    socket.on('email:unspam', handleSpam);
+    socket.on('email:permanently_deleted', handlePermDelete);
+    socket.on('thread:updated', handleThreadUpdated);
+    socket.on('thread:permanently_deleted', handleThreadPermDelete);
+
+    return () => {
+      socket.off('sync:started', handleSyncStarted);
+      socket.off('sync:completed', handleSyncCompleted);
+      socket.off('email:read', handleRead);
+      socket.off('email:unread', handleRead);
+      socket.off('email:deleted', handleDeleted);
+      socket.off('email:restored', handleDeleted);
+      socket.off('email:spam', handleSpam);
+      socket.off('email:unspam', handleSpam);
+      socket.off('email:permanently_deleted', handlePermDelete);
+      socket.off('thread:updated', handleThreadUpdated);
+      socket.off('thread:permanently_deleted', handleThreadPermDelete);
+    };
+  }, [socket, mode, selectedThreadId, filter, debouncedSearch]);
+
+  useEffect(() => {
+    if (!socket) return;
+    const handleRefresh = () => fetchThreads(true);
+    // These events should trigger a silent refresh of whichever page we're on
+    // so AI Drafts, Spam, Trash all update live just like Inbox does
+    socket.on('analysis:completed', handleRefresh);
+    socket.on('draft:generated', handleRefresh);
+    socket.on('draft:regenerated', handleRefresh);
+    socket.on('email:sent', handleRefresh);
+    return () => {
+      socket.off('analysis:completed', handleRefresh);
+      socket.off('draft:generated', handleRefresh);
+      socket.off('draft:regenerated', handleRefresh);
+      socket.off('email:sent', handleRefresh);
+    };
+  }, [socket, mode, filter, debouncedSearch]);
 
   const getSenderInfo = (thread: EmailThread) => {
     const sender = thread.emails[0]?.participants.find(p => p.role === "SENDER");
@@ -103,24 +313,13 @@ export function Inbox() {
     return { name, initial, color: getAvatarColor(name) };
   };
 
-  const filteredThreads = useMemo(() => {
-    if (!searchQuery.trim()) return threads;
-    const q = searchQuery.toLowerCase();
-    return threads.filter(t => {
-      const sender = getSenderInfo(t);
-      return (
-        t.subject?.toLowerCase().includes(q) ||
-        sender.name.toLowerCase().includes(q) ||
-        t.emails[0]?.snippet?.toLowerCase().includes(q)
-      );
-    });
-  }, [threads, searchQuery]);
+  const filteredThreads = threads;
 
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden">
       <div className="flex w-full flex-col border-r border-zinc-200 dark:border-zinc-800 md:w-[380px] lg:w-[420px] xl:w-[440px]">
-        <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
-          <div className="relative">
+        <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 flex gap-2">
+          <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               type="text"
@@ -130,7 +329,29 @@ export function Inbox() {
               className="w-full rounded-lg border border-zinc-200 bg-zinc-50 py-2 pl-9 pr-4 text-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-zinc-400 focus:bg-white focus:ring-1 focus:ring-zinc-300 dark:border-zinc-700 dark:bg-zinc-900 dark:placeholder:text-zinc-500 dark:focus:border-zinc-600 dark:focus:bg-zinc-800 dark:focus:ring-zinc-700"
             />
           </div>
+          {mode === "inbox" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-200 bg-zinc-50 text-zinc-500 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800">
+                <Filter className="h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={() => setFilter("all")}>All Emails</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilter("unread")}>Unread</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilter("starred")}>Starred</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilter("needsReply")}>Needs Reply</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilter("hasAttachments")}>Has Attachments</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setFilter("highPriority")}>High Priority</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
+
+        {isSyncing && (
+          <div className="bg-blue-50 dark:bg-blue-900/20 px-4 py-2 flex items-center justify-center gap-2 border-b border-blue-100 dark:border-blue-900/50">
+            <Loader2 className="h-3 w-3 animate-spin text-blue-500" />
+            <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Syncing new emails...</span>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto scrollbar-thin">
           {isLoading ? (
@@ -153,7 +374,7 @@ export function Inbox() {
             </div>
           ) : (
             <div className="stagger-children divide-y divide-zinc-100 dark:divide-zinc-800/50">
-              {filteredThreads.map((thread) => {
+              {filteredThreads.map((thread, index) => {
                 const isUnread = !thread.emails[0]?.isRead;
                 const isSelected = selectedThreadId === thread.id;
                 const sender = getSenderInfo(thread);
@@ -161,7 +382,18 @@ export function Inbox() {
                 return (
                   <div
                     key={thread.id}
-                    onClick={() => setSelectedThreadId(thread.id)}
+                    ref={index === filteredThreads.length - 1 ? lastElementRef : undefined}
+                    onClick={() => {
+                      setSelectedThreadId(thread.id);
+                      // Optimistic mark-as-read: instantly remove unread badge
+                      if (!thread.emails[0]?.isRead) {
+                        setThreads(prev => prev.map(t =>
+                          t.id === thread.id
+                            ? { ...t, emails: t.emails.map(e => ({ ...e, isRead: true })) }
+                            : t
+                        ));
+                      }
+                    }}
                     className={`group relative flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-all duration-150
                       ${isSelected
                         ? "bg-orange-50/80 dark:bg-orange-500/5"
@@ -203,6 +435,11 @@ export function Inbox() {
                   </div>
                 );
               })}
+              {isFetchingMore && (
+                <div className="flex justify-center p-4">
+                  <Loader2 className="h-5 w-5 animate-spin text-zinc-400" />
+                </div>
+              )}
             </div>
           )}
         </div>

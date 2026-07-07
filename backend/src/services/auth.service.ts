@@ -1,11 +1,10 @@
 import crypto from 'crypto';
 import { OAuth2Client } from 'google-auth-library';
-import { PrismaClient, EmailProvider, ActivityType } from '@prisma/client';
+import { EmailProvider, ActivityType } from '@prisma/client';
+import { prisma } from '../lib/prisma';
 import { env } from '../config/env';
 import { encryptToken } from '../utils/encryption';
 import { ApiError } from '../utils/ApiError';
-
-const prisma = new PrismaClient();
 
 const oauth2Client = new OAuth2Client(
   env.GOOGLE_CLIENT_ID,

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.5.0] & [Backend v0.6.0] - Full Email Client & AI Drafts Experience
+
+### Added
+- **AI Draft Generation:** Integrated automatic backend generation of AI email replies using Groq when `needsReply` is true. The AI uses full chronological thread context.
+- **Manual & AI Reply Composers:** A dynamic composer inside the thread viewer allowing users to edit AI drafts, regenerate them, or write completely manual replies.
+- **Gmail Send Integration:** Sending replies through MailBot natively uses the Gmail API, automatically marks spam as inbox upon reply, and supports sending without an AI draft.
+- **Instant Background Prefetching:** Added a `ThreadCacheProvider` that silently fetches full thread details in the background upon initial inbox load, resulting in 0ms load times when clicking emails.
+- **Infinite Scrolling:** Implemented Intersection Observer-based infinite pagination for all list views (Inbox, Spam, Trash, Drafts).
+- **Rate Limit Splitting:** Separated strict authentication rate limits (20 req / 15m) from broader API rate limits (300 req / 1m) to accommodate aggressive background caching.
+- **AI Eligibility Tweaks:** Adjusted AI prompts to explicitly skip newsletters, system alerts, and "thank you" notes from draft generation.
+- **Dynamic Contextual UI:** The Thread Viewer now dynamically displays "Not Spam" or "Restore" buttons if a thread is opened from Spam or Trash, and disables replying when in Trash.
+- **Loading Animations:** Real-time Socket.IO feedback indicating when background Gmail synchronization is active and when AI Analysis is processing.
+
 ## [Frontend v0.4.0] & [Backend v0.5.0] - AI Integration & Real-time Sync Bugfixes
 
 ### Added
