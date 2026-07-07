@@ -9,7 +9,7 @@ import { ApiError } from '../utils/ApiError';
 const oauth2Client = new OAuth2Client(
   env.GOOGLE_CLIENT_ID,
   env.GOOGLE_CLIENT_SECRET,
-  `http://localhost:${env.PORT}/api/v1/auth/google/callback`
+  `${env.API_URL}/api/v1/auth/google/callback`
 );
 
 export class AuthService {

@@ -1,7 +1,7 @@
 import { google, gmail_v1 } from "googleapis";
 import { prisma } from "../../../lib/prisma";
 import { decryptToken } from "../../../utils/encryption";
-
+import { env } from "../../../config/env";
 
 export class GmailClientService {
   async getAuthenticatedClient(userId: string): Promise<gmail_v1.Gmail> {
@@ -14,11 +14,9 @@ export class GmailClientService {
     }
 
     const oauth2Client = new google.auth.OAuth2(
-      process.env.GOOGLE_CLIENT_ID,
-      process.env.GOOGLE_CLIENT_SECRET,
-      process.env.NEXT_PUBLIC_API_URL
-        ? `${process.env.NEXT_PUBLIC_API_URL}/auth/google/callback`
-        : "http://localhost:5000/api/v1/auth/google/callback"
+      env.GOOGLE_CLIENT_ID,
+      env.GOOGLE_CLIENT_SECRET,
+      `${env.API_URL}/api/v1/auth/google/callback`
     );
 
     const decryptedAccessToken = decryptToken(connection.encryptedAccessToken);
