@@ -18,12 +18,6 @@ export class GmailController {
         return res.status(400).send('Bad Request');
       }
 
-      // Automatically forward a copy to local dev environment for easy testing
-      if (process.env.NODE_ENV === 'production') {
-        const axios = require('axios');
-        axios.post('https://smee.io/qNqTAILklQaJLAdN', req.body).catch(() => { });
-      }
-
       const decodedData = Buffer.from(message.data, 'base64').toString('utf8');
       const payload = JSON.parse(decodedData);
 
