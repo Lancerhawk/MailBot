@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -45,12 +45,12 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
   return (
     <>
       <div className="flex h-16 shrink-0 items-center justify-between gap-2 border-b border-zinc-200 px-6 dark:border-zinc-800">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 dark:bg-red-600">
-            <Mail className="h-5 w-5 text-white" />
+        <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity" onClick={() => setMobileOpen && setMobileOpen(false)}>
+          <div className="flex h-8 w-8 items-center justify-center">
+            <Image src="/logo.png" alt="MailBot Logo" width={32} height={32} className="h-full w-full object-contain" unoptimized />
           </div>
-          <span className="text-lg font-bold tracking-tight">MailBot</span>
-        </div>
+          <span className="text-lg font-bold tracking-tight bg-gradient-to-br from-zinc-900 to-zinc-600 dark:from-zinc-100 dark:to-zinc-400 bg-clip-text text-transparent">MailBot</span>
+        </Link>
         {setMobileOpen && (
           <button
             type="button"
@@ -99,9 +99,9 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
               </Link>
             );
           })}
-          
+
           <div className="my-2 h-px w-full bg-zinc-200 dark:bg-zinc-800" />
-          
+
           {secondaryNavigation.map((item) => {
             const isActive = pathname?.startsWith(item.href);
             return (

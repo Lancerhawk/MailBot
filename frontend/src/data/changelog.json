@@ -1,0 +1,260 @@
+{
+  "versions": [
+    {
+      "id": "fe-0.6.0",
+      "version": "v0.6.0",
+      "service": "Frontend",
+      "date": "2026-07-08",
+      "title": "UI Overhaul & Premium Aesthetics",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Marketing UI Redesign",
+          "description": "Complete ground-up redesign of the Privacy, Terms, and FAQ pages with glassmorphic cards and interactive layouts."
+        },
+        {
+          "title": "Fluid Typography",
+          "description": "Implemented modern viewport-relative typography scaling across all marketing pages for perfect responsiveness on every device."
+        },
+        {
+          "title": "Changelog Widget",
+          "description": "Added a premium floating action widget and split-pane version history modal for tracking platform updates."
+        }
+      ]
+    },
+    {
+      "id": "fe-0.5.0",
+      "version": "v0.5.0",
+      "service": "Frontend",
+      "date": "2026-07-08",
+      "title": "Full Email Client Experience",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Manual & AI Reply Composers",
+          "description": "A dynamic composer inside the thread viewer allowing users to edit AI drafts, regenerate them, or write completely manual replies."
+        },
+        {
+          "title": "Instant Background Prefetching",
+          "description": "Added a ThreadCacheProvider that silently fetches full thread details in the background upon initial inbox load, resulting in 0ms load times when clicking emails."
+        },
+        {
+          "title": "Infinite Scrolling",
+          "description": "Implemented Intersection Observer-based infinite pagination for all list views (Inbox, Spam, Trash, Drafts)."
+        },
+        {
+          "title": "Dynamic Contextual UI",
+          "description": "The Thread Viewer now dynamically displays 'Not Spam' or 'Restore' buttons if a thread is opened from Spam or Trash, and disables replying when in Trash."
+        },
+        {
+          "title": "Loading Animations",
+          "description": "Real-time Socket.IO feedback indicating when background Gmail synchronization is active and when AI Analysis is processing."
+        }
+      ]
+    },
+    {
+      "id": "fe-0.4.0",
+      "version": "v0.4.0",
+      "service": "Frontend",
+      "date": "2026-07-01",
+      "title": "AI Integration & Bugfixes",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Resilient AI Pipeline",
+          "description": "Implemented graceful failure handling and status management for AI summaries, preventing UI glitches on FAILED or SKIPPED states."
+        }
+      ]
+    },
+    {
+      "id": "fe-0.3.0",
+      "version": "v0.3.0",
+      "service": "Frontend",
+      "date": "2026-06-25",
+      "title": "Inbox UI Overhaul",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Inbox UI Overhaul",
+          "description": "Complete redesign of the Inbox interface featuring color-coded avatars, unread indicators, stagger animations, and skeleton loaders."
+        },
+        {
+          "title": "Thread Viewer",
+          "description": "Advanced email viewer with thread collapsing, HTML body isolation (safe dark mode), and proper overflow handling."
+        },
+        {
+          "title": "Live Dashboard",
+          "description": "Dynamic stats grid pulling realtime sync status and recent conversations."
+        }
+      ]
+    },
+    {
+      "id": "fe-0.2.0",
+      "version": "v0.2.0",
+      "service": "Frontend",
+      "date": "2026-06-20",
+      "title": "Authentication & OAuth",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Auth UI",
+          "description": "Integrated AuthProvider and ProtectedRoute components in Next.js."
+        },
+        {
+          "title": "Landing Page Evolution",
+          "description": "Upgraded the root page to feature a hero section with a Continue with Google flow and authenticated user state tracking."
+        }
+      ]
+    },
+    {
+      "id": "fe-0.1.0",
+      "version": "v0.1.0",
+      "service": "Frontend",
+      "date": "2026-06-15",
+      "title": "Application Foundation & Architecture",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Application Skeleton",
+          "description": "Complete Next.js 15 App Router foundation."
+        },
+        {
+          "title": "Global Layout",
+          "description": "Implemented responsive MainLayout, Sidebar, and Header components."
+        },
+        {
+          "title": "Theming & Aesthetics",
+          "description": "Implemented Dark/Light mode using next-themes and a custom Tailwind v4 theme."
+        }
+      ]
+    },
+    {
+      "id": "be-0.6.0",
+      "version": "v0.6.0",
+      "service": "Backend",
+      "date": "2026-07-08",
+      "title": "AI Drafts Experience",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "AI Draft Generation",
+          "description": "Integrated automatic backend generation of AI email replies using Groq when needsReply is true. The AI uses full chronological thread context."
+        },
+        {
+          "title": "Gmail Send Integration",
+          "description": "Sending replies through MailBot natively uses the Gmail API, automatically marks spam as inbox upon reply, and supports sending without an AI draft."
+        },
+        {
+          "title": "Rate Limit Splitting",
+          "description": "Separated strict authentication rate limits (20 req / 15m) from broader API rate limits (300 req / 1m)."
+        },
+        {
+          "title": "AI Eligibility Tweaks",
+          "description": "Adjusted AI prompts to explicitly skip newsletters, system alerts, and thank you notes from draft generation."
+        }
+      ]
+    },
+    {
+      "id": "be-0.5.0",
+      "version": "v0.5.0",
+      "service": "Backend",
+      "date": "2026-07-01",
+      "title": "Real-time Sync Bugfixes",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "AI Eligibility Engine",
+          "description": "Advanced filtering to prevent Groq API token burns on historical imports and self-sent messages."
+        },
+        {
+          "title": "Smart Message Counts",
+          "description": "Refactored Prisma count logic in upsertThreadAndEmails to actively filter out soft-deleted and trashed emails."
+        },
+        {
+          "title": "Hard Delete Synchronization",
+          "description": "Upgraded the markMessagesAsDeleted hook to instantly recalculate and sync parent thread counts when messages are permanently deleted via Webhook."
+        }
+      ]
+    },
+    {
+      "id": "be-0.4.0",
+      "version": "v0.4.0",
+      "service": "Backend",
+      "date": "2026-06-25",
+      "title": "Gmail Sync Engine",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Gmail Sync Engine",
+          "description": "Robust incremental synchronization via Gmail History API, handling pagination, batching, and history expiration fallbacks."
+        },
+        {
+          "title": "Performance",
+          "description": "Optimized backend sync to reduce API calls and frontend polling logic for real-time sync progress updates."
+        }
+      ]
+    },
+    {
+      "id": "be-0.3.0",
+      "version": "v0.3.0",
+      "service": "Backend",
+      "date": "2026-06-20",
+      "title": "Authentication & OAuth",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "OAuth Integration",
+          "description": "Complete Google OAuth 2.0 flow integrated on the backend."
+        },
+        {
+          "title": "Server-Side Sessions",
+          "description": "Secure HTTP-only sessions via express-session and connect-pg-simple."
+        },
+        {
+          "title": "Token Encryption",
+          "description": "AES-256-GCM encryption for storing OAuth tokens in PostgreSQL."
+        }
+      ]
+    },
+    {
+      "id": "be-0.2.0",
+      "version": "v0.2.0",
+      "service": "Backend",
+      "date": "2026-06-15",
+      "title": "Express Foundation & AI Strategy",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Express Skeleton",
+          "description": "Production-ready REST API architecture with separation of concerns."
+        },
+        {
+          "title": "Database",
+          "description": "Singleton Prisma client instance wrapper to prevent connection exhaustion."
+        },
+        {
+          "title": "Schema Refinement",
+          "description": "Updated AiProvider enum to include GROQ and set UserSetting default to Groq."
+        }
+      ]
+    },
+    {
+      "id": "be-0.1.0",
+      "version": "v0.1.0",
+      "service": "Backend",
+      "date": "2026-06-10",
+      "title": "Database Schema Architecture",
+      "isCurrent": false,
+      "features": [
+        {
+          "title": "Database Architecture",
+          "description": "Complete Prisma schema for a production AI email platform."
+        },
+        {
+          "title": "Core Email Models",
+          "description": "Email, EmailThread, EmailAccountConnection optimized for Gmail/Outlook integrations."
+        }
+      ]
+    }
+  ]
+}

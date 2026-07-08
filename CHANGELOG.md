@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.6.0] - UI Overhaul & Premium Aesthetics
+
+### Added
+- **Marketing UI Redesign:** Complete ground-up redesign of the Privacy, Terms, and FAQ pages with glassmorphic cards and interactive layouts.
+- **Fluid Typography:** Implemented modern viewport-relative typography scaling across all marketing pages for perfect responsiveness on every device.
+- **Changelog Widget:** Added a premium floating action widget and split-pane version history modal for tracking platform updates.
+
 ## [Frontend v0.5.0] & [Backend v0.6.0] - Full Email Client & AI Drafts Experience
 
 ### Added
