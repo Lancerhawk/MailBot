@@ -13,32 +13,16 @@ interface Draft {
   createdAt: string;
 }
 
-export function DraftEditor({ emailId, threadId, onSent }: { emailId: string; threadId: string; onSent?: (text: string) => void }) {
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [text, setText] = useState("");
+export function DraftEditor({ emailId, threadId, initialDraft, onSent }: { emailId: string; threadId: string; initialDraft?: Draft | null; onSent?: (text: string) => void }) {
+  const [draft, setDraft] = useState<Draft | null>(initialDraft || null);
+  const [text, setText] = useState(initialDraft?.editedText ?? initialDraft?.generatedText ?? "");
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isManualReply, setIsManualReply] = useState(false);
   const { socket } = useSocket();
 
-  const fetchDraft = async () => {
-    try {
-      const res = await api.get(`/drafts/${emailId}`);
-      if (res.data.data) {
-        setDraft(res.data.data);
-        setText(res.data.data.editedText ?? res.data.data.generatedText);
-      } else {
-        setDraft(null);
-      }
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  useEffect(() => {
-    fetchDraft();
-  }, [emailId]);
+  // Initial draft is set from props. Socket handles live updates.
 
   useEffect(() => {
     if (!socket) return;

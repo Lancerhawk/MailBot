@@ -16,44 +16,59 @@ export function ThreadCacheProvider({ children }: { children: React.ReactNode })
   const [cache, setCache] = useState<Record<string, any>>({});
   const prefetchingRef = useRef<Set<string>>(new Set());
   const cacheRef = useRef<Record<string, any>>({}); // Keep a ref for instant synchronous access
+  const promisesRef = useRef<Record<string, Promise<any> | undefined>>({});
 
   const getThread = useCallback(async (threadId: string) => {
     if (cacheRef.current[threadId]) {
       return cacheRef.current[threadId];
     }
 
-    try {
-      const res = await api.get(`/gmail/threads/${threadId}`);
+    if (promisesRef.current[threadId]) {
+      return promisesRef.current[threadId];
+    }
+
+    const promise = api.get(`/gmail/threads/${threadId}`).then(res => {
       const data = res.data.data;
       cacheRef.current[threadId] = data;
       setCache(prev => ({ ...prev, [threadId]: data }));
+      delete promisesRef.current[threadId];
       return data;
-    } catch (e) {
+    }).catch(e => {
+      delete promisesRef.current[threadId];
       console.error(`Failed to fetch thread ${threadId}`, e);
       throw e;
-    }
+    });
+
+    promisesRef.current[threadId] = promise;
+    return promise;
   }, []);
 
   const prefetchThreads = useCallback(async (threadIds: string[]) => {
     for (const threadId of threadIds) {
-      if (cacheRef.current[threadId] || prefetchingRef.current.has(threadId)) {
+      if (cacheRef.current[threadId] || promisesRef.current[threadId]) {
         continue;
       }
 
-      prefetchingRef.current.add(threadId);
-
-      try {
-        const res = await api.get(`/gmail/threads/${threadId}`);
+      const promise = api.get(`/gmail/threads/${threadId}`).then(res => {
         const data = res.data.data;
         cacheRef.current[threadId] = data;
         setCache(prev => ({ ...prev, [threadId]: data }));
-        
+        delete promisesRef.current[threadId];
+        return data;
+      }).catch(e => {
+        delete promisesRef.current[threadId];
+        console.error(`Failed to prefetch thread ${threadId}`, e);
+        throw e;
+      });
+      
+      promisesRef.current[threadId] = promise;
+
+      try {
+        await promise;
         // Add a small 50ms delay to prevent overwhelming the DB connection pool
         await new Promise(r => setTimeout(r, 50));
       } catch (e) {
-        console.error(`Failed to prefetch thread ${threadId}`, e);
-      } finally {
-        prefetchingRef.current.delete(threadId);
+        // Ignored
       }
     }
   }, []);

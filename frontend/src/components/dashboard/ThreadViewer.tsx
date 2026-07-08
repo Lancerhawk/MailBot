@@ -10,7 +10,7 @@ import { Skeleton } from "../ui/skeleton";
 import { useSocket } from "@/providers/SocketProvider";
 import { useThreadCache } from "@/providers/ThreadCacheProvider";
 import { DraftEditor } from "./DraftEditor";
-import { Archive, Star, Trash2, Mail, ShieldAlert, MoreVertical } from "lucide-react";
+import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/providers/AuthProvider";
 import {
@@ -41,6 +41,7 @@ interface Email {
   priority?: string;
   processingStatus?: string;
   labels?: any[];
+  drafts?: any[];
 }
 
 interface Thread {
@@ -102,7 +103,7 @@ function ThreadSkeleton() {
   );
 }
 
-function EmailCard({ email, isLast }: { email: Email; isLast: boolean }) {
+function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: string }) {
   const sender = email.participants.find(p => p.role === "SENDER");
   const to = email.participants.filter(p => p.role === "TO");
   const senderName = sender?.displayName || sender?.emailAddress || "Unknown";
@@ -114,7 +115,7 @@ function EmailCard({ email, isLast }: { email: Email; isLast: boolean }) {
     : null;
 
   return (
-    <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
+    <div id={id} className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
       <div
         className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4"
         onClick={() => setIsCollapsed(!isCollapsed)}
@@ -219,12 +220,6 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
         // Instant load if cached!
         const data = await getThread(threadId);
         setThread(data);
-
-        // Auto-mark thread as read when opened
-        const hasUnread = data?.emails?.some((e: Email) => !e.isRead);
-        if (hasUnread) {
-          api.post(`/gmail/threads/${threadId}/read`).catch(() => { });
-        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -263,17 +258,34 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
     socket.on('analysis:completed', handleUpdate);
     socket.on('sync:completed', handleSyncComplete);
     socket.on('email:sent', handleUpdate);
+    socket.on('thread:updated', handleUpdate);
+    socket.on('email:read', handleUpdate);
+    socket.on('email:unread', handleUpdate);
+    socket.on('email:deleted', handleUpdate);
+    socket.on('email:restored', handleUpdate);
+    socket.on('email:spam', handleUpdate);
+    socket.on('email:unspam', handleUpdate);
 
     return () => {
       socket.off('analysis:started', handleUpdate);
       socket.off('analysis:completed', handleUpdate);
       socket.off('sync:completed', handleSyncComplete);
       socket.off('email:sent', handleUpdate);
+      socket.off('thread:updated', handleUpdate);
+      socket.off('email:read', handleUpdate);
+      socket.off('email:unread', handleUpdate);
+      socket.off('email:deleted', handleUpdate);
+      socket.off('email:restored', handleUpdate);
+      socket.off('email:spam', handleUpdate);
+      socket.off('email:unspam', handleUpdate);
     };
   }, [socket, threadId]);
 
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
   const handleAction = async (action: string) => {
-    if (!thread) return;
+    if (!thread || actionLoading) return;
+    setActionLoading(action);
     try {
       await api.post(`/gmail/threads/${threadId}/${action}`);
       toast.success(`Action applied successfully`);
@@ -288,19 +300,23 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
       } else {
         toast.error(`Failed to apply action`);
       }
+    } finally {
+      setActionLoading(null);
     }
   };
 
   const [optimisticSentText, setOptimisticSentText] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to bottom when thread loads or emails change
+  // Auto-scroll to the top of the last email
   useEffect(() => {
     if (thread && scrollContainerRef.current) {
       // Small delay to let the DOM render the emails first
       setTimeout(() => {
-        if (scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        const lastEmailElement = document.getElementById('last-email-card');
+        if (lastEmailElement && scrollContainerRef.current) {
+          // Scroll so the last email is at the top of the view, minus a little padding
+          scrollContainerRef.current.scrollTop = lastEmailElement.offsetTop - 20;
         }
       }, 100);
     }
@@ -325,23 +341,29 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
         </div>
         <div className="flex items-center gap-2">
           {thread.emails[0]?.isSpam ? (
-            <Button variant="ghost" size="sm" onClick={() => handleAction('unspam')} title="Not Spam">
-              <ShieldAlert className="mr-2 h-4 w-4" /> Not Spam
+            <Button variant="ghost" size="sm" onClick={() => handleAction('unspam')} disabled={!!actionLoading} title="Not Spam">
+              {actionLoading === 'unspam' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />} Not Spam
             </Button>
           ) : thread.emails[0]?.isDeleted ? (
-            <Button variant="ghost" size="sm" onClick={() => handleAction('restore')} title="Restore">
-              <Trash2 className="mr-2 h-4 w-4" /> Restore
+            <Button variant="ghost" size="sm" onClick={() => handleAction('restore')} disabled={!!actionLoading} title="Restore">
+              {actionLoading === 'restore' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Trash2 className="mr-2 h-4 w-4" />} Restore
             </Button>
           ) : (
             <>
-              <Button variant="ghost" size="icon" onClick={() => handleAction('archive')} title="Archive">
-                <Archive className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={() => handleAction('archive')} disabled={!!actionLoading} title="Archive">
+                {actionLoading === 'archive' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Archive className="h-4 w-4" />}
               </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleAction('unread')} title="Mark unread">
-                <Mail className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" onClick={() => handleAction('delete')} title="Trash">
-                <Trash2 className="h-4 w-4" />
+              {thread.emails.some((e) => !e.isRead) ? (
+                <Button variant="outline" size="sm" onClick={() => handleAction('read')} disabled={!!actionLoading} className="bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300">
+                  {actionLoading === 'read' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <MailOpen className="mr-2 h-4 w-4" />} Mark as Read
+                </Button>
+              ) : (
+                <Button variant="ghost" size="icon" onClick={() => handleAction('unread')} disabled={!!actionLoading} title="Mark unread">
+                  {actionLoading === 'unread' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mail className="h-4 w-4" />}
+                </Button>
+              )}
+              <Button variant="ghost" size="icon" onClick={() => handleAction('delete')} disabled={!!actionLoading} title="Trash">
+                {actionLoading === 'delete' ? <Loader2 className="h-4 w-4 animate-spin" /> : <Trash2 className="h-4 w-4" />}
               </Button>
             </>
           )}
@@ -376,6 +398,7 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
               key={email.id}
               email={email}
               isLast={index === thread.emails.length - 1}
+              id={index === thread.emails.length - 1 ? 'last-email-card' : undefined}
             />
           ))}
 
@@ -398,17 +421,23 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
             </div>
           )}
 
-          {!optimisticSentText && !thread.emails[0]?.isDeleted && (
-            <DraftEditor
-              emailId={
-                [...thread.emails].reverse().find(e => 
-                  !e.labels?.some((l: any) => l.providerLabelId === 'SENT')
-                )?.id || thread.emails[0]?.id
-              }
-              threadId={thread.id}
-              onSent={(text) => setOptimisticSentText(text)}
-            />
-          )}
+          {!optimisticSentText && !thread.emails[0]?.isDeleted && (() => {
+            const targetEmail = [...thread.emails].reverse().find(e => 
+              !e.labels?.some((l: any) => l.providerLabelId === 'SENT')
+            ) || thread.emails[0];
+            // Find draft from ANY email in the thread (AI may attach it to a different email than our reply target)
+            const draftFromThread = [...thread.emails].reverse()
+              .map(e => e.drafts?.[0])
+              .find(d => d != null) || null;
+            return (
+              <DraftEditor
+                emailId={targetEmail.id}
+                threadId={thread.id}
+                initialDraft={draftFromThread}
+                onSent={(text) => setOptimisticSentText(text)}
+              />
+            );
+          })()}
         </div>
       </div>
     </div>

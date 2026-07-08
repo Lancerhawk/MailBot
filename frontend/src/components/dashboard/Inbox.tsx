@@ -385,14 +385,6 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
                     ref={index === filteredThreads.length - 1 ? lastElementRef : undefined}
                     onClick={() => {
                       setSelectedThreadId(thread.id);
-                      // Optimistic mark-as-read: instantly remove unread badge
-                      if (!thread.emails[0]?.isRead) {
-                        setThreads(prev => prev.map(t =>
-                          t.id === thread.id
-                            ? { ...t, emails: t.emails.map(e => ({ ...e, isRead: true })) }
-                            : t
-                        ));
-                      }
                     }}
                     className={`group relative flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-all duration-150
                       ${isSelected
