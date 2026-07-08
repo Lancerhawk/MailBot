@@ -139,7 +139,7 @@ export default function LandingNavbar() {
             </AnimatePresence>
           </div>
         ) : (
-          <Button onClick={handleGoogleLogin} className="rounded-full bg-white dark:bg-zinc-100 text-zinc-950 hover:bg-zinc-200 h-9 px-5 text-sm font-semibold transition-colors">
+          <Button onClick={handleGoogleLogin} className="rounded-full bg-zinc-900 text-white hover:bg-zinc-800 dark:bg-white dark:text-zinc-950 dark:hover:bg-zinc-200 shadow-sm cursor-pointer h-9 px-5 text-sm font-bold transition-all">
             Sign In
           </Button>
         )}

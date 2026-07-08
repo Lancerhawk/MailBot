@@ -72,19 +72,19 @@ export default function LandingPage() {
       <LandingNavbar />
 
       {/* Hero Section */}
-      <main className="relative z-10 w-full min-h-[100vh] flex flex-col items-center justify-center px-4 pt-16 text-center">
+      <main className="relative z-10 w-full min-h-[100vh] flex flex-col items-center justify-center px-4 pt-24 pb-12 text-center">
 
         {/* Huge Bold Typography */}
         <div className="max-w-[90vw] md:max-w-5xl mx-auto flex flex-col items-center justify-center gap-2">
-          <h1 className="text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.1] font-black tracking-tight text-zinc-900 dark:text-white drop-shadow-sm transition-colors text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.1] font-black tracking-tight text-zinc-900 dark:text-white drop-shadow-sm transition-colors text-center">
             Email that respects
           </h1>
-          <h1 className="text-[clamp(2.5rem,8vw,5.5rem)] leading-[1.1] font-black tracking-tight bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 dark:from-orange-400 dark:via-orange-500 dark:to-red-500 bg-clip-text text-transparent pb-4 drop-shadow-[0_0_40px_rgba(249,115,22,0.3)] text-center">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.1] font-black tracking-tight bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 dark:from-orange-400 dark:via-orange-500 dark:to-red-500 bg-clip-text text-transparent pb-2 drop-shadow-[0_0_40px_rgba(249,115,22,0.3)] text-center">
             your time.
           </h1>
         </div>
 
-        <p className="mx-auto mt-6 w-[90%] max-w-2xl text-[clamp(1rem,2.5vw,1.25rem)] text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed transition-colors px-4 text-center">
+        <p className="mx-auto mt-6 w-[90%] max-w-xl text-base sm:text-lg text-zinc-600 dark:text-zinc-400 font-medium leading-relaxed transition-colors px-4 text-center">
           The next-generation AI email assistant. MailBot leverages Groq LLMs and real-time Pub/Sub synchronization to auto-categorize threads, extract CRM metadata, and draft intelligent replies the millisecond an email arrives.
         </p>
 
@@ -102,7 +102,7 @@ export default function LandingPage() {
         </div>
 
         {/* Features Row */}
-        <div className="mt-32 flex flex-row flex-wrap items-center justify-center gap-10 sm:gap-24 px-4">
+        <div className="mt-16 md:mt-20 flex flex-row flex-wrap items-center justify-center gap-8 sm:gap-16 px-4">
           <div className="flex flex-col items-center gap-1.5">
             <span className="text-[clamp(1.25rem,4vw,1.75rem)] font-bold text-zinc-900 dark:text-white tracking-tight text-center">Smart Drafts</span>
             <span className="text-[clamp(0.6rem,1.5vw,0.6875rem)] font-bold tracking-[0.2em] text-zinc-500 uppercase text-center">Context Aware AI</span>
