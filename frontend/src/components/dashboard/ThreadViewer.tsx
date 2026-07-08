@@ -164,8 +164,8 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
                   )}
                   {email.sentiment && (
                     <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${email.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                        email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
-                          'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                      email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
+                        'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
                       }`}>
                       {email.sentiment}
                     </span>
@@ -422,13 +422,20 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
           )}
 
           {!optimisticSentText && !thread.emails[0]?.isDeleted && (() => {
-            const targetEmail = [...thread.emails].reverse().find(e => 
-              !e.labels?.some((l: any) => l.providerLabelId === 'SENT')
+            const lastEmail = thread.emails[thread.emails.length - 1];
+            const isLastEmailSent = lastEmail?.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT') ||
+              lastEmail?.participants?.some((p: { role: string }) => p.role === 'SENDER');
+
+            const targetEmail = [...thread.emails].reverse().find(e =>
+              !(e.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT') || e.participants?.some((p: { role: string }) => p.role === 'SENDER'))
             ) || thread.emails[0];
-            // Find draft from ANY email in the thread (AI may attach it to a different email than our reply target)
-            const draftFromThread = [...thread.emails].reverse()
-              .map(e => e.drafts?.[0])
-              .find(d => d != null) || null;
+
+            const draftFromThread = isLastEmailSent
+              ? null
+              : [...thread.emails].reverse()
+                .map(e => e.drafts?.[0])
+                .find(d => d != null) || null;
+
             return (
               <DraftEditor
                 emailId={targetEmail.id}
