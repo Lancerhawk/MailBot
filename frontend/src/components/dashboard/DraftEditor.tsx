@@ -13,10 +13,10 @@ interface Draft {
   createdAt: string;
 }
 
-export function DraftEditor({ emailId, threadId, initialDraft, onSent }: { emailId: string; threadId: string; initialDraft?: Draft | null; onSent?: (text: string) => void }) {
+export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcessing }: { emailId: string; threadId: string; initialDraft?: Draft | null; onSent?: (text: string) => void; isProcessing?: boolean }) {
   const [draft, setDraft] = useState<Draft | null>(initialDraft || null);
   const [text, setText] = useState(initialDraft?.editedText ?? initialDraft?.generatedText ?? "");
-  const [isGenerating, setIsGenerating] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(isProcessing || false);
   const [isSending, setIsSending] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isManualReply, setIsManualReply] = useState(false);

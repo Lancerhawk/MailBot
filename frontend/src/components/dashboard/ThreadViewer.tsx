@@ -422,25 +422,39 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
           )}
 
           {!optimisticSentText && !thread.emails[0]?.isDeleted && (() => {
+            // Helper: check if an email was sent BY the logged-in user
+            const isEmailSentByUser = (email: Email) => {
+              const sender = email.participants?.find((p: { role: string }) => p.role === 'SENDER');
+              if (!sender) return false;
+              // Check SENT label OR sender email matches logged-in user
+              const hasSentLabel = email.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT');
+              const senderMatchesUser = sender.emailAddress?.toLowerCase() === user?.email?.toLowerCase();
+              return hasSentLabel || senderMatchesUser;
+            };
+
             const lastEmail = thread.emails[thread.emails.length - 1];
-            const isLastEmailSent = lastEmail?.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT') ||
-              lastEmail?.participants?.some((p: { role: string }) => p.role === 'SENDER');
+            const isLastEmailByUser = isEmailSentByUser(lastEmail);
 
-            const targetEmail = [...thread.emails].reverse().find(e =>
-              !(e.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT') || e.participants?.some((p: { role: string }) => p.role === 'SENDER'))
-            ) || thread.emails[0];
+            // Find the latest email that was NOT sent by the user (i.e. the one we'd reply to)
+            const latestReceivedEmail = [...thread.emails].reverse().find(e => !isEmailSentByUser(e));
 
-            const draftFromThread = isLastEmailSent
-              ? null
-              : [...thread.emails].reverse()
-                .map(e => e.drafts?.[0])
-                .find(d => d != null) || null;
+            // Only show the AI draft if:
+            // 1. The last email in the thread was NOT sent by the user (otherwise the conversation is waiting on the other person)
+            // 2. The draft belongs to the latest received email specifically
+            const draftFromLatest = !isLastEmailByUser && latestReceivedEmail?.drafts?.[0] || null;
+
+            // The email we're replying to is the latest received email, or fallback to the last email
+            const targetEmail = latestReceivedEmail || lastEmail;
+
+            // Check if AI is currently processing this email (draft being generated)
+            const isCurrentlyProcessing = targetEmail.processingStatus === 'PROCESSING' && !draftFromLatest;
 
             return (
               <DraftEditor
                 emailId={targetEmail.id}
                 threadId={thread.id}
-                initialDraft={draftFromThread}
+                initialDraft={draftFromLatest}
+                isProcessing={isCurrentlyProcessing}
                 onSent={(text) => setOptimisticSentText(text)}
               />
             );
