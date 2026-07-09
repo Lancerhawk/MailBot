@@ -265,6 +265,8 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
     socket.on('email:restored', handleUpdate);
     socket.on('email:spam', handleUpdate);
     socket.on('email:unspam', handleUpdate);
+    socket.on('draft:generated', handleUpdate);
+    socket.on('draft:regenerated', handleUpdate);
 
     return () => {
       socket.off('analysis:started', handleUpdate);
@@ -278,6 +280,8 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
       socket.off('email:restored', handleUpdate);
       socket.off('email:spam', handleUpdate);
       socket.off('email:unspam', handleUpdate);
+      socket.off('draft:generated', handleUpdate);
+      socket.off('draft:regenerated', handleUpdate);
     };
   }, [socket, threadId]);
 

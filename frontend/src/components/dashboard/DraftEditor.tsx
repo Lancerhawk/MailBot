@@ -22,7 +22,16 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
   const [isManualReply, setIsManualReply] = useState(false);
   const { socket } = useSocket();
 
-  // Initial draft is set from props. Socket handles live updates.
+  useEffect(() => {
+    if (initialDraft) {
+      setDraft(initialDraft);
+      setText(initialDraft.editedText ?? initialDraft.generatedText ?? "");
+      setIsGenerating(false);
+    } else {
+      setIsGenerating(isProcessing || false);
+    }
+  }, [initialDraft, isProcessing]);
+
 
   useEffect(() => {
     if (!socket) return;
@@ -113,7 +122,7 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
     if (onSent) {
       onSent(text);
     }
-    
+
     // Immediately hide the draft editor
     setDraft(null);
     setIsManualReply(false);
