@@ -1,12 +1,30 @@
 {
   "versions": [
     {
+      "id": "fe-0.6.2",
+      "version": "v0.6.2",
+      "service": "Frontend",
+      "date": "2026-07-11",
+      "title": "Mobile Responsiveness & Layout",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Sliding Inbox Panes",
+          "description": "Refactored the mobile inbox layout to use dynamic sliding panes. Opening a thread on mobile now natively overlays the screen with a slide-in animation and provides a back button."
+        },
+        {
+          "title": "Dashboard Grid Optimization",
+          "description": "Fixed severe horizontal overflow issues on small screens by allowing grid tracks to shrink properly and aggressively squashing widget paddings."
+        }
+      ]
+    },
+    {
       "id": "fe-0.6.1",
       "version": "v0.6.1",
       "service": "Frontend",
       "date": "2026-07-10",
       "title": "Refresh Stability & UX",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Cache Bypassing",

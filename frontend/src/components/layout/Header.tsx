@@ -61,18 +61,18 @@ export function Header({ setSidebarOpen }: HeaderProps) {
       <div className="flex flex-1 items-center justify-between gap-x-4 self-stretch lg:gap-x-6">
         <div className="flex flex-1">
         </div>
-        <div className="flex items-center gap-x-4 lg:gap-x-6">
+        <div className="flex items-center gap-x-2 sm:gap-x-4 lg:gap-x-6">
           <Button
             variant="outline"
-            size="sm"
+            size="icon"
             onClick={handleRefreshClick}
             disabled={isRefreshing}
-            className="hidden sm:flex items-center gap-2 text-zinc-600 dark:text-zinc-300"
+            className="sm:w-auto sm:px-3 flex items-center sm:gap-2 text-zinc-600 dark:text-zinc-300"
           >
             <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-            Refresh
+            <span className="hidden sm:inline">Refresh</span>
           </Button>
-          <Button onClick={() => setIsComposeOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
+          <Button onClick={() => setIsComposeOpen(true)} size="icon" className="sm:w-auto sm:px-3 bg-orange-500 hover:bg-orange-600 text-white sm:gap-2">
             <Edit className="h-4 w-4" />
             <span className="hidden sm:inline">Compose</span>
           </Button>

@@ -10,7 +10,7 @@ import { Skeleton } from "../ui/skeleton";
 import { useSocket } from "@/providers/SocketProvider";
 import { useThreadCache } from "@/providers/ThreadCacheProvider";
 import { DraftEditor } from "./DraftEditor";
-import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2 } from "lucide-react";
+import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2, ChevronLeft } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/providers/AuthProvider";
 import {
@@ -205,7 +205,7 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
   );
 }
 
-export function ThreadViewer({ threadId }: { threadId: string }) {
+export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?: () => void }) {
   const { user } = useAuth();
   const { getThread, updateThreadInCache, cache } = useThreadCache();
   const [thread, setThread] = useState<Thread | null>(() => cache[threadId] || null);
@@ -352,17 +352,24 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
   if (!thread) return null;
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden animate-fade-in-scale">
-      <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-            {thread.subject || "(No Subject)"}
-          </h2>
-          <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-            {thread.emails.length} message{thread.emails.length !== 1 ? "s" : ""} in this conversation
-          </p>
+    <div className="flex h-full w-full flex-col overflow-hidden animate-thread-viewer">
+      <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          {onClose && (
+            <Button variant="ghost" size="icon" onClick={onClose} className="xl:hidden shrink-0 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
+              <ChevronLeft className="h-5 w-5" />
+            </Button>
+          )}
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+              {thread.subject || "(No Subject)"}
+            </h2>
+            <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
+              {thread.emails.length} message{thread.emails.length !== 1 ? "s" : ""} in this conversation
+            </p>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {thread.emails[0]?.isSpam ? (
             <Button variant="ghost" size="sm" onClick={() => handleAction('unspam')} disabled={!!actionLoading} title="Not Spam">
               {actionLoading === 'unspam' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />} Not Spam

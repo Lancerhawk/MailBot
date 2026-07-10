@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.6.2] - Mobile Responsiveness & Layout
+
+### Fixed
+- **Dashboard Grid Optimization:** Fixed severe horizontal overflow issues on small screens by allowing grid tracks to shrink properly and aggressively squashing widget paddings.
+- **Sliding Inbox Panes:** Refactored the mobile inbox layout to use dynamic sliding panes. Opening a thread on mobile now natively overlays the screen with a slide-in animation and provides a back button.
+
 ## [Frontend v0.6.1] & [Backend v0.6.1] - Refresh Stability & Security Fixes
 
 ### Fixed

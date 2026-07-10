@@ -333,8 +333,8 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
   const filteredThreads = threads;
 
   return (
-    <div className="flex h-full min-h-0 flex-1 overflow-hidden">
-      <div className="flex w-full flex-col border-r border-zinc-200 dark:border-zinc-800 md:w-[380px] lg:w-[420px] xl:w-[440px]">
+    <div className="flex h-full min-h-0 flex-1 overflow-hidden relative">
+      <div className={`flex w-full flex-col border-r border-zinc-200 dark:border-zinc-800 xl:w-[380px] 2xl:w-[440px] shrink-0 ${selectedThreadId ? 'hidden xl:flex' : 'flex'}`}>
         <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -454,9 +454,9 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
         </div>
       </div>
 
-      <div className="hidden flex-1 md:flex">
+      <div className={`flex-1 ${selectedThreadId ? 'flex absolute inset-0 z-10 bg-white dark:bg-zinc-950 xl:relative xl:inset-auto xl:z-auto' : 'hidden xl:flex'}`}>
         {selectedThreadId ? (
-          <ThreadViewer threadId={selectedThreadId} key={selectedThreadId} />
+          <ThreadViewer threadId={selectedThreadId} key={selectedThreadId} onClose={() => setSelectedThreadId(null)} />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-4">
             <div className="flex h-20 w-20 items-center justify-center rounded-3xl bg-zinc-100 dark:bg-zinc-800/80">

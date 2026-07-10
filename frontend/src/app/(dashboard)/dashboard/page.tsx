@@ -60,9 +60,9 @@ function StatCard({
   isLoading: boolean;
 }) {
   return (
-    <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
-      <div className="flex items-center gap-4">
-        <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${accent}`}>
+    <div className="min-w-0 animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
+      <div className="flex items-center gap-3 sm:gap-4">
+        <div className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${accent}`}>
           <Icon className="h-5 w-5" />
         </div>
         <div className="min-w-0">
@@ -216,13 +216,13 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="animate-fade-in lg:col-span-2 rounded-xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
-          <div className="flex items-center justify-between border-b border-zinc-100 px-5 py-4 dark:border-zinc-800">
+        <div className="min-w-0 animate-fade-in lg:col-span-2 rounded-xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+          <div className="flex items-center justify-between border-b border-zinc-100 px-3 sm:px-5 py-3 sm:py-4 dark:border-zinc-800">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Recent Conversations
             </h2>
             <Link href="/inbox">
-              <Button variant="ghost" size="sm" className="h-8 text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
+              <Button variant="ghost" size="sm" className="h-8 px-2 sm:px-3 text-[11px] sm:text-xs text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
                 View All
                 <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
@@ -231,8 +231,8 @@ export default function DashboardPage() {
           <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
             {isLoading ? (
               Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-3 px-5 py-3.5">
-                  <Skeleton className="h-9 w-9 rounded-full" />
+                <div key={i} className="flex items-center gap-3 px-3 sm:px-5 py-3.5">
+                  <Skeleton className="h-8 w-8 sm:h-9 sm:w-9 rounded-full" />
                   <div className="flex-1 space-y-1.5">
                     <Skeleton className="h-3.5 w-32" />
                     <Skeleton className="h-3 w-48" />
@@ -260,25 +260,25 @@ export default function DashboardPage() {
                   <Link
                     key={thread.id}
                     href="/inbox"
-                    className="flex items-center gap-3 px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
+                    className="flex items-center gap-2 sm:gap-3 px-3 sm:px-5 py-3 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-800/30"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                    <div className="flex h-8 w-8 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-full bg-zinc-100 text-xs font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                       {senderName.charAt(0).toUpperCase()}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <p className={`truncate text-sm ${isUnread ? "font-bold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-700 dark:text-zinc-300"}`}>
+                      <div className="flex items-center gap-1.5 sm:gap-2">
+                        <p className={`truncate text-xs sm:text-sm ${isUnread ? "font-bold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-700 dark:text-zinc-300"}`}>
                           {senderName}
                         </p>
                         {isUnread && (
                           <div className="h-1.5 w-1.5 shrink-0 rounded-full bg-blue-500" />
                         )}
                       </div>
-                      <p className="truncate text-xs text-zinc-400 dark:text-zinc-500">
+                      <p className="truncate text-[10px] sm:text-xs text-zinc-400 dark:text-zinc-500 mt-0.5">
                         {thread.subject || "(No Subject)"}
                       </p>
                     </div>
-                    <span className="shrink-0 text-[11px] text-zinc-400 dark:text-zinc-500">
+                    <span className="shrink-0 text-[10px] sm:text-[11px] text-zinc-400 dark:text-zinc-500 ml-1">
                       {formatDistanceToNow(new Date(thread.lastMessageAt), {
                         addSuffix: false,
                       })}
@@ -290,8 +290,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-4">
-          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+        <div className="min-w-0 flex flex-col gap-4">
+          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Quick Actions
             </h2>
@@ -305,7 +305,7 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Coming Soon
             </h2>
