@@ -31,7 +31,7 @@ const AmbientBackground = () => {
       />
 
       {/* Modern Developer/AI Dot Grid (Dark Mode) */}
-      <div 
+      <div
         className="absolute inset-0 hidden dark:block"
         style={{
           backgroundImage: `url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjU1LDI1NSwyNTUsMC4wNikiLz48L3N2Zz4=")`,
@@ -41,7 +41,7 @@ const AmbientBackground = () => {
         }}
       />
       {/* Modern Developer/AI Dot Grid (Light Mode) */}
-      <div 
+      <div
         className="absolute inset-0 block dark:hidden opacity-50"
         style={{
           backgroundImage: `url("data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMCwwLDAsMC4xKSIvPjwvc3ZnPg==")`,
@@ -71,15 +71,13 @@ export default function LandingPage() {
 
       <LandingNavbar />
 
-      {/* Hero Section */}
-      <main className="relative z-10 w-full min-h-[100vh] flex flex-col items-center justify-center px-4 pt-24 pb-12 text-center">
+      <main className="relative z-10 w-full min-h-[100vh] flex flex-col items-center justify-center px-4 pt-32 pb-12 text-center">
 
-        {/* Huge Bold Typography */}
-        <div className="max-w-[90vw] md:max-w-5xl mx-auto flex flex-col items-center justify-center gap-2">
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.1] font-black tracking-tight text-zinc-900 dark:text-white drop-shadow-sm transition-colors text-center">
+        <div className="max-w-[90vw] md:max-w-5xl mx-auto flex flex-col items-center justify-center gap-1 sm:gap-2">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl 2xl:text-6xl leading-[1.1] font-black tracking-tight text-zinc-900 dark:text-white drop-shadow-sm transition-colors text-center">
             Email that respects
           </h1>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.1] font-black tracking-tight bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 dark:from-orange-400 dark:via-orange-500 dark:to-red-500 bg-clip-text text-transparent pb-2 drop-shadow-[0_0_40px_rgba(249,115,22,0.3)] text-center">
+          <h1 className="text-3xl md:text-4xl lg:text-5xl 2xl:text-6xl leading-[1.1] font-black tracking-tight bg-gradient-to-r from-orange-500 via-orange-600 to-red-600 dark:from-orange-400 dark:via-orange-500 dark:to-red-500 bg-clip-text text-transparent pb-2 drop-shadow-[0_0_40px_rgba(249,115,22,0.3)] text-center">
             your time.
           </h1>
         </div>
@@ -131,7 +129,7 @@ export default function LandingPage() {
             Everything you need for a <span className="text-orange-500">cleaner inbox</span>.
           </h2>
           <p className="text-[clamp(0.875rem,2vw,1rem)] text-zinc-600 dark:text-zinc-400 mb-20 max-w-2xl mx-auto text-center px-4">
-            MailBot uses cutting-edge artificial intelligence to transform the way you handle emails. 
+            MailBot uses cutting-edge artificial intelligence to transform the way you handle emails.
             Automate the boring stuff and focus on what actually matters.
           </p>
 
@@ -145,7 +143,7 @@ export default function LandingPage() {
                 Direct integration with Google Cloud Pub/Sub webhooks ensures your inbox state is updated instantly the millisecond an email arrives.
               </p>
             </div>
-            
+
             <div className="flex flex-col items-center p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-[#06060c]/80 shadow-[0_0_30px_rgba(0,0,0,0.05)] dark:shadow-[0_0_30px_rgba(0,0,0,0.3)] transition-transform hover:-translate-y-2">
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-500 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
                 <Sparkles className="h-7 w-7" />
@@ -155,7 +153,7 @@ export default function LandingPage() {
                 Leverages lightning-fast Groq LLMs to deeply analyze incoming threads and automatically propose context-aware, ready-to-send draft replies.
               </p>
             </div>
-            
+
             <div className="flex flex-col items-center p-8 rounded-3xl border border-zinc-200 dark:border-zinc-800/50 bg-white dark:bg-[#06060c]/80 shadow-[0_0_30px_rgba(0,0,0,0.05)] dark:shadow-[0_0_30px_rgba(0,0,0,0.3)] transition-transform hover:-translate-y-2">
               <div className="mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-orange-500/10 text-orange-600 dark:text-orange-500 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
                 <LayoutDashboard className="h-7 w-7" />

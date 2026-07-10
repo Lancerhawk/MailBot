@@ -11,6 +11,9 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "MailBot",
   description: "AI-powered email management platform",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
