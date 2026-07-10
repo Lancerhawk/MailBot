@@ -30,3 +30,19 @@ export const authLimiter = rateLimit({
     return req.ip;
   },
 });
+
+export const refreshRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 10,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: 'Please wait 1 minute before refreshing again.',
+  keyGenerator: (req) => {
+    if (!req.ip) return 'unknown';
+    if (req.ip.includes('.') && req.ip.includes(':')) {
+      return req.ip.split(':')[0];
+    }
+    return req.ip;
+  },
+  skip: (req) => req.query.refresh !== 'true',
+});

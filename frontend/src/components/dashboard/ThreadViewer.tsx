@@ -228,7 +228,26 @@ export function ThreadViewer({ threadId }: { threadId: string }) {
     };
 
     fetchThread();
-  }, [threadId, getThread]);
+
+    const handleRefresh = async () => {
+      try {
+        setIsLoading(true);
+        const res = await api.get(`/gmail/threads/${threadId}?refresh=true`);
+        setThread(res.data.data);
+        updateThreadInCache(threadId, res.data.data);
+      } catch (e: any) {
+        if (e?.response?.status === 429) {
+          toast.error("Please wait 1 minute before refreshing again.");
+        } else {
+          console.error("Failed to refresh thread", e);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    window.addEventListener('refresh-data', handleRefresh);
+    return () => window.removeEventListener('refresh-data', handleRefresh);
+  }, [threadId, getThread, updateThreadInCache]);
 
   const { socket } = useSocket();
 

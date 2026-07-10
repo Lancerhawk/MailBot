@@ -1,14 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Search, Menu, Moon, Sun } from "lucide-react";
+import { Bell, Menu, Moon, Sun, RefreshCw } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAuth } from "@/providers/AuthProvider";
 import { SyncIndicator } from "@/components/dashboard/SyncIndicator";
 import { ComposeModal } from "@/components/dashboard/ComposeModal";
 import { Edit } from "lucide-react";
+import { toast } from "@/lib/toast";
 
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
@@ -17,12 +19,28 @@ interface HeaderProps {
 export function Header({ setSidebarOpen }: HeaderProps) {
   const { theme, setTheme } = useTheme();
   const { user, logout } = useAuth();
+  const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
   const [isComposeOpen, setIsComposeOpen] = React.useState(false);
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
   }, []);
+
+  const handleRefreshClick = () => {
+    setIsRefreshing(true);
+    
+    // This triggers router.refresh() (Next.js server-side reload)
+    router.refresh();
+    
+    // This triggers our custom event that tells client components like Inbox and ThreadViewer
+    // to call api.get() directly and bypass the cache.
+    window.dispatchEvent(new Event('refresh-data'));
+    
+    // Stop spinning after 1 second for visual feedback
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-zinc-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8 dark:border-zinc-800 dark:bg-zinc-950">
@@ -41,22 +59,19 @@ export function Header({ setSidebarOpen }: HeaderProps) {
       />
 
       <div className="flex flex-1 items-center justify-between gap-x-4 self-stretch lg:gap-x-6">
-        <form className="relative flex w-full max-w-sm items-center" action="#" method="GET">
-          <label htmlFor="search-field" className="sr-only">
-            Search
-          </label>
-          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-            <Search className="h-4 w-4 text-zinc-400" aria-hidden="true" />
-          </div>
-          <Input
-            id="search-field"
-            className="block h-9 w-full rounded-md border border-zinc-200 bg-zinc-50 py-1 pl-9 pr-3 text-sm text-zinc-900 placeholder:text-zinc-400 focus-visible:ring-1 focus-visible:ring-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50 dark:focus-visible:ring-zinc-700"
-            placeholder="Search..."
-            type="search"
-            name="search"
-          />
-        </form>
+        <div className="flex flex-1">
+        </div>
         <div className="flex items-center gap-x-4 lg:gap-x-6">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefreshClick}
+            disabled={isRefreshing}
+            className="hidden sm:flex items-center gap-2 text-zinc-600 dark:text-zinc-300"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
           <Button onClick={() => setIsComposeOpen(true)} className="bg-orange-500 hover:bg-orange-600 text-white gap-2">
             <Edit className="h-4 w-4" />
             <span className="hidden sm:inline">Compose</span>

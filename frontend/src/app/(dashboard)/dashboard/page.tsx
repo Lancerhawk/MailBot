@@ -19,6 +19,7 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useSocket } from "@/providers/SocketProvider";
+import { toast } from "@/lib/toast";
 
 interface DashboardStats {
   totalThreads: number;
@@ -87,10 +88,11 @@ export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = async (isRefresh = false) => {
     try {
+      const threadsUrl = isRefresh ? "/gmail/threads?limit=5&refresh=true" : "/gmail/threads?limit=5";
       const [threadsRes, statusRes] = await Promise.all([
-        api.get("/gmail/threads?limit=5"),
+        api.get(threadsUrl),
         api.get("/gmail/status"),
       ]);
 
@@ -104,8 +106,10 @@ export default function DashboardPage() {
         syncStatus: statusData.activeSync ? "SYNCING" : statusData.connectionStatus,
         recentThreads: threadsData.threads,
       });
-    } catch (e) {
-      // Silently ignore
+    } catch (e: any) {
+      if (e?.response?.status === 429) {
+        toast.error("Please wait 1 minute before refreshing again.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +118,12 @@ export default function DashboardPage() {
   useEffect(() => {
     fetchDashboardData();
 
-    if (!socket) return;
+    const handleRefresh = () => {
+      fetchDashboardData();
+    };
+    window.addEventListener('refresh-data', handleRefresh);
+
+    if (!socket) return () => window.removeEventListener('refresh-data', handleRefresh);
 
     const handleSyncStarted = () => {
       setStats(prev => prev ? { ...prev, syncStatus: "SYNCING" } : null);
@@ -132,6 +141,7 @@ export default function DashboardPage() {
     }, 60000);
 
     return () => {
+      window.removeEventListener('refresh-data', handleRefresh);
       socket.off('sync:started', handleSyncStarted);
       socket.off('sync:completed', handleSyncCompleted);
       clearInterval(ticker);
@@ -141,17 +151,14 @@ export default function DashboardPage() {
   const greeting = getGreeting();
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
 
-  // Compute Sync Status Card values
   let syncStatusLabel = "—";
   let SyncIcon = CheckCircle;
   let syncAccent = "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
-  
+
   if (!isConnected) {
     syncStatusLabel = "Disconnected";
     syncAccent = "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400";
-    // We could import AlertTriangle or similar, but for now we'll just use CheckCircle as a fallback 
-    // Wait, let's actually import Loader2 and WifiOff at the top if possible. Since I can't easily add imports here safely without replacing the top, I'll use simple logic.
-    // I will replace the imports separately.
+
   } else if (stats?.syncStatus === "SYNCING") {
     syncStatusLabel = "Syncing...";
     syncAccent = "bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400";
@@ -199,8 +206,8 @@ export default function DashboardPage() {
           value={
             stats?.lastSyncAt
               ? formatDistanceToNow(new Date(stats.lastSyncAt), { addSuffix: true })
-                  .replace("about ", "")
-                  .replace("less than a minute ago", "Just now")
+                .replace("about ", "")
+                .replace("less than a minute ago", "Just now")
               : "Never"
           }
           accent="bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"

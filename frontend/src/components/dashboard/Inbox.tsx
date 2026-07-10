@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import { toast } from "@/lib/toast";
 
 interface Participant {
   emailAddress: string;
@@ -91,7 +92,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchThreads = async (silent = false, pageNum = 1, append = false) => {
+  const fetchThreads = async (silent = false, pageNum = 1, append = false, isRefresh = false) => {
     try {
       if (!silent && !append) setIsLoading(true);
       if (append) setIsFetchingMore(true);
@@ -108,6 +109,9 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       }
       if (debouncedSearch) {
         queryUrl += `&search=${encodeURIComponent(debouncedSearch)}`;
+      }
+      if (isRefresh) {
+        queryUrl += `&refresh=true`;
       }
 
       const res = await api.get(queryUrl);
@@ -127,8 +131,12 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       
       // Background cache prefetching for 0ms load times!
       prefetchThreads(newThreads.map((t: any) => t.id));
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      if (error?.response?.status === 429) {
+        toast.error("Please wait 1 minute before refreshing again.");
+      } else {
+        console.error(error);
+      }
     } finally {
       setIsLoading(false);
       setIsFetchingMore(false);
@@ -138,6 +146,15 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
   useEffect(() => {
     setPage(1);
     fetchThreads(false, 1, false);
+  }, [mode, filter, debouncedSearch]);
+
+  useEffect(() => {
+    const handleRefresh = () => {
+      setPage(1);
+      fetchThreads(false, 1, false, true);
+    };
+    window.addEventListener('refresh-data', handleRefresh);
+    return () => window.removeEventListener('refresh-data', handleRefresh);
   }, [mode, filter, debouncedSearch]);
 
   const loadMore = useCallback(() => {

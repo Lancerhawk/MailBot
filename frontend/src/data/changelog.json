@@ -1,12 +1,44 @@
 {
   "versions": [
     {
+      "id": "fe-0.6.1",
+      "version": "v0.6.1",
+      "service": "Frontend",
+      "date": "2026-07-10",
+      "title": "Refresh Stability & UX",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Cache Bypassing",
+          "description": "The global refresh button now actively passes a refresh=true flag to bypass local caching across the Dashboard, Inbox, and Thread Viewer."
+        },
+        {
+          "title": "Refresh Visual Feedback",
+          "description": "Thread viewer now correctly displays skeleton loaders during an active manual refresh."
+        }
+      ]
+    },
+    {
+      "id": "be-0.6.1",
+      "version": "v0.6.1",
+      "service": "Backend",
+      "date": "2026-07-10",
+      "title": "Security & Rate Limiting",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Backend Rate Limiter",
+          "description": "Moved rate limiting for manual refreshes from the frontend to a dedicated refreshRateLimiter middleware in the backend (max 10 requests per minute)."
+        }
+      ]
+    },
+    {
       "id": "fe-0.6.0",
       "version": "v0.6.0",
       "service": "Frontend",
       "date": "2026-07-08",
       "title": "UI Overhaul & Premium Aesthetics",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Marketing UI Redesign",

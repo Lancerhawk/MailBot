@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.6.1] & [Backend v0.6.1] - Refresh Stability & Security Fixes
+
+### Fixed
+- **Cache Bypassing:** The global refresh button now actively passes a `refresh=true` flag to bypass local caching across the Dashboard, Inbox, and Thread Viewer.
+- **Refresh Visual Feedback:** Thread viewer now correctly displays skeleton loaders during an active manual refresh.
+- **Security:** Moved rate limiting for manual refreshes from the frontend to a dedicated `refreshRateLimiter` middleware in the backend (max 10 requests per minute).
+
 ## [Frontend v0.6.0] - UI Overhaul & Premium Aesthetics
 
 ### Added

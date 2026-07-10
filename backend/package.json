@@ -1,6 +1,6 @@
 {
   "name": "mailbot-backend",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon",
