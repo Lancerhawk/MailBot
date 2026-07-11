@@ -111,7 +111,7 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
   const [isCollapsed, setIsCollapsed] = useState(!isLast);
 
   const cleanHtml = email.htmlBody
-    ? DOMPurify.sanitize(email.htmlBody, { USE_PROFILES: { html: true } })
+    ? DOMPurify.sanitize(email.htmlBody, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style'] })
     : null;
 
   return (
