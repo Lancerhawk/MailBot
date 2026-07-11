@@ -17,9 +17,8 @@ export default function SupportPage() {
       
       <EmptyState
         icon={HelpCircle}
-        title="Need help?"
-        description="Our support team is here for you. Reach out with any questions."
-        action={<Button>Contact Support</Button>}
+        title="Coming Soon"
+        description="The integrated support center is currently under development. Stay tuned!"
       />
     </div>
   );

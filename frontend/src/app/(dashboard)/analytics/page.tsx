@@ -16,8 +16,8 @@ export default function AnalyticsPage() {
       
       <EmptyState
         icon={BarChart3}
-        title="No data available"
-        description="We need more data to generate analytics. Check back later."
+        title="Coming Soon"
+        description="Advanced analytics and reporting are currently under development. Stay tuned!"
       />
     </div>
   );

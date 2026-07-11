@@ -15,14 +15,12 @@ export default function KnowledgeBasePage() {
             Manage the documents and context the AI uses to draft emails.
           </p>
         </div>
-        <Button>Upload Document</Button>
       </div>
       
       <EmptyState
         icon={BookOpen}
-        title="No documents uploaded"
-        description="Upload documents to train your AI assistant to respond like you."
-        action={<Button variant="outline">Browse Files</Button>}
+        title="Coming Soon"
+        description="The AI Knowledge Base and custom document uploading is currently under development. Stay tuned!"
       />
     </div>
   );

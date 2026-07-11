@@ -10,7 +10,9 @@ import {
   ArrowRight,
   CheckCircle,
   Loader2,
-  WifiOff
+  WifiOff,
+  Users,
+  BookOpen
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -311,13 +313,13 @@ export default function DashboardPage() {
             </h2>
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/30">
-                <Sparkles className="h-5 w-5 text-indigo-400" />
+                <Users className="h-5 w-5 text-indigo-400" />
                 <div>
                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                    AI Summaries
+                    CRM & Contacts
                   </p>
                   <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                    Smart email digests
+                    Relationship management
                   </p>
                 </div>
               </div>
@@ -329,6 +331,17 @@ export default function DashboardPage() {
                   </p>
                   <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
                     Insights & trends
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/30">
+                <BookOpen className="h-5 w-5 text-amber-400" />
+                <div>
+                  <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+                    AI Knowledge Base
+                  </p>
+                  <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
+                    Train your assistant
                   </p>
                 </div>
               </div>

@@ -15,14 +15,12 @@ export default function ContactsPage() {
             Manage your network and relationships.
           </p>
         </div>
-        <Button>Add Contact</Button>
       </div>
       
       <EmptyState
         icon={Users}
-        title="No contacts found"
-        description="Your contact list is empty. Import contacts or add them manually."
-        action={<Button variant="outline">Import Contacts</Button>}
+        title="Coming Soon"
+        description="The CRM and Contacts feature is currently under development. Stay tuned!"
       />
     </div>
   );

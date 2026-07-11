@@ -16,8 +16,8 @@ export default function SettingsPage() {
       
       <EmptyState
         icon={Settings}
-        title="Settings placeholder"
-        description="Configuration options will be available in Phase 4."
+        title="Coming Soon"
+        description="Configuration and account settings are currently under development. Stay tuned!"
       />
     </div>
   );
