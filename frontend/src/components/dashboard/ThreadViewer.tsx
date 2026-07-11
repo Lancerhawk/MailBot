@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
@@ -232,8 +232,8 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
                   {email.attachments.map((attachment) => (
-                    <div 
-                      key={attachment.id} 
+                    <div
+                      key={attachment.id}
                       className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30"
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -252,15 +252,22 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
                     </div>
                   ))}
                 </div>
-                
+
                 {email.providerMessageId && (
-                  <Button 
-                    variant="outline" 
-                    className="w-full flex items-center justify-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 dark:border-orange-900/30 dark:hover:bg-orange-500/10"
-                    onClick={() => window.open(`https://mail.google.com/mail/u/0/#all/${email.providerMessageId}`, '_blank')}
+                  <Button
+                    variant="outline"
+                    className="w-full text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 dark:border-orange-900/30 dark:hover:bg-orange-500/10"
+                    asChild
                   >
-                    <ExternalLink className="h-4 w-4" />
-                    Open in Gmail to view attachments
+                    <a
+                      href={`https://mail.google.com/mail/u/0/#all/${email.providerMessageId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Open in Gmail to view attachments
+                    </a>
                   </Button>
                 )}
               </div>
