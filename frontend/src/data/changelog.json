@@ -1,12 +1,30 @@
 {
   "versions": [
     {
+      "id": "fe-0.6.3",
+      "version": "v0.6.3",
+      "service": "Frontend & Backend",
+      "date": "2026-07-11",
+      "title": "Gmail Permissions Fallback Flow",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Permissions Fallback Dialog",
+          "description": "Implemented a persistent, floating UI dialog in the frontend that detects if a user denied Gmail scopes during OAuth. It blocks the user and forces them to re-authenticate with the correct permissions."
+        },
+        {
+          "title": "Dynamic Scope Tracking",
+          "description": "Backend now actively saves and updates the granted OAuth scopes in the database on subsequent logins, and injects a hasGmailAccess flag into the /me endpoint."
+        }
+      ]
+    },
+    {
       "id": "fe-0.6.2",
       "version": "v0.6.2",
       "service": "Frontend",
       "date": "2026-07-11",
       "title": "Mobile Responsiveness & Layout",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Sliding Inbox Panes",

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.6.3] & [Backend v0.6.2] - Gmail Permissions Fallback Flow
+
+### Added
+- **Permissions Fallback Dialog:** Implemented a persistent, floating UI dialog in the frontend that detects if a user denied Gmail scopes during OAuth. It blocks the user and forces them to re-authenticate with the correct permissions.
+- **Dynamic Scope Tracking:** Backend now actively saves and updates the granted OAuth scopes in the database on subsequent logins, and injects a `hasGmailAccess` flag into the `/me` endpoint.
+
 ## [Frontend v0.6.2] - Mobile Responsiveness & Layout
 
 ### Fixed
