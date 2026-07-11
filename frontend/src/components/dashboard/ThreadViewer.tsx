@@ -10,7 +10,7 @@ import { Skeleton } from "../ui/skeleton";
 import { useSocket } from "@/providers/SocketProvider";
 import { useThreadCache } from "@/providers/ThreadCacheProvider";
 import { DraftEditor } from "./DraftEditor";
-import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2, ChevronLeft } from "lucide-react";
+import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2, ChevronLeft, Paperclip, FileText, Image as ImageIcon, Film, FileArchive, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/providers/AuthProvider";
 import {
@@ -42,6 +42,14 @@ interface Email {
   processingStatus?: string;
   labels?: any[];
   drafts?: any[];
+  attachments?: {
+    id: string;
+    filename: string;
+    mimeType: string;
+    sizeBytes: number;
+    storagePath?: string;
+  }[];
+  providerMessageId?: string;
 }
 
 interface Thread {
@@ -60,6 +68,23 @@ const AVATAR_COLORS = [
   { bg: "bg-cyan-100 dark:bg-cyan-500/20", text: "text-cyan-600 dark:text-cyan-400" },
   { bg: "bg-orange-100 dark:bg-orange-500/20", text: "text-orange-600 dark:text-orange-400" },
 ];
+
+function formatBytes(bytes: number, decimals = 2) {
+  if (!+bytes) return '0 Bytes';
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
+}
+
+function getAttachmentIcon(mimeType: string) {
+  if (mimeType.startsWith('image/')) return <ImageIcon className="h-5 w-5 text-blue-500" />;
+  if (mimeType.startsWith('video/')) return <Film className="h-5 w-5 text-purple-500" />;
+  if (mimeType.includes('pdf') || mimeType.includes('document') || mimeType.includes('text')) return <FileText className="h-5 w-5 text-orange-500" />;
+  if (mimeType.includes('zip') || mimeType.includes('tar') || mimeType.includes('compressed')) return <FileArchive className="h-5 w-5 text-amber-500" />;
+  return <Paperclip className="h-5 w-5 text-zinc-500" />;
+}
 
 function getAvatarColor(name: string) {
   let hash = 0;
@@ -196,6 +221,48 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
             ) : (
               <div className="email-body-content whitespace-pre-wrap font-sans leading-relaxed text-zinc-800 dark:text-zinc-300">
                 {email.plainBody || "This message has no content."}
+              </div>
+            )}
+
+            {email.attachments && email.attachments.length > 0 && (
+              <div className="mt-6 border-t border-zinc-100 dark:border-zinc-800/60 pt-4">
+                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-1.5">
+                  <Paperclip className="h-3.5 w-3.5" />
+                  {email.attachments.length} Attachment{email.attachments.length !== 1 ? 's' : ''}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                  {email.attachments.map((attachment) => (
+                    <div 
+                      key={attachment.id} 
+                      className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="p-2 bg-white dark:bg-zinc-800 rounded-md shadow-sm border border-zinc-100 dark:border-zinc-700">
+                          {getAttachmentIcon(attachment.mimeType)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate pr-2" title={attachment.filename}>
+                            {attachment.filename}
+                          </p>
+                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                            {formatBytes(attachment.sizeBytes)}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                {email.providerMessageId && (
+                  <Button 
+                    variant="outline" 
+                    className="w-full flex items-center justify-center gap-2 text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 dark:border-orange-900/30 dark:hover:bg-orange-500/10"
+                    onClick={() => window.open(`https://mail.google.com/mail/u/0/#all/${email.providerMessageId}`, '_blank')}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    Open in Gmail to view attachments
+                  </Button>
+                )}
               </div>
             )}
           </div>
