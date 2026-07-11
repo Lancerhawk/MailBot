@@ -110,6 +110,7 @@ export class AuthService {
             accessTokenExpiresAt,
             emailAddress: email,
             isActive: true,
+            scope: tokens.scope || '',
           },
           create: {
             userId: targetUserId,

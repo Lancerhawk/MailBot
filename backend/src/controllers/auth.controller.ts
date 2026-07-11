@@ -71,11 +71,24 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
   }
 });
 
+import { prisma } from '../lib/prisma';
+
 export const getCurrentUser = catchAsync(async (req: Request, res: Response) => {
+  const userWithConnections = await prisma.user.findUnique({
+    where: { id: req.user.id },
+    include: { connections: true }
+  });
+
+  const connection = userWithConnections?.connections[0];
+  const hasGmailAccess = connection ? connection.scope.includes('gmail.modify') : false;
+
   res.status(200).json({
     status: 'success',
     data: {
-      user: req.user,
+      user: {
+        ...req.user,
+        hasGmailAccess,
+      },
     }
   });
 });
