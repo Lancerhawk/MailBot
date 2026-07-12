@@ -58,10 +58,8 @@ export function Header({ setSidebarOpen }: HeaderProps) {
         aria-hidden="true"
       />
 
-      <div className="flex flex-1 items-center justify-between gap-x-4 self-stretch lg:gap-x-6">
-        <div className="flex flex-1">
-        </div>
-        <div className="flex items-center gap-x-2 sm:gap-x-4 lg:gap-x-6">
+      <div className="flex flex-1 items-center self-stretch lg:gap-x-6 min-w-0">
+        <div className="flex flex-1 items-center justify-end gap-x-1 sm:gap-x-2 lg:gap-x-6 overflow-x-auto hide-scrollbar">
           <Button
             variant="outline"
             size="icon"
@@ -96,7 +94,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
             aria-hidden="true"
           />
 
-          <div className="relative">
+          <div className="relative ml-2 lg:ml-0">
             <Button
               variant="ghost"
               className="-m-1.5 flex items-center p-1.5"

@@ -138,7 +138,7 @@ export function SyncIndicator() {
               Stop Sync
             </button>
           ) : (
-            <span className="text-zinc-600 dark:text-zinc-400">
+          <span className="hidden sm:inline text-zinc-600 dark:text-zinc-400">
               {status.activeSync?.currentStage || "Syncing..."}
               {status.activeSync && status.activeSync.totalEmailsEstimated > 0 && (
                 <span className="ml-1 text-xs">
@@ -151,7 +151,7 @@ export function SyncIndicator() {
       ) : hasError ? (
         <>
           <AlertTriangle className="h-4 w-4 text-red-500" />
-          <span className="text-red-500">Sync Error</span>
+          <span className="hidden sm:inline text-red-500">Sync Error</span>
           {isHovered && (
             <button
               onClick={handleManualSync}
@@ -165,7 +165,7 @@ export function SyncIndicator() {
       ) : (
         <>
           <CheckCircle className="h-4 w-4 text-emerald-500" />
-          <span className="text-zinc-600 dark:text-zinc-400">Up to date</span>
+          <span className="hidden sm:inline text-zinc-600 dark:text-zinc-400">Up to date</span>
         </>
       )}
     </div>

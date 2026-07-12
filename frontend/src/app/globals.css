@@ -248,3 +248,12 @@
   white-space: pre-wrap;
   word-wrap: break-word;
 }
+
+/* === Utility to hide scrollbars but keep scrolling === */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

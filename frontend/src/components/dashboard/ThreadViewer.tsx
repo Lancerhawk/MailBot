@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "isomorphic-dompurify";
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
@@ -142,139 +143,152 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
   return (
     <div id={id} className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
       <div
-        className="flex cursor-pointer items-center justify-between gap-3 px-5 py-4"
+        className="flex cursor-pointer items-start sm:items-center justify-between gap-2 px-4 sm:px-5 py-4 min-w-0"
         onClick={() => setIsCollapsed(!isCollapsed)}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0 flex-1">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${color.bg} ${color.text}`}>
             {senderName.charAt(0).toUpperCase()}
           </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-sm font-semibold text-zinc-900 dark:text-zinc-50 truncate">
                 {sender?.displayName || sender?.emailAddress}
               </p>
               {sender?.displayName && (
-                <span className="hidden text-xs text-zinc-400 sm:inline dark:text-zinc-500">
+                <span className="hidden text-xs text-zinc-400 sm:inline dark:text-zinc-500 truncate">
                   &lt;{sender.emailAddress}&gt;
                 </span>
               )}
             </div>
-            <p className="text-xs text-zinc-400 dark:text-zinc-500">
+            <p className="text-xs text-zinc-400 dark:text-zinc-500 truncate">
               to {to.map(t => t.displayName || t.emailAddress).join(", ")}
             </p>
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
-          <span className="text-[11px] text-zinc-400 dark:text-zinc-500">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2 ml-2">
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 whitespace-nowrap hidden sm:inline">
             {format(new Date(email.receivedAt), "MMM d, yyyy 'at' h:mm a")}
           </span>
+          <span className="text-[11px] text-zinc-400 dark:text-zinc-500 whitespace-nowrap sm:hidden">
+            {format(new Date(email.receivedAt), "MMM d, yy")}
+          </span>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
-            {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isCollapsed ? '' : 'rotate-180'}`} />
           </Button>
         </div>
       </div>
 
-      {!isCollapsed && (
-        <div className="border-t border-zinc-100 dark:border-zinc-800">
-          {email.processingStatus === "COMPLETED" && email.summary && (
-            <div className="bg-orange-50/50 px-5 py-3 border-b border-orange-100/50 dark:bg-orange-500/5 dark:border-orange-500/10">
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400">AI Summary</span>
-                <div className="flex gap-1.5 ml-auto">
-                  {email.intent && (
-                    <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-semibold dark:bg-blue-900/30 dark:text-blue-400">
-                      {email.intent}
-                    </span>
-                  )}
-                  {email.sentiment && (
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${email.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
-                      email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
-                        'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
-                      }`}>
-                      {email.sentiment}
-                    </span>
-                  )}
-                  {email.needsReply && (
-                    <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold dark:bg-amber-900/30 dark:text-amber-400">
-                      Needs Reply
-                    </span>
-                  )}
-                </div>
-              </div>
-              <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{email.summary}</p>
-            </div>
-          )}
-          {email.processingStatus === "PROCESSING" && (
-            <div className="bg-blue-50/50 px-5 py-2 border-b border-blue-100/50 dark:bg-blue-500/5 dark:border-blue-500/10 flex items-center gap-2">
-              <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">AI Analysis in progress...</span>
-            </div>
-          )}
-          <div className="px-5 py-4 text-sm">
-            {cleanHtml ? (
-              <div
-                className="email-body-content rounded-lg bg-white p-4 text-zinc-900 prose prose-sm max-w-none prose-a:text-orange-500 hover:prose-a:text-orange-600 prose-img:rounded-lg"
-                style={{ colorScheme: "light" }}
-                dangerouslySetInnerHTML={{ __html: cleanHtml }}
-              />
-            ) : (
-              <div className="email-body-content whitespace-pre-wrap font-sans leading-relaxed text-zinc-800 dark:text-zinc-300">
-                {email.plainBody || "This message has no content."}
-              </div>
-            )}
-
-            {email.attachments && email.attachments.length > 0 && (
-              <div className="mt-6 border-t border-zinc-100 dark:border-zinc-800/60 pt-4">
-                <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-1.5">
-                  <Paperclip className="h-3.5 w-3.5" />
-                  {email.attachments.length} Attachment{email.attachments.length !== 1 ? 's' : ''}
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
-                  {email.attachments.map((attachment) => (
-                    <div
-                      key={attachment.id}
-                      className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30"
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="p-2 bg-white dark:bg-zinc-800 rounded-md shadow-sm border border-zinc-100 dark:border-zinc-700">
-                          {getAttachmentIcon(attachment.mimeType)}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate pr-2" title={attachment.filename}>
-                            {attachment.filename}
-                          </p>
-                          <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                            {formatBytes(attachment.sizeBytes)}
-                          </p>
-                        </div>
-                      </div>
+      <AnimatePresence initial={false}>
+        {!isCollapsed && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden"
+          >
+            <div className="border-t border-zinc-100 dark:border-zinc-800">
+              {email.processingStatus === "COMPLETED" && email.summary && (
+                <div className="bg-orange-50/50 px-5 py-3 border-b border-orange-100/50 dark:bg-orange-500/5 dark:border-orange-500/10">
+                  <div className="flex flex-wrap items-center gap-2 mb-2 sm:mb-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-orange-600 dark:text-orange-400 shrink-0">AI Summary</span>
+                    <div className="flex flex-wrap gap-1.5 ml-0 sm:ml-auto">
+                      {email.intent && (
+                        <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[10px] font-semibold dark:bg-blue-900/30 dark:text-blue-400">
+                          {email.intent}
+                        </span>
+                      )}
+                      {email.sentiment && (
+                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${email.sentiment === 'POSITIVE' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                          email.sentiment === 'NEGATIVE' ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400' :
+                            'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300'
+                          }`}>
+                          {email.sentiment}
+                        </span>
+                      )}
+                      {email.needsReply && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-[10px] font-semibold dark:bg-amber-900/30 dark:text-amber-400">
+                          Needs Reply
+                        </span>
+                      )}
                     </div>
-                  ))}
+                  </div>
+                  <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed">{email.summary}</p>
                 </div>
+              )}
+              {email.processingStatus === "PROCESSING" && (
+                <div className="bg-blue-50/50 px-5 py-2 border-b border-blue-100/50 dark:bg-blue-500/5 dark:border-blue-500/10 flex items-center gap-2">
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
+                  <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">AI Analysis in progress...</span>
+                </div>
+              )}
+              <div className="px-5 py-4 text-sm">
+                {cleanHtml ? (
+                  <div
+                    className="email-body-content rounded-lg bg-white p-4 text-zinc-900 prose prose-sm max-w-none prose-a:text-orange-500 hover:prose-a:text-orange-600 prose-img:rounded-lg"
+                    style={{ colorScheme: "light" }}
+                    dangerouslySetInnerHTML={{ __html: cleanHtml }}
+                  />
+                ) : (
+                  <div className="email-body-content whitespace-pre-wrap font-sans leading-relaxed text-zinc-800 dark:text-zinc-300">
+                    {email.plainBody || "This message has no content."}
+                  </div>
+                )}
 
-                {email.providerMessageId && (
-                  <Button
-                    variant="outline"
-                    className="w-full text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 dark:border-orange-900/30 dark:hover:bg-orange-500/10"
-                    asChild
-                  >
-                    <a
-                      href={`https://mail.google.com/mail/u/0/#all/${email.providerMessageId}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <ExternalLink className="h-4 w-4 mr-2" />
-                      Open in Gmail to view attachments
-                    </a>
-                  </Button>
+                {email.attachments && email.attachments.length > 0 && (
+                  <div className="mt-6 border-t border-zinc-100 dark:border-zinc-800/60 pt-4">
+                    <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400 mb-3 flex items-center gap-1.5">
+                      <Paperclip className="h-3.5 w-3.5" />
+                      {email.attachments.length} Attachment{email.attachments.length !== 1 ? 's' : ''}
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                      {email.attachments.map((attachment) => (
+                        <div
+                          key={attachment.id}
+                          className="flex items-center p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-900/30"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="p-2 bg-white dark:bg-zinc-800 rounded-md shadow-sm border border-zinc-100 dark:border-zinc-700">
+                              {getAttachmentIcon(attachment.mimeType)}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate pr-2" title={attachment.filename}>
+                                {attachment.filename}
+                              </p>
+                              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                                {formatBytes(attachment.sizeBytes)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+
+                    {email.providerMessageId && (
+                      <Button
+                        variant="outline"
+                        className="w-full text-orange-600 hover:text-orange-700 hover:bg-orange-50 border-orange-200 dark:border-orange-900/30 dark:hover:bg-orange-500/10"
+                        asChild
+                      >
+                        <a
+                          href={`https://mail.google.com/mail/u/0/#all/${email.providerMessageId}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ExternalLink className="h-4 w-4 mr-2" />
+                          Open in Gmail to view attachments
+                        </a>
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          </div>
-        </div>
-      )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -427,10 +441,10 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden animate-thread-viewer">
-      <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+      <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-2">
+        <div className="flex items-start sm:items-center gap-2 sm:gap-4 min-w-0">
           {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="xl:hidden shrink-0 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50">
+            <Button variant="ghost" size="icon" onClick={onClose} className="xl:hidden shrink-0 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 mt-0.5 sm:mt-0">
               <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
@@ -443,7 +457,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
             </p>
           </div>
         </div>
-        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0 self-start sm:self-auto w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
           {thread.emails[0]?.isSpam ? (
             <Button variant="ghost" size="sm" onClick={() => handleAction('unspam')} disabled={!!actionLoading} title="Not Spam">
               {actionLoading === 'unspam' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ShieldAlert className="mr-2 h-4 w-4" />} Not Spam
