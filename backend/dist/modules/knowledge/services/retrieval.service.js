@@ -153,8 +153,11 @@ ${contextText.substring(0, 4000)}`;
         const footer = '\n--------------------------------';
         let currentTokens = estimateTokens(header) + estimateTokens(footer);
         const sections = [];
+        const now = Date.now();
         for (const chunk of chunks) {
-            const docLabel = `[Document: ${chunk.documentTitle}${chunk.documentVersion > 1 ? ` (v${chunk.documentVersion})` : ''}]`;
+            const ageDays = Math.floor((now - chunk.documentCreatedAt.getTime()) / (1000 * 60 * 60 * 24));
+            const ageStr = ageDays === 0 ? 'Uploaded today' : `Uploaded ${ageDays} days ago`;
+            const docLabel = `[Document: ${chunk.documentTitle}${chunk.documentVersion > 1 ? ` (v${chunk.documentVersion})` : ''} | ${ageStr}]`;
             const chunkText = `${docLabel}\n${chunk.content}\n`;
             const chunkTokens = estimateTokens(chunkText);
             if (currentTokens + chunkTokens > MAX_KNOWLEDGE_TOKENS) {

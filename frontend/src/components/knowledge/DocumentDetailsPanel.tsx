@@ -110,7 +110,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
     if (!doc) return;
     try {
       const res = await api.get(`/knowledge/download/${doc.id}`);
-      window.open(res.data.data.url, "_blank");
+      window.location.href = res.data.data.url;
     } catch {
       toast.error("Failed to generate download link");
     }

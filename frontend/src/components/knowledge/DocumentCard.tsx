@@ -170,7 +170,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
   const handleDownload = useCallback(async () => {
     try {
       const res = await api.get(`/knowledge/download/${doc.id}`);
-      window.open(res.data.data.url, "_blank");
+      window.location.href = res.data.data.url;
     } catch {
       toast.error("Failed to get download link");
     }
