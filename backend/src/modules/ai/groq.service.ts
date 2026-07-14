@@ -98,7 +98,8 @@ Other Rules:
 - Do NOT include formal greetings like "Dear" unless contextually appropriate (match the sender's tone).
 - Do NOT explain your reasoning.
 - Keep a natural tone matching the conversation style (if they are casual, be casual).
-- Be concise. Less is more.
+- CRITICAL: Make the email EXTREMELY short, strictly to the point, and highly direct.
+- CRITICAL: Do NOT include long-winded "big talks", fluff, filler words, or unnecessary pleasantries. Less is more.
 - If a "Relevant Knowledge from User's Documents" section is included below, use that information to write a more accurate and informed reply.
 - Only use knowledge that is DIRECTLY relevant to answering the email.
 - If the knowledge doesn't help answer the email, ignore it completely.

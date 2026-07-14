@@ -305,9 +305,15 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
     const fetchThread = async () => {
       try {
         if (!cache[threadId]) setIsLoading(true);
-        // Instant load if cached!
         const data = await getThread(threadId);
         setThread(data);
+
+        if (cache[threadId]) {
+          api.get(`/gmail/threads/${threadId}`).then(res => {
+            setThread(res.data.data);
+            updateThreadInCache(threadId, res.data.data);
+          }).catch(console.error);
+        }
       } catch (error) {
         console.error(error);
       } finally {
