@@ -7,6 +7,7 @@ import authRoute from './auth.route';
 import gmailRoute from '../../modules/gmail/gmail.route';
 
 import draftRoute from '../../modules/draft/draft.route';
+import knowledgeRoute from '../../modules/knowledge/knowledge.route';
 
 const defaultRoutes = [
   {
@@ -24,6 +25,10 @@ const defaultRoutes = [
   {
     path: '/drafts',
     route: draftRoute,
+  },
+  {
+    path: '/knowledge',
+    route: knowledgeRoute,
   }
 ];
 

@@ -17,7 +17,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
         <Header setSidebarOpen={setSidebarOpen} />
-        <main className={`flex-1 ${isFullWidth ? "overflow-hidden" : "overflow-y-auto"}`}>
+        <main className={`flex-1 ${isFullWidth ? "overflow-hidden" : "overflow-y-auto [scrollbar-gutter:stable]"}`}>
           {isFullWidth ? (
             children
           ) : (

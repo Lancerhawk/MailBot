@@ -1,17 +1,75 @@
 {
   "versions": [
     {
+      "id": "fe-0.7.0",
+      "version": "v0.7.0",
+      "service": "Frontend",
+      "date": "2026-07-14",
+      "title": "Knowledge Base Interface & RAG UI",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Complete Knowledge Base UI",
+          "description": "Full interface with drag-and-drop uploads, document cards, folder organization, filtering, searching, storage statistics, metadata viewing, and responsive layouts."
+        },
+        {
+          "title": "Real-time Processing Feedback",
+          "description": "Integrated Socket.IO events to show dynamic progress indicators for parsing, chunking, and embedding."
+        }
+      ]
+    },
+    {
+      "id": "be-0.7.0",
+      "version": "v0.7.0",
+      "service": "Backend",
+      "date": "2026-07-14",
+      "title": "Semantic AI Retrieval & AWS S3 Storage",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "AWS S3 Integration",
+          "description": "Secure document storage with checksum validation, MIME type verification, storage quotas, duplicate detection, and signed download URL generation."
+        },
+        {
+          "title": "Intelligent Document Parsing & Chunking",
+          "description": "Support for PDF, DOCX, TXT, Markdown, CSV, and XLSX with token-aware segmentation, heading-aware splitting, and chunk metadata generation."
+        },
+        {
+          "title": "Semantic Vector Search & Embeddings",
+          "description": "Powered by pgvector and Google Gemini embeddings with similarity ranking, adjacent chunk merging, and document freshness prioritization."
+        },
+        {
+          "title": "RAG-Augmented AI Drafts",
+          "description": "Extended the AI draft generation workflow with Retrieval-Augmented Generation (RAG), allowing relevant user knowledge to be dynamically injected into prompts."
+        },
+        {
+          "title": "Backend Management APIs",
+          "description": "APIs for document management, folder statistics, semantic search, storage information, document metadata updates, and secure download generation."
+        }
+      ]
+    },
+    {
       "id": "fe-0.6.3",
       "version": "v0.6.3",
-      "service": "Frontend & Backend",
+      "service": "Frontend",
       "date": "2026-07-11",
       "title": "Gmail Permissions Fallback Flow",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Permissions Fallback Dialog",
           "description": "Implemented a persistent, floating UI dialog in the frontend that detects if a user denied Gmail scopes during OAuth. It blocks the user and forces them to re-authenticate with the correct permissions."
-        },
+        }
+      ]
+    },
+    {
+      "id": "be-0.6.2",
+      "version": "v0.6.2",
+      "service": "Backend",
+      "date": "2026-07-11",
+      "title": "Dynamic Scope Tracking",
+      "isCurrent": false,
+      "features": [
         {
           "title": "Dynamic Scope Tracking",
           "description": "Backend now actively saves and updates the granted OAuth scopes in the database on subsequent logins, and injects a hasGmailAccess flag into the /me endpoint."
@@ -60,7 +118,7 @@
       "service": "Backend",
       "date": "2026-07-10",
       "title": "Security & Rate Limiting",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Backend Rate Limiter",
@@ -202,7 +260,7 @@
       "service": "Backend",
       "date": "2026-07-08",
       "title": "AI Drafts Experience",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "AI Draft Generation",

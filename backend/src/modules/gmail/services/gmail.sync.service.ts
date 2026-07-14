@@ -127,17 +127,17 @@ export class GmailSyncService {
         break;
       }
 
-      console.time(`Gmail-FetchChunk`);
+      // console.time(`Gmail-FetchChunk`);
       const fetchedThreads = await Promise.all(chunk.map(async (threadId) => {
         try {
           const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
           return threadRes.data;
         } catch (e) {
-          console.error(`Failed to fetch thread ${threadId} from Gmail:`, e);
+          // console.error(`Failed to fetch thread ${threadId} from Gmail:`, e);
           return null;
         }
       }));
-      console.timeEnd(`Gmail-FetchChunk`);
+      // console.timeEnd(`Gmail-FetchChunk`);
 
       for (const threadData of fetchedThreads) {
         if (!threadData) continue;
@@ -152,7 +152,7 @@ export class GmailSyncService {
           state.emailsProcessed = totalMessagesProcessed;
           state.threadsProcessed++;
         } catch (e) {
-          console.error(`Failed to process thread in DB:`, e);
+          // console.error(`Failed to process thread in DB:`, e);
         }
       }
     }
@@ -180,9 +180,9 @@ export class GmailSyncService {
     const deletedMessageIds = new Set<string>();
 
     try {
-      console.time(`Gmail-HistoryList`);
+      // console.time(`Gmail-HistoryList`);
       const res = await gmail.users.history.list({ userId: "me", startHistoryId });
-      console.timeEnd(`Gmail-HistoryList`);
+      // console.timeEnd(`Gmail-HistoryList`);
 
       if (res.data.historyId) {
         await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
@@ -256,17 +256,17 @@ export class GmailSyncService {
           break;
         }
         try {
-          console.time(`Prisma-ThreadCheck-${threadId}`);
+          // console.time(`Prisma-ThreadCheck-${threadId}`);
           const existingThread = await this.dbService.getThreadByProviderId(userId, threadId);
-          console.timeEnd(`Prisma-ThreadCheck-${threadId}`);
+          // console.timeEnd(`Prisma-ThreadCheck-${threadId}`);
 
           if (existingThread) {
-            console.time(`Gmail-MissingMessages-${threadId}`);
+            // console.time(`Gmail-MissingMessages-${threadId}`);
             const fetchedMessages = await Promise.all(Array.from(messageIds).map(async (msgId) => {
               const fullMsgRes = await gmail.users.messages.get({ userId: "me", id: msgId, format: "full" });
               return fullMsgRes.data;
             }));
-            console.timeEnd(`Gmail-MissingMessages-${threadId}`);
+            // console.timeEnd(`Gmail-MissingMessages-${threadId}`);
 
             const parsedEmails = fetchedMessages.map(m => this.parserService.parseMessage(m));
             parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
@@ -276,9 +276,9 @@ export class GmailSyncService {
             }
             state.emailsProcessed += parsedEmails.length;
           } else {
-            console.time(`Gmail-FullThread-${threadId}`);
+            // console.time(`Gmail-FullThread-${threadId}`);
             const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
-            console.timeEnd(`Gmail-FullThread-${threadId}`);
+            // console.timeEnd(`Gmail-FullThread-${threadId}`);
             const threadMessages = threadRes.data.messages || [];
             const parsedEmails = threadMessages.map(m => this.parserService.parseMessage(m));
             parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
@@ -310,7 +310,7 @@ export class GmailSyncService {
   async processWebhook(emailAddress: string, newHistoryId: bigint) {
     const connection = await this.dbService.getConnectionByEmail(emailAddress);
     if (!connection) {
-      console.error(`No connection found for webhook email ${emailAddress}`);
+      // console.error(`No connection found for webhook email ${emailAddress}`);
       return;
     }
 
@@ -347,6 +347,15 @@ export class GmailSyncService {
 
       processedEmailIds = await this.performIncrementalSync(userId, connection.id, startHistoryId, gmail, state);
 
+      if (processedEmailIds && processedEmailIds.length > 0) {
+        state.currentStage = "Generating AI drafts...";
+        const { AiPipelineService } = require('../../ai/ai.pipeline.service');
+        const aiPipeline = new AiPipelineService();
+
+        const aiPromises = processedEmailIds.map(emailId => aiPipeline.scheduleAnalysis(userId, emailId));
+        await Promise.all(aiPromises);
+      }
+
       state.status = "IDLE";
       state.currentStage = "Sync complete";
       await this.dbService.updateSyncStatus(userId, "IDLE");
@@ -362,15 +371,6 @@ export class GmailSyncService {
       emitToUser(userId, 'sync:error', { error: error.message });
     } finally {
       syncMemoryMap.delete(userId);
-    }
-
-    if (processedEmailIds && processedEmailIds.length > 0) {
-      const { AiPipelineService } = require('../../ai/ai.pipeline.service');
-      const aiPipeline = new AiPipelineService();
-
-      for (const emailId of processedEmailIds) {
-        aiPipeline.scheduleAnalysis(userId, emailId);
-      }
     }
   }
 }

@@ -102,7 +102,7 @@ export default function LandingNavbar() {
                   transition={{ duration: 0.15, ease: "easeOut" }}
                   className="absolute right-0 top-full mt-2 w-64 origin-top-right rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white/95 dark:bg-[#0a0a14]/95 backdrop-blur-xl p-2 shadow-2xl shadow-black/10 dark:shadow-black/50 overflow-hidden"
                 >
-                  {/* User Info Header */}
+
                   <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50">
                     {user.avatarUrl ? (
                       <img src={user.avatarUrl} alt="Avatar" className="h-10 w-10 rounded-full object-cover border border-zinc-700" />

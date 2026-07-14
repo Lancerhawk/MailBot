@@ -1,6 +1,6 @@
 {
   "name": "mailbot-backend",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon",
@@ -17,6 +17,8 @@
     "exec": "tsx src/server.ts"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1086.0",
+    "@aws-sdk/s3-request-presigner": "^3.1086.0",
     "@prisma/client": "^6.0.0",
     "compression": "^1.7.4",
     "connect-pg-simple": "^10.0.0",
@@ -31,11 +33,16 @@
     "groq-sdk": "^0.5.0",
     "helmet": "^7.1.0",
     "html-to-text": "^9.0.5",
+    "mammoth": "^1.12.0",
     "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "openai": "^6.46.0",
+    "pdf-parse": "^2.4.5",
     "pg": "^8.12.0",
     "pino": "^9.2.0",
     "pino-http": "^10.1.0",
     "socket.io": "^4.7.5",
+    "xlsx": "^0.18.5",
     "zod": "^3.23.8"
   },
   "devDependencies": {
@@ -48,6 +55,7 @@
     "@types/express-session": "^1.18.0",
     "@types/html-to-text": "^9.0.4",
     "@types/morgan": "^1.9.9",
+    "@types/multer": "^2.2.0",
     "@types/node": "^20.14.9",
     "@types/pg": "^8.11.6",
     "eslint": "^9.6.0",
@@ -58,6 +66,7 @@
     "pino-pretty": "^11.2.1",
     "prettier": "^3.3.2",
     "prisma": "^6.0.0",
+    "smee-client": "^5.0.0",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.0"

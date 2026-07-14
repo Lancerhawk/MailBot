@@ -514,10 +514,26 @@ model KnowledgeBaseDocument {
   updatedAt        DateTime         @updatedAt
   deletedAt        DateTime?
 
+  originalFileName  String?
+  folder            String           @default("Personal")
+  isArchived        Boolean          @default(false)
+  chunkCount        Int              @default(0)
+  retrievalCount    Int              @default(0)
+  lastRetrievedAt   DateTime?
+  lastAccessedAt    DateTime?
+  processingError   String?          @db.Text
+  processedAt       DateTime?
+  fileHash          String?
+  storageKey        String?
+
   user   User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   chunks KnowledgeBaseChunk[]
 
   @@index([userId])
+  @@index([userId, processingStatus])
+  @@index([userId, folder])
+  @@index([userId, fileHash])
+  @@index([userId, isArchived])
 }
 
 model KnowledgeBaseChunk {
@@ -529,10 +545,19 @@ model KnowledgeBaseChunk {
   embeddingModel String?
   embedding      Unsupported("vector(1536)")?
   metadata       Json?                        @default("{}")
+  deletedAt      DateTime?
+
+  pageNumber        Int?
+  heading           String?
+  section           String?
+  sourceOffsetStart Int?
+  sourceOffsetEnd   Int?
+  documentVersion   Int?
 
   document KnowledgeBaseDocument @relation(fields: [documentId], references: [id], onDelete: Cascade)
 
   @@unique([documentId, chunkIndex])
+  @@index([documentId])
 }
 
 model PromptTemplate {
@@ -689,4 +714,12 @@ model ApiKey {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model session {
+  sid    String   @id @db.VarChar
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+
+  @@index([expire], map: "IDX_session_expire")
 }

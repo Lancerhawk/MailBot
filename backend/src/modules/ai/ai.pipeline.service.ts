@@ -12,7 +12,7 @@ const groqService = new GroqService();
 const userProcessingQueue: Record<string, Promise<void>> = {};
 
 export class AiPipelineService {
-  scheduleAnalysis(userId: string, emailId: string) {
+  scheduleAnalysis(userId: string, emailId: string): Promise<void> {
     const run = async () => {
       try {
         await this.processEmail(userId, emailId);
@@ -25,8 +25,10 @@ export class AiPipelineService {
       userProcessingQueue[userId] = Promise.resolve();
     }
 
-    userProcessingQueue[userId] = userProcessingQueue[userId].then(run).catch(() => {
-    });
+    const nextPromise = userProcessingQueue[userId].then(run);
+    userProcessingQueue[userId] = nextPromise.catch(() => {});
+    
+    return nextPromise;
   }
 
   private async processEmail(userId: string, emailId: string) {
@@ -53,7 +55,7 @@ export class AiPipelineService {
       isSent ||
       isOld
     ) {
-      logger.debug(`Skipping AI analysis for email ${emailId} - failed eligibility check.`);
+      // logger.debug(`Skipping AI analysis for email ${emailId} - failed eligibility check.`);
       if (email.processingStatus === 'PENDING') {
         await prisma.email.update({
           where: { id: emailId },
@@ -64,13 +66,13 @@ export class AiPipelineService {
     }
 
     if (email.processingStatus !== 'PENDING') {
-      logger.debug(`Skipping AI analysis for email ${emailId} - already processed (${email.processingStatus}).`);
+      // logger.debug(`Skipping AI analysis for email ${emailId} - already processed (${email.processingStatus}).`);
       return;
     }
 
     const content = email.plainBody || email.htmlBody || email.snippet || '';
     if (!content || content.trim().length === 0) {
-      logger.debug(`Skipping AI analysis for email ${emailId} - no readable content.`);
+      // logger.debug(`Skipping AI analysis for email ${emailId} - no readable content.`);
       await prisma.email.update({
         where: { id: emailId },
         data: { processingStatus: ProcessingStatus.SKIPPED }
@@ -149,7 +151,7 @@ export class AiPipelineService {
         }
       });
 
-      logger.info(`AI analysis completed for email ${emailId}`);
+      // logger.info(`AI analysis completed for email ${emailId}`);
       emitToUser(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result: { ...result, sentiment, intent, priority, needsReply, confidence } });
 
       if (result.needsReply === false) {

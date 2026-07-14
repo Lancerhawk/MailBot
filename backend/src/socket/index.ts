@@ -42,6 +42,6 @@ export const emitToUser = (userId: string, event: string, data: any) => {
     logger.warn(`Failed to emit ${event} to ${userId}: Socket.io not initialized`);
     return;
   }
-  logger.info(`Emitting socket event '${event}' to user ${userId}`);
+  // logger.info(`Emitting socket event '${event}' to user ${userId}`);
   io.to(userId).emit(event, data);
 };

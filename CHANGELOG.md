@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.7.0] & [Backend v0.7.0] - Knowledge Base & Semantic AI Retrieval
+
+### Added
+- **Complete Knowledge Base Module:** Support for uploading, viewing, searching, replacing, archiving, restoring, downloading, and deleting user documents.
+- **AWS S3 Integration:** Secure document storage with checksum validation, MIME type verification, storage quotas, duplicate detection, and signed download URL generation.
+- **Document Parsing Pipelines:** Added support for PDF, DOCX, TXT, Markdown, CSV, and XLSX files with normalized text extraction and metadata preservation.
+- **Intelligent Document Chunking:** Token-aware segmentation, overlap preservation, heading-aware splitting, and chunk metadata generation.
+- **Google Gemini Embeddings:** Automatic zero-padding for seamless compatibility with the existing 1536-dimensional pgvector schema without requiring database changes.
+- **Semantic Vector Search:** Powered by pgvector with similarity ranking, adjacent chunk merging, duplicate elimination, document freshness prioritization, and retrieval statistics.
+- **Retrieval Orchestration:** Pipeline capable of determining whether external knowledge is required before performing semantic search.
+- **RAG-Augmented Drafts:** Extended the AI draft generation workflow with Retrieval-Augmented Generation (RAG), allowing relevant user knowledge to be injected into prompts while enforcing strict context budgeting and prioritizing conversation history.
+- **Retrieval Metrics:** Added document usage tracking, retrieval counters, processing status updates, embedding completion state, and document version management.
+- **Asynchronous Document Processing:** Covers parsing, chunk generation, embedding creation, database persistence, and completion notifications.
+- **Comprehensive Socket Events:** Real-time Socket.IO events for upload progress, parsing, chunking, embedding, processing completion, replacement, deletion, archival, restoration, and document lifecycle synchronization.
+- **Knowledge Base UI:** Complete interface with drag-and-drop uploads, document cards, folder organization, filtering, searching, storage statistics, processing indicators, metadata viewing, and responsive layouts.
+- **Backend Management APIs:** APIs for document management, folder statistics, semantic search, storage information, document metadata updates, and secure download generation.
+- **Backward Compatibility:** Preserved compatibility with the existing Gmail synchronization, AI analysis pipeline, draft generation workflow, authentication system, Socket.IO infrastructure, and production deployment without introducing breaking changes.
+
 ## [Frontend v0.6.3] & [Backend v0.6.2] - Gmail Permissions Fallback Flow
 
 ### Added

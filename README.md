@@ -5,8 +5,8 @@
   
   **The Next-Generation AI-Powered Email Intelligence Platform**
   
-  [![Frontend Version](https://img.shields.io/badge/Frontend-v0.6.3-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
-  [![Backend Version](https://img.shields.io/badge/Backend-v0.6.2-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
+  [![Frontend Version](https://img.shields.io/badge/Frontend-v0.7.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
+  [![Backend Version](https://img.shields.io/badge/Backend-v0.7.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)
 
@@ -39,6 +39,16 @@
       <p>Passively builds a directory of contacts and organizations by extracting sender data and interaction history from every email.</p>
     </td>
   </tr>
+  <tr>
+    <td width="50%">
+      <h3> Semantic Knowledge Base</h3>
+      <p>Upload and manage documents with automatic AI chunking, parsing, and pgvector-based semantic search to build a personalized RAG pipeline.</p>
+    </td>
+    <td width="50%">
+      <h3> RAG-Augmented Drafts</h3>
+      <p>Injects exact context from your uploaded AWS S3 documents directly into the AI prompts, ensuring your drafts are factually accurate and personalized to your unique data.</p>
+    </td>
+  </tr>
 </table>
 
 <br />
@@ -60,8 +70,11 @@ graph TD
     H --> I[Dashboard]
     B -->|Yes| I[Dashboard]
     I --> J[View Inbox & Threads]
-    I --> K[View AI Generated Drafts]
-    K --> L[Approve & Send Email]
+    I --> K[Manage Knowledge Base]
+    K --> |Upload Documents| L[AWS S3 & pgvector Embeddings]
+    J --> M[View RAG-Augmented AI Drafts]
+    L --> M
+    M --> N[Approve & Send Email]
 ```
 
 ### 2. Class / Component Diagram
@@ -72,24 +85,27 @@ classDiagram
         +SocketContext
         +api (AxiosClient)
         +DashboardLayout()
-        +LandingPage()
+        +KnowledgeBase()
     }
     class Backend_Controllers {
         +googleAuth()
-        +googleCallback()
-        +getCurrentUser()
         +processWebhook()
+        +uploadDocument()
+        +searchKnowledge()
     }
     class Backend_Services {
         +AuthService
         +GmailSyncService
-        +GmailDbService
-        +WatchRenewalService
+        +AiPipelineService
+        +DocumentParserService
+        +EmbeddingService
+        +VectorSearchService
     }
     class External_APIs {
         +Google OAuth
         +Gmail API
-        +Google Pub/Sub
+        +AWS S3
+        +Google Gemini
         +Groq LLM
     }
     Frontend --> Backend_Controllers : REST API calls
@@ -104,9 +120,13 @@ flowchart LR
     User([User]) -->|HTTP GET / POST| UI[Next.js Frontend]
     UI -->|API Requests| API[Express Backend]
     Gmail([Gmail Servers]) -->|Pub/Sub Webhook| API
-    API -->|Read/Write via Prisma| DB[(PostgreSQL)]
+    API -->|Read/Write via Prisma| DB[(PostgreSQL + pgvector)]
     API -->|Fetch Email Content| Gmail
-    API -->|Send Content for Analysis| LLM([Groq AI])
+    UI -->|Upload Document| API
+    API -->|Upload to Bucket| S3[(AWS S3)]
+    API -->|Generate Vectors| Gemini([Google Gemini])
+    Gemini -->|Embeddings| API
+    API -->|Send RAG Context| LLM([Groq AI])
     LLM -->|Return Draft| API
 ```
 
@@ -120,14 +140,17 @@ mailman/
 │   ├── prisma/
 │   │   ├── migrations/              # Database migration history
 │   │   └── schema.prisma            # Main Prisma schema definition
-│       │           └── watch-renewal.service.ts # Renews the Gmail Pub/Sub watch expiration
-│       ├── routes/
-│       │   ├── v1/
-│       │   │   ├── auth.route.ts    # Routes for /api/v1/auth
-│       │   │   ├── health.route.ts  # Standard uptime check
-│       │   │   └── index.ts         # Main router entrypoint
-│       └── app.ts                   # Express app configuration (CORS, Morgan, helmet)
-│       └── server.ts                # Starts the HTTP server and Prisma client
+│   ├── src/
+│   │   ├── modules/
+│   │   │   ├── ai/                  # AI drafting and pipeline services
+│   │   │   ├── gmail/               # Gmail synchronization and webhooks
+│   │   │   └── knowledge/           # Knowledge Base: Parsing, Chunking, S3 Storage, pgvector Search, Gemini Embeddings
+│   │   │       ├── knowledge.controller.ts
+│   │   │       ├── knowledge.route.ts
+│   │   │       └── services/
+│   │   ├── routes/
+│   │   │   └── v1/                  # Main router entrypoint
+│   │   └── server.ts                # Starts the HTTP server and Prisma client
 └── frontend/
     └── src/
         ├── app/
@@ -135,6 +158,7 @@ mailman/
         │   │   ├── analytics/page.tsx # Renders charts for email activity
         │   │   ├── drafts/page.tsx    # Renders pending AI drafts
         │   │   ├── inbox/page.tsx     # Renders the primary email feed
+        │   │   ├── knowledge-base/page.tsx # Semantic AI Document Manager
         │   │   └── layout.tsx       # Sidebar and Topbar wrapper for the dashboard
         │   ├── auth/callback/
         │   │   └── page.tsx         # Rehydrates user state after Google OAuth redirect
@@ -368,6 +392,17 @@ erDiagram
         DateTime createdAt
         DateTime updatedAt
         DateTime deletedAt
+        String originalFileName
+        String folder
+        Boolean isArchived
+        Int chunkCount
+        Int retrievalCount
+        DateTime lastRetrievedAt
+        DateTime lastAccessedAt
+        String processingError
+        DateTime processedAt
+        String fileHash
+        String storageKey
     }
     
     KnowledgeBaseChunk {
@@ -379,6 +414,13 @@ erDiagram
         String embeddingModel
         Unsupported embedding
         Json metadata
+        DateTime deletedAt
+        Int pageNumber
+        String heading
+        String section
+        Int sourceOffsetStart
+        Int sourceOffsetEnd
+        Int documentVersion
     }
     
     PromptTemplate {

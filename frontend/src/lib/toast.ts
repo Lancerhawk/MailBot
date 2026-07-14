@@ -24,7 +24,7 @@ const createToast = (message: string, type: 'success' | 'error' | 'info') => {
     </div>
   `;
 
-  // Apply Tailwind-like styling via inline CSS for guaranteed isolation
+
   el.style.cssText = `
     position: fixed;
     bottom: 32px;
@@ -45,7 +45,7 @@ const createToast = (message: string, type: 'success' | 'error' | 'info') => {
 
   document.body.appendChild(el);
 
-  // Trigger animation
+
   requestAnimationFrame(() => {
     el.style.transform = 'translateY(0)';
     el.style.opacity = '1';

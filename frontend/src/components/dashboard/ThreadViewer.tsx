@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "isomorphic-dompurify";
@@ -419,14 +419,11 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
   const [optimisticSentText, setOptimisticSentText] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll to the top of the last email
   useEffect(() => {
     if (thread && scrollContainerRef.current) {
-      // Small delay to let the DOM render the emails first
       setTimeout(() => {
         const lastEmailElement = document.getElementById('last-email-card');
         if (lastEmailElement && scrollContainerRef.current) {
-          // Scroll so the last email is at the top of the view, minus a little padding
           scrollContainerRef.current.scrollTop = lastEmailElement.offsetTop - 20;
         }
       }, 100);
@@ -442,14 +439,14 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
   return (
     <div className="flex h-full w-full flex-col overflow-hidden animate-thread-viewer">
       <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-2">
-        <div className="flex items-start sm:items-center gap-2 sm:gap-4 min-w-0">
+        <div className="flex flex-1 items-start sm:items-center gap-2 sm:gap-4 min-w-0">
           {onClose && (
             <Button variant="ghost" size="icon" onClick={onClose} className="xl:hidden shrink-0 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 mt-0.5 sm:mt-0">
               <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
           <div className="min-w-0">
-            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
+            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 break-words whitespace-normal">
               {thread.subject || "(No Subject)"}
             </h2>
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
@@ -540,11 +537,9 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
           )}
 
           {!optimisticSentText && !thread.emails[0]?.isDeleted && (() => {
-            // Helper: check if an email was sent BY the logged-in user
             const isEmailSentByUser = (email: Email) => {
               const sender = email.participants?.find((p: { role: string }) => p.role === 'SENDER');
               if (!sender) return false;
-              // Check SENT label OR sender email matches logged-in user
               const hasSentLabel = email.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT');
               const senderMatchesUser = sender.emailAddress?.toLowerCase() === user?.email?.toLowerCase();
               return hasSentLabel || senderMatchesUser;
@@ -553,18 +548,12 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
             const lastEmail = thread.emails[thread.emails.length - 1];
             const isLastEmailByUser = isEmailSentByUser(lastEmail);
 
-            // Find the latest email that was NOT sent by the user (i.e. the one we'd reply to)
             const latestReceivedEmail = [...thread.emails].reverse().find(e => !isEmailSentByUser(e));
 
-            // Only show the AI draft if:
-            // 1. The last email in the thread was NOT sent by the user (otherwise the conversation is waiting on the other person)
-            // 2. The draft belongs to the latest received email specifically
             const draftFromLatest = !isLastEmailByUser && latestReceivedEmail?.drafts?.[0] || null;
 
-            // The email we're replying to is the latest received email, or fallback to the last email
             const targetEmail = latestReceivedEmail || lastEmail;
 
-            // Check if AI is currently processing this email (draft being generated)
             const isCurrentlyProcessing = targetEmail.processingStatus === 'PROCESSING' && !draftFromLatest;
 
             return (

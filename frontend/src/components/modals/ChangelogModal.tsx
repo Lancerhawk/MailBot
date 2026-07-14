@@ -32,7 +32,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
   const backendVersions = versions.filter(v => v.service === "Backend");
   const [selectedVersion, setSelectedVersion] = useState<Version>(frontendVersions[0] || versions[0]);
 
-  // Prevent background scrolling when modal is open
+
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -49,7 +49,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
   return (
     <AnimatePresence>
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-        {/* Backdrop */}
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -59,7 +59,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
           className="absolute inset-0 bg-black/60 backdrop-blur-sm"
         />
 
-        {/* Modal Container */}
+
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -67,7 +67,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
           transition={{ type: "spring", bounce: 0, duration: 0.4 }}
           className="relative w-full max-w-5xl h-[85vh] max-h-[800px] flex flex-col bg-zinc-50 dark:bg-[#0a0a14] border border-zinc-200 dark:border-zinc-800/80 rounded-2xl shadow-2xl overflow-hidden"
         >
-          {/* Header */}
+
           <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-800/80 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md">
             <div className="flex items-center gap-3">
               <div className="flex h-8 w-8 items-center justify-center">
@@ -86,13 +86,13 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
             </button>
           </div>
 
-          {/* Body */}
+
           <div className="flex flex-1 overflow-hidden">
             
-            {/* Sidebar */}
+
             <div className="w-1/3 max-w-[280px] h-full flex flex-col border-r border-zinc-200 dark:border-zinc-800/80 bg-zinc-50 dark:bg-[#06060c]">
               
-              {/* Frontend Section */}
+
               <div className="flex-1 flex flex-col overflow-hidden pt-4 pb-2 border-b border-zinc-200 dark:border-zinc-800/80">
                 <h3 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase mb-3 px-7 flex items-center gap-2 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
@@ -132,7 +132,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
                 </div>
               </div>
 
-              {/* Backend Section */}
+
               <div className="flex-1 flex flex-col overflow-hidden pt-4 pb-2">
                 <h3 className="text-[10px] font-bold tracking-wider text-zinc-500 uppercase mb-3 px-7 flex items-center gap-2 shrink-0">
                   <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
@@ -173,15 +173,15 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
               </div>
             </div>
 
-            {/* Main Content */}
+
             <div className="flex-1 h-full overflow-y-auto bg-white dark:bg-[#0a0a14] p-8 md:p-12 custom-scrollbar">
               <div className="max-w-2xl mx-auto">
                 
-                <div className="flex items-center gap-3 mb-6">
-                  <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight">
+                <div className="flex items-start gap-4 mb-6">
+                  <h1 className="text-2xl md:text-3xl font-bold text-zinc-900 dark:text-white tracking-tight flex-1">
                     {selectedVersion.title}
                   </h1>
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-xs font-medium text-zinc-600 dark:text-zinc-400">
+                  <span className="shrink-0 mt-1.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900/50 text-xs font-medium text-zinc-600 dark:text-zinc-400">
                     {selectedVersion.version} · {selectedVersion.service}
                   </span>
                 </div>

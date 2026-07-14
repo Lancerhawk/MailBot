@@ -15,7 +15,7 @@ const ThreadCacheContext = createContext<ThreadCacheContextType | undefined>(und
 export function ThreadCacheProvider({ children }: { children: React.ReactNode }) {
   const [cache, setCache] = useState<Record<string, any>>({});
   const prefetchingRef = useRef<Set<string>>(new Set());
-  const cacheRef = useRef<Record<string, any>>({}); // Keep a ref for instant synchronous access
+  const cacheRef = useRef<Record<string, any>>({});
   const promisesRef = useRef<Record<string, Promise<any> | undefined>>({});
 
   const getThread = useCallback(async (threadId: string) => {
@@ -65,10 +65,10 @@ export function ThreadCacheProvider({ children }: { children: React.ReactNode })
 
       try {
         await promise;
-        // Add a small 50ms delay to prevent overwhelming the DB connection pool
+
         await new Promise(r => setTimeout(r, 50));
       } catch (e) {
-        // Ignored
+
       }
     }
   }, []);

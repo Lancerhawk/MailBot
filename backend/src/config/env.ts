@@ -14,6 +14,12 @@ const envSchema = z.object({
   SESSION_SECRET: z.string().min(32, 'Session secret must be at least 32 characters'),
   ENCRYPTION_KEY: z.string().length(64, 'Encryption key must be exactly 64 hex characters (32 bytes)'),
   GROQ_API_KEY: z.string().optional(),
+  AWS_ACCESS_KEY_ID: z.string().min(1, 'AWS Access Key ID is required'),
+  AWS_SECRET_ACCESS_KEY: z.string().min(1, 'AWS Secret Access Key is required'),
+  AWS_REGION: z.string().default('ap-south-1'),
+  AWS_S3_BUCKET: z.string().min(1, 'AWS S3 Bucket is required'),
+  OPENAI_API_KEY: z.string().optional(),
+  GEMINI_API_KEY: z.string().min(1, 'Gemini API Key is required'),
 });
 
 const _env = envSchema.safeParse(process.env);

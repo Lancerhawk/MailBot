@@ -30,7 +30,7 @@ export class GroqService {
     const prompt = `You are an AI assistant analyzing an email conversation.
 Read the conversation history and the latest email, then return a strict JSON object with your analysis of the newest message in the context of the whole thread.
 
-CRITICAL: Determine if the latest email actually requires a human response. If it is a newsletter, an automated receipt, a system notification, a simple "thank you" message, or otherwise does not require a reply, you MUST set "needsReply": false.
+CRITICAL: Determine if the latest email actually requires a human response. If it is a newsletter, an automated receipt, a system notification, a social media/LinkedIn connection request or update, a simple "thank you" message, or otherwise does not require a reply, you MUST set "needsReply": false.
 
 Output format MUST be EXACTLY this JSON structure and absolutely nothing else (no markdown, no explanations):
 {
@@ -93,6 +93,13 @@ Other Rules:
 - Do NOT explain your reasoning.
 - Keep a natural tone matching the conversation style (if they are casual, be casual).
 - Be concise. Less is more.
+- If a "Relevant Knowledge from User's Documents" section is included below, use that information to write a more accurate and informed reply.
+- Only use knowledge that is DIRECTLY relevant to answering the email.
+- If the knowledge doesn't help answer the email, ignore it completely.
+- NEVER invent or assume facts that aren't in the conversation or the provided knowledge.
+- Conversation context always takes priority over retrieved knowledge.
+- NEVER mention that you are using a document, resume, or knowledge base. 
+- You are writing AS the user. Own the information in the documents as your own personal knowledge and experience. Do NOT say "Based on the resume" or "According to the provided document". Instead, say "I have experience in..." or "My skills include...".
 
 Output format MUST be EXACTLY this JSON structure and absolutely nothing else:
 {
@@ -138,6 +145,35 @@ ${contextText}`;
       }
 
       logger.error({ error }, 'Groq draft generation failed after all retries or due to a non-transient error.');
+      throw error;
+    }
+  }
+
+  async rawCompletion(prompt: string, retryCount = 0): Promise<string> {
+    try {
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.1-8b-instant',
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+      });
+
+      return completion.choices[0]?.message?.content || '{}';
+    } catch (error: any) {
+      const isTransient =
+        error.status === 429 ||
+        error.status >= 500 ||
+        error.name === 'TimeoutError' ||
+        error instanceof SyntaxError;
+
+      if (isTransient && retryCount < 3) {
+        const backoffMs = Math.pow(2, retryCount) * 1000;
+        logger.warn(`Groq rawCompletion transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/3)`);
+        await sleep(backoffMs);
+        return this.rawCompletion(prompt, retryCount + 1);
+      }
+
+      logger.error({ error }, 'Groq rawCompletion failed after all retries');
       throw error;
     }
   }

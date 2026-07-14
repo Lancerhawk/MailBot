@@ -251,7 +251,7 @@ export class GmailDbService {
       current.internalDate > latest.internalDate ? current : latest
     );
 
-    console.time(`Prisma-Tx-${threadId}`);
+    // console.time(`Prisma-Tx-${threadId}`);
     const createdEmails: any[] = [];
 
     // 1. Upsert Thread
@@ -440,7 +440,7 @@ export class GmailDbService {
       data: { messageCount: actualMessageCount }
     });
 
-    console.timeEnd(`Prisma-Tx-${threadId}`);
+    // console.timeEnd(`Prisma-Tx-${threadId}`);
 
     return createdEmails;
   }

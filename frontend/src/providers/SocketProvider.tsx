@@ -27,12 +27,12 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
     const baseUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000").replace('/api/v1', '');
     const socketInstance = io(baseUrl, {
       withCredentials: true,
-      transports: ["websocket", "polling"], // Allow fallback
+      transports: ["websocket", "polling"],
     });
 
     socketInstance.on("connect", () => {
       setIsConnected(true);
-      // Authenticate with the backend
+
       socketInstance.emit("authenticate", user.id);
     });
 

@@ -70,6 +70,19 @@ function ThreadSkeleton() {
 import { useSocket } from "@/providers/SocketProvider";
 import { useThreadCache } from "@/providers/ThreadCacheProvider";
 
+function decodeHtmlEntities(text: string | null | undefined): string {
+  if (!text) return "";
+  return text
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&#x27;/g, "'")
+    .replace(/&#x2F;/g, '/')
+    .replace(/&nbsp;/g, ' ');
+}
+
 export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | "drafts" }) {
   const { socket } = useSocket();
   const { prefetchThreads } = useThreadCache();
@@ -78,7 +91,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
   const [isFetchingMore, setIsFetchingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
-  
+
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filter, setFilter] = useState("all");
@@ -96,14 +109,14 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     try {
       if (!silent && !append) setIsLoading(true);
       if (append) setIsFetchingMore(true);
-      
+
       let queryUrl = `/gmail/threads?limit=100&page=${pageNum}`;
-      
+
       let actualFilter = filter;
       if (mode === "spam") actualFilter = "spam";
       if (mode === "trash") actualFilter = "trash";
       if (mode === "drafts") actualFilter = "drafts";
-      
+
       if (actualFilter !== "all") {
         queryUrl += `&filter=${actualFilter}`;
       }
@@ -116,20 +129,18 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
 
       const res = await api.get(queryUrl);
       const newThreads = res.data.data.threads;
-      
+
       if (append) {
         setThreads(prev => [...prev, ...newThreads]);
       } else {
         setThreads(newThreads);
-        // If the selected thread is no longer in the refreshed list, clear it
         if (selectedThreadId && !newThreads.some((t: any) => t.id === selectedThreadId)) {
           setSelectedThreadId(null);
         }
       }
-      
+
       setHasMore(pageNum < res.data.data.pagination.totalPages);
-      
-      // Background cache prefetching for 0ms load times!
+
       prefetchThreads(newThreads.map((t: any) => t.id));
     } catch (error: any) {
       if (error?.response?.status === 429) {
@@ -168,28 +179,25 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
   const lastElementRef = useCallback((node: HTMLDivElement) => {
     if (isLoading || isFetchingMore) return;
     if (observer.current) observer.current.disconnect();
-    
+
     observer.current = new IntersectionObserver(entries => {
       if (entries[0].isIntersecting && hasMore) {
         loadMore();
       }
     });
-    
+
     if (node) observer.current.observe(node);
   }, [isLoading, isFetchingMore, hasMore, loadMore]);
 
-  // Socket event handlers
   useEffect(() => {
     if (!socket) return;
 
     const handleSyncStarted = () => setIsSyncing(true);
-    // New email arrived via webhook sync → background refresh, new threads appear without flash
     const handleSyncCompleted = () => {
       setIsSyncing(false);
       fetchThreads(true);
     };
 
-    // Local optimistic updater for individual thread fields
     const updateThread = (threadId: string, updater: (t: EmailThread) => EmailThread) => {
       setThreads(prev => {
         const idx = prev.findIndex(t => t.id === threadId);
@@ -200,7 +208,6 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       });
     };
 
-    // Per-message action events (legacy, kept for backwards compat)
     const handleRead = (data: any) => updateThread(data.threadId, t => ({
       ...t, emails: t.emails.map(e => ({ ...e, isRead: data.value }))
     }));
@@ -234,11 +241,9 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       if (selectedThreadId === data.threadId) setSelectedThreadId(null);
     };
 
-    // Thread-level action events
     const handleThreadUpdated = (data: any) => {
       const { threadId, field, value } = data;
       if (field === 'isRead') {
-        // Pure optimistic — just flip the flag, no refetch needed
         updateThread(threadId, t => ({
           ...t, emails: t.emails.map(e => ({ ...e, isRead: value }))
         }));
@@ -309,8 +314,6 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
   useEffect(() => {
     if (!socket) return;
     const handleRefresh = () => fetchThreads(true);
-    // These events should trigger a silent refresh of whichever page we're on
-    // so AI Drafts, Spam, Trash all update live just like Inbox does
     socket.on('analysis:completed', handleRefresh);
     socket.on('draft:generated', handleRefresh);
     socket.on('draft:regenerated', handleRefresh);
@@ -438,7 +441,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
                         {thread.subject || "(No Subject)"}
                       </p>
                       <p className="mt-0.5 line-clamp-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        {thread.emails[0]?.snippet}
+                        {decodeHtmlEntities(thread.emails[0]?.snippet)}
                       </p>
                     </div>
                   </div>
