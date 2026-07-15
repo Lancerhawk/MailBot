@@ -1,9 +1,9 @@
 <div align="center">
-  <img src="https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/mail.svg" alt="MailBot Logo" width="100" height="100" style="margin-bottom: 20px" />
+  <img src="./frontend/public/logo.png" alt="MailBot Logo" width="100" height="100" style="margin-bottom: 20px" />
 
   # MailBot
   
-  **The Next-Generation AI-Powered Email Intelligence Platform**
+  **An AI-Powered Email Assistant**
   
   [![Frontend Version](https://img.shields.io/badge/Frontend-v0.7.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
   [![Backend Version](https://img.shields.io/badge/Backend-v0.7.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
@@ -618,3 +618,11 @@ erDiagram
    ```bash
    npm run dev
    ```
+
+---
+
+## Improvements Still Needed
+
+- **OCR for Image Chunking:** Add Optical Character Recognition so images uploaded to the knowledge base can have text extracted and chunked for RAG.
+- **Security Handlers:** Implement robust security handling for production APIs and webhooks.
+- **Logging System:** Remove `morgan` and implement a production-grade logging system.
