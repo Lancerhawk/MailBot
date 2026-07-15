@@ -3,27 +3,24 @@ import { catchAsync } from '../utils/catchAsync';
 import { AuthService } from '../services/auth.service';
 import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
+import { WatchRenewalService } from '../modules/gmail/services/watch-renewal.service';
 
 export const googleAuth = catchAsync(async (req: Request, res: Response) => {
   const state = AuthService.generateState();
   req.session.oauthState = state;
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      req.session.save((err) => {
-        if (err) {
-          console.error("Session save error:", err);
-          return reject(new ApiError(500, 'Failed to save session state'));
-        }
-        resolve();
-      });
+  await new Promise<void>((resolve, reject) => {
+    req.session.save((err) => {
+      if (err) {
+        console.error("Session save error:", err);
+        return reject(new ApiError(500, 'Failed to save session state'));
+      }
+      resolve();
     });
+  });
 
-    const url = AuthService.generateAuthUrl(state);
-    res.redirect(url);
-  } catch (error) {
-    throw error;
-  }
+  const url = AuthService.generateAuthUrl(state);
+  res.redirect(url);
 });
 
 export const googleCallback = catchAsync(async (req: Request, res: Response) => {
@@ -61,8 +58,8 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
       });
     });
 
-    const watchService = new (require('../modules/gmail/services/watch-renewal.service').WatchRenewalService)();
-    watchService.registerWatch(user.id).catch((err: any) => console.error("Watch registration error:", err));
+    const watchService = new WatchRenewalService();
+    watchService.registerWatch(user.id).catch((err: unknown) => console.error("Watch registration error:", err));
 
     res.redirect(`${env.FRONTEND_URL}/auth/callback?success=true`);
   } catch (err) {
@@ -75,7 +72,7 @@ import { prisma } from '../lib/prisma';
 
 export const getCurrentUser = catchAsync(async (req: Request, res: Response) => {
   const userWithConnections = await prisma.user.findUnique({
-    where: { id: req.user.id },
+    where: { id: req.user!.id },
     include: { connections: true }
   });
 
@@ -101,20 +98,16 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
     await AuthService.logLogout(req.session.userId, ipAddress, userAgent);
   }
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      req.session.destroy((err) => {
-        if (err) {
-          console.error("Session destroy error:", err);
-          return reject(new ApiError(500, 'Failed to destroy session'));
-        }
-        resolve();
-      });
+  await new Promise<void>((resolve, reject) => {
+    req.session.destroy((err) => {
+      if (err) {
+        console.error("Session destroy error:", err);
+        return reject(new ApiError(500, 'Failed to destroy session'));
+      }
+      resolve();
     });
+  });
 
-    res.clearCookie('connect.sid');
-    res.status(200).json({ status: 'success', message: 'Logged out successfully' });
-  } catch (error) {
-    throw error;
-  }
+  res.clearCookie('connect.sid');
+  res.status(200).json({ status: 'success', message: 'Logged out successfully' });
 });

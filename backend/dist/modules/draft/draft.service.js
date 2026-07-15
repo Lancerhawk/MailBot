@@ -38,10 +38,6 @@ class DraftService {
     async processDraft(userId, emailId, isRegeneration) {
         activeGenerations.add(emailId);
         try {
-        }
-        catch (e) {
-        }
-        try {
             const email = await gmailDbService.getEmailByIdWithConnection(userId, emailId);
             if (!email) {
                 throw new Error('Email not found');
@@ -53,8 +49,8 @@ class DraftService {
             (0, socket_1.emitToUser)(userId, 'draft:started', { emailId, threadId: thread.id });
             const MAX_CHARS = 8000;
             let currentChars = 0;
-            let contextBlocks = [];
-            let allRecipients = new Set();
+            const contextBlocks = [];
+            const allRecipients = new Set();
             const sortedEmails = thread.emails.sort((a, b) => new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime());
             for (let i = sortedEmails.length - 1; i >= 0; i--) {
                 const msg = sortedEmails[i];
@@ -96,8 +92,6 @@ class DraftService {
                         knowledgeContext = retrievalResult.formattedContext;
                     }
                 }
-                else {
-                }
             }
             catch (err) {
                 logger_1.logger.warn({ err, emailId }, 'Knowledge retrieval failed, continuing without knowledge');
@@ -138,7 +132,8 @@ class DraftService {
                 }
             });
         }
-        catch (error) {
+        catch (err) {
+            const error = err;
             logger_1.logger.error({ error, emailId, userId }, 'Draft generation failed');
             (0, socket_1.emitToUser)(userId, 'draft:failed', { emailId, error: error.message });
             throw error;

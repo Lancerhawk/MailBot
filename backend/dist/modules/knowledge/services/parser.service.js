@@ -83,7 +83,7 @@ class ParserService {
             throw new Error(`Failed to parse PDF: ${error.message || error.toString()}`);
         }
     }
-    async parseDocx(buffer, filename) {
+    async parseDocx(buffer, _filename) {
         const mammoth = await Promise.resolve().then(() => __importStar(require('mammoth')));
         const result = await mammoth.extractRawText({ buffer });
         const text = this.normalizeText(result.value);
@@ -104,14 +104,14 @@ class ParserService {
             },
         };
     }
-    parseCsv(buffer, filename) {
+    parseCsv(buffer, _filename) {
         const text = this.normalizeText(buffer.toString('utf-8'));
         return {
             text,
             metadata: { type: 'csv' },
         };
     }
-    async parseXlsx(buffer, filename) {
+    async parseXlsx(buffer, _filename) {
         const XLSX = await Promise.resolve().then(() => __importStar(require('xlsx')));
         const workbook = XLSX.read(buffer, { type: 'buffer' });
         const sheets = [];

@@ -58,7 +58,7 @@ export class ParserService {
     }
   }
 
-  private async parseDocx(buffer: Buffer, filename: string): Promise<ParseResult> {
+  private async parseDocx(buffer: Buffer, _filename: string): Promise<ParseResult> {
     const mammoth = await import('mammoth');
     const result = await mammoth.extractRawText({ buffer });
     const text = this.normalizeText(result.value);
@@ -81,7 +81,7 @@ export class ParserService {
     };
   }
 
-  private parseCsv(buffer: Buffer, filename: string): ParseResult {
+  private parseCsv(buffer: Buffer, _filename: string): ParseResult {
     const text = this.normalizeText(buffer.toString('utf-8'));
     return {
       text,
@@ -89,7 +89,7 @@ export class ParserService {
     };
   }
 
-  private async parseXlsx(buffer: Buffer, filename: string): Promise<ParseResult> {
+  private async parseXlsx(buffer: Buffer, _filename: string): Promise<ParseResult> {
     const XLSX = await import('xlsx');
     const workbook = XLSX.read(buffer, { type: 'buffer' });
     const sheets: string[] = [];

@@ -1,4 +1,4 @@
-import { Email, ProcessingStatus } from '@prisma/client';
+import { ProcessingStatus, Sentiment, Intent, Priority } from '@prisma/client';
 import { prisma } from '../../lib/prisma';
 import { htmlToText } from 'html-to-text';
 import { GroqService } from './groq.service';
@@ -16,7 +16,8 @@ export class AiPipelineService {
     const run = async () => {
       try {
         await this.processEmail(userId, emailId);
-      } catch (error: any) {
+      } catch (err: unknown) {
+        const error = err as Error;
         logger.error({ error: error.message || error, stack: error.stack, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
       }
     };
@@ -39,8 +40,8 @@ export class AiPipelineService {
 
     if (!email) return;
 
-    const isSentLabel = email.labels?.some((l: any) => l.providerLabelId === 'SENT');
-    const sender = email.participants?.find((p: any) => p.role === 'SENDER');
+    const isSentLabel = email.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT');
+    const sender = email.participants?.find((p: { role: string; emailAddress: string }) => p.role === 'SENDER');
     const isSentByUser = sender && email.connection && sender.emailAddress.toLowerCase() === email.connection.emailAddress.toLowerCase();
 
     const isSent = isSentLabel || isSentByUser;
@@ -139,10 +140,10 @@ export class AiPipelineService {
         where: { id: emailId },
         data: {
           summary: result.summary,
-          sentiment: sentiment as any,
-          intent: intent as any,
+          sentiment: sentiment as Sentiment,
+          intent: intent as Intent,
           needsReply: needsReply,
-          priority: priority as any,
+          priority: priority as Priority,
           confidence: confidence,
           processingStatus: ProcessingStatus.COMPLETED
         }

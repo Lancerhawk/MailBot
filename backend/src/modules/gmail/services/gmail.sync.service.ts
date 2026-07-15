@@ -1,5 +1,5 @@
 import { GmailClientService } from "./gmail.client.service";
-import { GmailParserService, ParsedEmail } from "./gmail.parser.service";
+import { GmailParserService } from "./gmail.parser.service";
 import { GmailDbService } from "./gmail.db.service";
 import { gmail_v1 } from "googleapis";
 
@@ -132,7 +132,7 @@ export class GmailSyncService {
         try {
           const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
           return threadRes.data;
-        } catch (e) {
+        } catch (_e) {
           // console.error(`Failed to fetch thread ${threadId} from Gmail:`, e);
           return null;
         }
@@ -151,7 +151,7 @@ export class GmailSyncService {
           totalMessagesProcessed += parsedEmails.length;
           state.emailsProcessed = totalMessagesProcessed;
           state.threadsProcessed++;
-        } catch (e) {
+        } catch (_e) {
           // console.error(`Failed to process thread in DB:`, e);
         }
       }

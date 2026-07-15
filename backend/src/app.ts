@@ -6,11 +6,9 @@ import cookieParser from 'cookie-parser';
 import session from 'express-session';
 import pgSession from 'connect-pg-simple';
 import pg from 'pg';
-import pinoHttp from 'pino-http';
 import morgan from 'morgan';
 
 import { env } from './config/env';
-import { logger } from './config/logger';
 import { apiLimiter } from './middlewares/rateLimiter';
 import { errorHandler } from './middlewares/error.middleware';
 import { ApiError } from './utils/ApiError';

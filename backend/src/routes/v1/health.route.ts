@@ -12,7 +12,7 @@ router.get(
     try {
       await prisma.$queryRaw`SELECT 1`;
       isDbConnected = true;
-    } catch (error) {
+    } catch (_error) {
       isDbConnected = false;
     }
 

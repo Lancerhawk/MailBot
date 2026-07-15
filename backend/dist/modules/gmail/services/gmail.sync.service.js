@@ -100,7 +100,7 @@ class GmailSyncService {
                     const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
                     return threadRes.data;
                 }
-                catch (e) {
+                catch (_e) {
                     // console.error(`Failed to fetch thread ${threadId} from Gmail:`, e);
                     return null;
                 }
@@ -118,7 +118,7 @@ class GmailSyncService {
                     state.emailsProcessed = totalMessagesProcessed;
                     state.threadsProcessed++;
                 }
-                catch (e) {
+                catch (_e) {
                     // console.error(`Failed to process thread in DB:`, e);
                 }
             }

@@ -1,6 +1,5 @@
 import { prisma } from '../../lib/prisma';
 import { ProcessingStatus, Prisma } from '@prisma/client';
-import { logger } from '../../config/logger';
 
 const MAX_STORAGE_PER_USER = 500 * 1024 * 1024;
 const MAX_DOCUMENTS_PER_USER = 100;

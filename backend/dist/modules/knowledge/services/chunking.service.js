@@ -5,7 +5,6 @@ const logger_1 = require("../../../config/logger");
 const TARGET_CHUNK_SIZE = 800;
 const MIN_CHUNK_SIZE = 200;
 const MAX_CHUNK_SIZE = 1000;
-const OVERLAP_SIZE = 100;
 function estimateTokens(text) {
     return Math.ceil(text.length / 4);
 }

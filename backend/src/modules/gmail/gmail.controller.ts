@@ -119,7 +119,7 @@ export class GmailController {
     try {
       const threads = await this.dbService.listThreads(userId, page, limit, filter, search);
       res.json({ status: "success", data: threads });
-    } catch (error) {
+    } catch {
       res.status(500).json({ status: "error", message: "Failed to list threads" });
     }
   }
@@ -134,7 +134,7 @@ export class GmailController {
         return res.status(404).json({ status: "error", message: "Thread not found" });
       }
       res.json({ status: "success", data: thread });
-    } catch (error) {
+    } catch {
       res.status(500).json({ status: "error", message: "Failed to get thread" });
     }
   }
@@ -150,7 +150,8 @@ export class GmailController {
     try {
       await actionFn.call(this.actionsService, userId, emailId);
       res.json({ status: 'success' });
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error & { statusCode?: number };
       res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
     }
   }
@@ -182,14 +183,14 @@ export class GmailController {
   async sendReply(req: Request, res: Response) {
     const userId = req.session.userId;
     if (!userId) throw new ApiError(401, 'Unauthorized');
-    const emailId = req.params.id;
     const targetEmailId = req.body.emailId;
     const editedText = req.body.editedText;
     if (!targetEmailId) throw new ApiError(400, 'emailId is required in body');
     try {
       await this.sendService.sendReply(userId, targetEmailId, editedText);
       res.json({ status: 'success' });
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error & { statusCode?: number };
       res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
     }
   }
@@ -200,7 +201,8 @@ export class GmailController {
     try {
       await this.sendService.sendCompose(userId, req.body);
       res.json({ status: 'success' });
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error & { statusCode?: number };
       res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
     }
   }

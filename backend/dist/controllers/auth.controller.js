@@ -5,25 +5,21 @@ const catchAsync_1 = require("../utils/catchAsync");
 const auth_service_1 = require("../services/auth.service");
 const env_1 = require("../config/env");
 const ApiError_1 = require("../utils/ApiError");
+const watch_renewal_service_1 = require("../modules/gmail/services/watch-renewal.service");
 exports.googleAuth = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const state = auth_service_1.AuthService.generateState();
     req.session.oauthState = state;
-    try {
-        await new Promise((resolve, reject) => {
-            req.session.save((err) => {
-                if (err) {
-                    console.error("Session save error:", err);
-                    return reject(new ApiError_1.ApiError(500, 'Failed to save session state'));
-                }
-                resolve();
-            });
+    await new Promise((resolve, reject) => {
+        req.session.save((err) => {
+            if (err) {
+                console.error("Session save error:", err);
+                return reject(new ApiError_1.ApiError(500, 'Failed to save session state'));
+            }
+            resolve();
         });
-        const url = auth_service_1.AuthService.generateAuthUrl(state);
-        res.redirect(url);
-    }
-    catch (error) {
-        throw error;
-    }
+    });
+    const url = auth_service_1.AuthService.generateAuthUrl(state);
+    res.redirect(url);
 });
 exports.googleCallback = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { code, state, error } = req.query;
@@ -51,7 +47,7 @@ exports.googleCallback = (0, catchAsync_1.catchAsync)(async (req, res) => {
                 resolve();
             });
         });
-        const watchService = new (require('../modules/gmail/services/watch-renewal.service').WatchRenewalService)();
+        const watchService = new watch_renewal_service_1.WatchRenewalService();
         watchService.registerWatch(user.id).catch((err) => console.error("Watch registration error:", err));
         res.redirect(`${env_1.env.FRONTEND_URL}/auth/callback?success=true`);
     }
@@ -84,20 +80,15 @@ exports.logout = (0, catchAsync_1.catchAsync)(async (req, res) => {
         const userAgent = req.get('user-agent');
         await auth_service_1.AuthService.logLogout(req.session.userId, ipAddress, userAgent);
     }
-    try {
-        await new Promise((resolve, reject) => {
-            req.session.destroy((err) => {
-                if (err) {
-                    console.error("Session destroy error:", err);
-                    return reject(new ApiError_1.ApiError(500, 'Failed to destroy session'));
-                }
-                resolve();
-            });
+    await new Promise((resolve, reject) => {
+        req.session.destroy((err) => {
+            if (err) {
+                console.error("Session destroy error:", err);
+                return reject(new ApiError_1.ApiError(500, 'Failed to destroy session'));
+            }
+            resolve();
         });
-        res.clearCookie('connect.sid');
-        res.status(200).json({ status: 'success', message: 'Logged out successfully' });
-    }
-    catch (error) {
-        throw error;
-    }
+    });
+    res.clearCookie('connect.sid');
+    res.status(200).json({ status: 'success', message: 'Logged out successfully' });
 });

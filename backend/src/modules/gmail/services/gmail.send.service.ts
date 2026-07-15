@@ -2,7 +2,6 @@ import { prisma } from '../../../lib/prisma';
 import { GmailClientService } from './gmail.client.service';
 import { GmailDbService } from './gmail.db.service';
 import { DraftDbService } from '../../draft/draft.db.service';
-import { GmailSyncService } from './gmail.sync.service';
 import { emitToUser } from '../../../socket';
 import { logger } from '../../../config/logger';
 import { ApiError } from '../../../utils/ApiError';
@@ -10,8 +9,6 @@ import { ApiError } from '../../../utils/ApiError';
 const gmailClientService = new GmailClientService();
 const gmailDbService = new GmailDbService();
 const draftDbService = new DraftDbService();
-const syncService = new GmailSyncService();
-
 const activeSends = new Set<string>();
 
 interface SendEmailParams {

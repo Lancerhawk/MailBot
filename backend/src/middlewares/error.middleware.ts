@@ -5,7 +5,7 @@ import { ApiError } from '../utils/ApiError';
 import { env } from '../config/env';
 import { logger } from '../config/logger';
 
-export const errorHandler = (err: any, req: Request, res: Response, next: NextFunction) => {
+export const errorHandler = (err: any, req: Request, res: Response, _next: NextFunction) => {
   let error = err;
 
   if (!(error instanceof ApiError)) {

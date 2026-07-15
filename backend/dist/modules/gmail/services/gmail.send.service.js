@@ -38,14 +38,12 @@ const prisma_1 = require("../../../lib/prisma");
 const gmail_client_service_1 = require("./gmail.client.service");
 const gmail_db_service_1 = require("./gmail.db.service");
 const draft_db_service_1 = require("../../draft/draft.db.service");
-const gmail_sync_service_1 = require("./gmail.sync.service");
 const socket_1 = require("../../../socket");
 const logger_1 = require("../../../config/logger");
 const ApiError_1 = require("../../../utils/ApiError");
 const gmailClientService = new gmail_client_service_1.GmailClientService();
 const gmailDbService = new gmail_db_service_1.GmailDbService();
 const draftDbService = new draft_db_service_1.DraftDbService();
-const syncService = new gmail_sync_service_1.GmailSyncService();
 const activeSends = new Set();
 class GmailSendService {
     validateComposePayload(to, subject, body) {

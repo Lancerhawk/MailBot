@@ -11,7 +11,7 @@ router.get('/', (0, catchAsync_1.catchAsync)(async (_req, res) => {
         await prisma_1.prisma.$queryRaw `SELECT 1`;
         isDbConnected = true;
     }
-    catch (error) {
+    catch (_error) {
         isDbConnected = false;
     }
     const healthData = {

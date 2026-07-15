@@ -131,42 +131,42 @@ class GmailActionsService {
         return thread;
     }
     async threadMarkRead(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, [], ['UNREAD']);
+        await this.modifyThreadLabels(userId, threadId, [], ['UNREAD']);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isRead: true } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isRead', value: true });
     }
     async threadMarkUnread(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, ['UNREAD'], []);
+        await this.modifyThreadLabels(userId, threadId, ['UNREAD'], []);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isRead: false } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isRead', value: false });
     }
     async threadStar(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, ['STARRED'], []);
+        await this.modifyThreadLabels(userId, threadId, ['STARRED'], []);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isStarred: true } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isStarred', value: true });
     }
     async threadUnstar(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, [], ['STARRED']);
+        await this.modifyThreadLabels(userId, threadId, [], ['STARRED']);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isStarred: false } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isStarred', value: false });
     }
     async threadArchive(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, [], ['INBOX']);
+        await this.modifyThreadLabels(userId, threadId, [], ['INBOX']);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isArchived: true } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isArchived', value: true });
     }
     async threadUnarchive(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, ['INBOX'], []);
+        await this.modifyThreadLabels(userId, threadId, ['INBOX'], []);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isArchived: false } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isArchived', value: false });
     }
     async threadMarkSpam(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, ['SPAM'], ['INBOX']);
+        await this.modifyThreadLabels(userId, threadId, ['SPAM'], ['INBOX']);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isSpam: true } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isSpam', value: true });
     }
     async threadUnmarkSpam(userId, threadId) {
-        const thread = await this.modifyThreadLabels(userId, threadId, ['INBOX'], ['SPAM']);
+        await this.modifyThreadLabels(userId, threadId, ['INBOX'], ['SPAM']);
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId }, data: { isSpam: false } });
         await prisma_1.prisma.email.updateMany({ where: { emailThreadId: threadId, userId, processingStatus: 'SKIPPED' }, data: { processingStatus: 'PENDING' } });
         (0, socket_1.emitToUser)(userId, 'thread:updated', { threadId, field: 'isSpam', value: false });

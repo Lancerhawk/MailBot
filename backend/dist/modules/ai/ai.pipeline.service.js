@@ -17,7 +17,8 @@ class AiPipelineService {
             try {
                 await this.processEmail(userId, emailId);
             }
-            catch (error) {
+            catch (err) {
+                const error = err;
                 logger_1.logger.error({ error: error.message || error, stack: error.stack, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
             }
         };

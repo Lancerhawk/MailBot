@@ -105,7 +105,7 @@ class GmailController {
             const threads = await this.dbService.listThreads(userId, page, limit, filter, search);
             res.json({ status: "success", data: threads });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ status: "error", message: "Failed to list threads" });
         }
     }
@@ -119,7 +119,7 @@ class GmailController {
             }
             res.json({ status: "success", data: thread });
         }
-        catch (error) {
+        catch {
             res.status(500).json({ status: "error", message: "Failed to get thread" });
         }
     }
@@ -135,7 +135,8 @@ class GmailController {
             await actionFn.call(this.actionsService, userId, emailId);
             res.json({ status: 'success' });
         }
-        catch (error) {
+        catch (err) {
+            const error = err;
             res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
         }
     }
@@ -165,7 +166,6 @@ class GmailController {
         const userId = req.session.userId;
         if (!userId)
             throw new ApiError_1.ApiError(401, 'Unauthorized');
-        const emailId = req.params.id;
         const targetEmailId = req.body.emailId;
         const editedText = req.body.editedText;
         if (!targetEmailId)
@@ -174,7 +174,8 @@ class GmailController {
             await this.sendService.sendReply(userId, targetEmailId, editedText);
             res.json({ status: 'success' });
         }
-        catch (error) {
+        catch (err) {
+            const error = err;
             res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
         }
     }
@@ -186,7 +187,8 @@ class GmailController {
             await this.sendService.sendCompose(userId, req.body);
             res.json({ status: 'success' });
         }
-        catch (error) {
+        catch (err) {
+            const error = err;
             res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
         }
     }

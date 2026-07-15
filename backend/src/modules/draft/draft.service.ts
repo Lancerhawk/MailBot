@@ -43,12 +43,6 @@ export class DraftService {
   private async processDraft(userId: string, emailId: string, isRegeneration: boolean) {
     activeGenerations.add(emailId);
     try {
-
-    } catch (e) {
-
-    }
-
-    try {
       const email = await gmailDbService.getEmailByIdWithConnection(userId, emailId);
       if (!email) {
         throw new Error('Email not found');
@@ -63,26 +57,26 @@ export class DraftService {
 
       const MAX_CHARS = 8000;
       let currentChars = 0;
-      let contextBlocks: string[] = [];
-      let allRecipients = new Set<string>();
+      const contextBlocks: string[] = [];
+      const allRecipients = new Set<string>();
 
-      const sortedEmails = thread.emails.sort((a: any, b: any) =>
+      const sortedEmails = thread.emails.sort((a: { receivedAt: Date | string | number }, b: { receivedAt: Date | string | number }) =>
         new Date(a.receivedAt).getTime() - new Date(b.receivedAt).getTime()
       );
 
       for (let i = sortedEmails.length - 1; i >= 0; i--) {
         const msg = sortedEmails[i];
 
-        msg.participants.forEach((p: any) => {
+        msg.participants.forEach((p: { emailAddress?: string | null, displayName?: string | null }) => {
           if (p.emailAddress) {
             allRecipients.add(`${p.displayName ? p.displayName + ' ' : ''}<${p.emailAddress}>`);
           }
         });
 
         const dateStr = new Date(msg.receivedAt).toUTCString();
-        const from = msg.participants.find((p: any) => p.role === 'SENDER');
-        const to = msg.participants.filter((p: any) => p.role === 'TO').map((p: any) => p.emailAddress).join(', ');
-        const cc = msg.participants.filter((p: any) => p.role === 'CC').map((p: any) => p.emailAddress).join(', ');
+        const from = msg.participants.find((p: { role: string }) => p.role === 'SENDER');
+        const to = msg.participants.filter((p: { role: string }) => p.role === 'TO').map((p: { emailAddress?: string | null }) => p.emailAddress).join(', ');
+        const cc = msg.participants.filter((p: { role: string }) => p.role === 'CC').map((p: { emailAddress?: string | null }) => p.emailAddress).join(', ');
 
         const rawBody = msg.plainBody || (msg.htmlBody ? convert(msg.htmlBody, { wordwrap: false }) : 'No content');
         const header = `--- Message from ${from?.emailAddress} on ${dateStr} ---\nTo: ${to}\nCc: ${cc}\nSubject: ${msg.subject || thread.subject}\n`;
@@ -115,9 +109,7 @@ export class DraftService {
           if (retrievalResult) {
             knowledgeContext = retrievalResult.formattedContext;
           }
-        } else {
-
-        }
+          }
       } catch (err) {
         logger.warn({ err, emailId }, 'Knowledge retrieval failed, continuing without knowledge');
       }
@@ -162,7 +154,8 @@ export class DraftService {
         }
       });
 
-    } catch (error: any) {
+    } catch (err: unknown) {
+      const error = err as Error;
       logger.error({ error, emailId, userId }, 'Draft generation failed');
       emitToUser(userId, 'draft:failed', { emailId, error: error.message });
       throw error;

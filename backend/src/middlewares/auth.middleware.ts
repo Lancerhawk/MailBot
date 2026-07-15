@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { PrismaClient } from '@prisma/client';
+import { User } from '@prisma/client';
 import { ApiError } from '../utils/ApiError';
 
 declare module 'express-session' {
@@ -10,9 +10,10 @@ declare module 'express-session' {
 }
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
-      user?: any;
+      user?: User;
     }
   }
 }
