@@ -15,8 +15,6 @@ export interface AiAnalysisResult {
   confidence: number;
 }
 
-const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
-
 export interface DraftReplyResult {
   replyText: string;
   confidence: number;
@@ -25,8 +23,137 @@ export interface DraftReplyResult {
   totalTokens: number;
 }
 
+const MAX_GLOBAL_CONCURRENCY = parseInt(process.env.GROQ_CONCURRENCY_LIMIT || '2', 10);
+const MAX_PENDING_PER_USER = 100;
+const REQUEST_TIMEOUT_MS = 60000;
+
+interface Task<T = any> {
+  taskFn: () => Promise<T>;
+  resolve: (value: T) => void;
+  reject: (reason?: any) => void;
+  retryCount: number;
+}
+
+const userQueues = new Map<string, Task[]>();
+const readyUsers: string[] = [];
+const activeUsers = new Set<string>();
+let currentGlobalConcurrency = 0;
+
+function enqueueTask<T>(userId: string, taskFn: () => Promise<T>): Promise<T> {
+  return new Promise((resolve, reject) => {
+    let queue = userQueues.get(userId);
+    if (!queue) {
+      queue = [];
+      userQueues.set(userId, queue);
+    }
+
+    if (queue.length >= MAX_PENDING_PER_USER) {
+      return reject(new Error(`Max queue size (${MAX_PENDING_PER_USER}) exceeded for user ${userId}`));
+    }
+
+    queue.push({ taskFn, resolve, reject, retryCount: 0 });
+
+    if (!activeUsers.has(userId) && !readyUsers.includes(userId)) {
+      readyUsers.push(userId);
+    }
+
+    processScheduler();
+  });
+}
+
+function processScheduler() {
+  while (currentGlobalConcurrency < MAX_GLOBAL_CONCURRENCY && readyUsers.length > 0) {
+    const userId = readyUsers.shift()!;
+    const queue = userQueues.get(userId);
+
+    if (!queue || queue.length === 0) {
+      userQueues.delete(userId);
+      continue;
+    }
+
+    if (activeUsers.has(userId)) {
+      continue;
+    }
+
+    const task = queue.shift()!;
+    activeUsers.add(userId);
+    currentGlobalConcurrency++;
+
+    executeTaskWorker(userId, task);
+  }
+}
+
+async function executeTaskWorker(userId: string, task: Task) {
+  let isTransientRetry = false;
+  let delayMs = 0;
+
+  try {
+    const result = await Promise.race([
+      task.taskFn(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Groq request timed out')), REQUEST_TIMEOUT_MS)
+      )
+    ]);
+
+    task.resolve(result);
+  } catch (error: any) {
+    const isTransient = error.status === 429 || error.status >= 500 || error.name === 'TimeoutError' || error.message === 'Groq request timed out' || error instanceof SyntaxError;
+
+    if (isTransient && task.retryCount < 5) {
+      isTransientRetry = true;
+      task.retryCount++;
+
+      const retryAfter = error.headers?.['retry-after'] || error.response?.headers?.['retry-after'];
+      if (retryAfter && !isNaN(parseInt(retryAfter, 10))) {
+        delayMs = parseInt(retryAfter, 10) * 1000;
+      } else {
+        const baseDelay = Math.pow(2, task.retryCount) * 1000;
+        const jitter = Math.random() * 2000;
+        delayMs = baseDelay + jitter;
+      }
+
+      logger.warn(`Groq transient error. User ${userId} retrying in ${Math.round(delayMs)}ms (Attempt ${task.retryCount}/5)`);
+
+      const queue = userQueues.get(userId) || [];
+      queue.unshift(task);
+      userQueues.set(userId, queue);
+    } else {
+      if (task.retryCount >= 5) {
+        logger.error({ error }, `Groq task for user ${userId} discarded after 5 failed retries.`);
+      } else {
+        logger.error({ error }, `Groq task for user ${userId} failed due to a non-transient error.`);
+      }
+      task.reject(error);
+    }
+  } finally {
+    currentGlobalConcurrency--;
+
+    if (isTransientRetry) {
+      setTimeout(() => {
+        activeUsers.delete(userId);
+        if (!readyUsers.includes(userId)) {
+          readyUsers.push(userId);
+        }
+        processScheduler();
+      }, delayMs);
+    } else {
+      activeUsers.delete(userId);
+      const remainingQueue = userQueues.get(userId);
+      if (remainingQueue && remainingQueue.length > 0) {
+        if (!readyUsers.includes(userId)) {
+          readyUsers.push(userId);
+        }
+      } else {
+        userQueues.delete(userId);
+      }
+    }
+
+    processScheduler();
+  }
+}
+
 export class GroqService {
-  async analyzeConversation(contextText: string, retryCount = 0): Promise<AiAnalysisResult> {
+  async analyzeConversation(userId: string, contextText: string): Promise<AiAnalysisResult> {
     const prompt = `You are an AI assistant analyzing an email conversation.
 Read the conversation history and the latest email, then return a strict JSON object with your analysis of the newest message in the context of the whole thread.
 
@@ -45,7 +172,7 @@ Output format MUST be EXACTLY this JSON structure and absolutely nothing else (n
 Conversation Context:
 ${contextText}`;
 
-    try {
+    return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model: 'llama-3.1-8b-instant',
@@ -55,27 +182,10 @@ ${contextText}`;
 
       const responseText = completion.choices[0]?.message?.content || '{}';
       return JSON.parse(responseText) as AiAnalysisResult;
-
-    } catch (error: any) {
-      const isTransient =
-        error.status === 429 ||
-        error.status >= 500 ||
-        error.name === 'TimeoutError' ||
-        error instanceof SyntaxError;
-
-      if (isTransient && retryCount < 6) {
-        const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(`Groq analysis transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/6)`);
-        await sleep(backoffMs);
-        return this.analyzeConversation(contextText, retryCount + 1);
-      }
-
-      logger.error({ error }, 'Groq analysis failed after all retries or due to a non-transient error.');
-      throw error;
-    }
+    });
   }
 
-  async generateDraftReply(contextText: string, retryCount = 0): Promise<DraftReplyResult> {
+  async generateDraftReply(userId: string, contextText: string): Promise<DraftReplyResult> {
     const prompt = `You are an AI assistant writing a reply to an email conversation.
 Read the conversation history and the latest email carefully. Write a polite, appropriate reply that directly answers the latest email.
 
@@ -117,7 +227,7 @@ Output format MUST be EXACTLY this JSON structure and absolutely nothing else:
 Conversation Context:
 ${contextText}`;
 
-    try {
+    return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model: 'llama-3.1-8b-instant',
@@ -136,28 +246,11 @@ ${contextText}`;
         completionTokens: usage?.completion_tokens || 0,
         totalTokens: usage?.total_tokens || 0,
       };
-
-    } catch (error: any) {
-      const isTransient =
-        error.status === 429 ||
-        error.status >= 500 ||
-        error.name === 'TimeoutError' ||
-        error instanceof SyntaxError;
-
-      if (isTransient && retryCount < 6) {
-        const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(`Groq draft generation transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/6)`);
-        await sleep(backoffMs);
-        return this.generateDraftReply(contextText, retryCount + 1);
-      }
-
-      logger.error({ error }, 'Groq draft generation failed after all retries or due to a non-transient error.');
-      throw error;
-    }
+    });
   }
 
-  async rawCompletion(prompt: string, retryCount = 0): Promise<string> {
-    try {
+  async rawCompletion(userId: string, prompt: string): Promise<string> {
+    return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model: 'llama-3.1-8b-instant',
@@ -166,22 +259,6 @@ ${contextText}`;
       });
 
       return completion.choices[0]?.message?.content || '{}';
-    } catch (error: any) {
-      const isTransient =
-        error.status === 429 ||
-        error.status >= 500 ||
-        error.name === 'TimeoutError' ||
-        error instanceof SyntaxError;
-
-      if (isTransient && retryCount < 6) {
-        const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(`Groq rawCompletion transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/6)`);
-        await sleep(backoffMs);
-        return this.rawCompletion(prompt, retryCount + 1);
-      }
-
-      logger.error({ error }, 'Groq rawCompletion failed after all retries');
-      throw error;
-    }
+    });
   }
 }

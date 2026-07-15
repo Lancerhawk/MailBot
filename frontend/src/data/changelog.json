@@ -1,6 +1,28 @@
 {
   "versions": [
     {
+      "id": "be-0.7.1",
+      "version": "v0.7.1",
+      "service": "Backend",
+      "date": "2026-07-15",
+      "title": "Fair-Share Rate Limit Scheduler",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "O(1) Fair-Share Rate Limiter",
+          "description": "Refactored the API scheduler to an isolated, per-user sequential queue to prevent head-of-line blocking and ensure fair concurrency across users."
+        },
+        {
+          "title": "Worker-Owned Backoff",
+          "description": "Transient errors now securely hold user-specific locks while releasing global concurrency slots, maximizing CPU utilization."
+        },
+        {
+          "title": "Production Guardrails",
+          "description": "Implemented configurable queue limits per-user and Promise.race timeouts to protect against infinitely hanging requests and OOMs."
+        }
+      ]
+    },
+    {
       "id": "fe-0.7.0",
       "version": "v0.7.0",
       "service": "Frontend",
@@ -24,7 +46,7 @@
       "service": "Backend",
       "date": "2026-07-14",
       "title": "Semantic AI Retrieval & AWS S3 Storage",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "AWS S3 Integration",

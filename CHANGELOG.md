@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v0.7.1] - Fair-Share Rate Limit Scheduler
+
+### Changed
+- **O(1) Fair-Share Rate Limiter:** Refactored the Groq API scheduler to a strictly isolated, per-user sequential queue architecture. Eliminates head-of-line blocking by allowing independent users to process concurrently.
+- **Worker-Owned Backoff:** Transient errors (like 429s) now hold a user-specific queue lock during sleep but release the global concurrency slot, achieving 100% CPU utilization while preserving strict intra-user task ordering.
+- **Production Guardrails:** Added a configurable maximum queue limit per user (100) to prevent OOM errors, alongside `Promise.race` 60-second timeouts to protect against infinitely hanging requests.
+
 ## [Frontend v0.7.0] & [Backend v0.7.0] - Knowledge Base & Semantic AI Retrieval
 
 ### Added

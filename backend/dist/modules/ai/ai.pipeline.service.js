@@ -46,7 +46,6 @@ class AiPipelineService {
             email.category === 'TRASH' ||
             isSent ||
             isOld) {
-            // logger.debug(`Skipping AI analysis for email ${emailId} - failed eligibility check.`);
             if (email.processingStatus === 'PENDING') {
                 await prisma_1.prisma.email.update({
                     where: { id: emailId },
@@ -56,12 +55,10 @@ class AiPipelineService {
             return;
         }
         if (email.processingStatus !== 'PENDING') {
-            // logger.debug(`Skipping AI analysis for email ${emailId} - already processed (${email.processingStatus}).`);
             return;
         }
         const content = email.plainBody || email.htmlBody || email.snippet || '';
         if (!content || content.trim().length === 0) {
-            // logger.debug(`Skipping AI analysis for email ${emailId} - no readable content.`);
             await prisma_1.prisma.email.update({
                 where: { id: emailId },
                 data: { processingStatus: client_1.ProcessingStatus.SKIPPED }
@@ -104,7 +101,7 @@ class AiPipelineService {
                 contextMessages.unshift(msgBlock);
             }
             const conversationContext = contextMessages.join('');
-            const result = await groqService.analyzeConversation(conversationContext);
+            const result = await groqService.analyzeConversation(userId, conversationContext);
             const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED'];
             const validIntents = ['INQUIRY', 'SUPPORT', 'MEETING', 'FEEDBACK', 'SPAM', 'OTHER'];
             const validPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];
@@ -125,7 +122,6 @@ class AiPipelineService {
                     processingStatus: client_1.ProcessingStatus.COMPLETED
                 }
             });
-            // logger.info(`AI analysis completed for email ${emailId}`);
             (0, socket_1.emitToUser)(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result: { ...result, sentiment, intent, priority, needsReply, confidence } });
             if (result.needsReply === false) {
                 return;

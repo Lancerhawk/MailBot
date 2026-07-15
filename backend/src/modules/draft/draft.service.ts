@@ -61,7 +61,6 @@ export class DraftService {
 
       emitToUser(userId, 'draft:started', { emailId, threadId: thread.id });
 
-      // console.time(`Draft-PromptBuild-${emailId}`);
       const MAX_CHARS = 8000;
       let currentChars = 0;
       let contextBlocks: string[] = [];
@@ -107,46 +106,29 @@ export class DraftService {
       const userEmail = email.connection?.emailAddress || '';
 
       let contextText = `You are writing a reply on behalf of: ${userEmail}\nYou must write as ${userEmail}, NOT as the person who sent the email.\n\nThread Context (All participants: ${allRecipientsList}):\n\n` + contextBlocks.join('\n');
-      // console.timeEnd(`Draft-PromptBuild-${emailId}`);
 
-      // --- Knowledge Retrieval (Phase 8) ---
       let knowledgeContext = '';
       try {
         const hasDocuments = await knowledgeDbService.hasActiveDocuments(userId);
         if (hasDocuments) {
-          // console.time(`Draft-KnowledgeRetrieval-${emailId}`);
           const retrievalResult = await retrievalService.retrieveForDraft(userId, contextText);
           if (retrievalResult) {
             knowledgeContext = retrievalResult.formattedContext;
           }
-          // console.timeEnd(`Draft-KnowledgeRetrieval-${emailId}`);
         } else {
-          // console.log(`\n[INFO] [RAG] User has no documents in Knowledge Base. Search bypassed.`);
+
         }
       } catch (err) {
-        // Knowledge retrieval failure must NEVER block draft generation
-        // console.log(`\n[ERROR] [RAG] Retrieval encountered an error. Proceeding without knowledge context.`);
         logger.warn({ err, emailId }, 'Knowledge retrieval failed, continuing without knowledge');
       }
 
       if (knowledgeContext) {
-        // console.log(`\n[INFO] [DRAFT] Injecting retrieved knowledge context into generation prompt.`);
         contextText += '\n\n' + knowledgeContext;
       }
 
-      // console.log(`\n[INFO] [AI] Initiating generation via Llama 3 (Prompt Size: ${contextText.length} characters)...`);
-      // console.time(`Draft-GroqLatency-${emailId}`);
       const startGroq = Date.now();
-      const groqResult = await groqService.generateDraftReply(contextText);
+      const groqResult = await groqService.generateDraftReply(userId, contextText);
       const generationLatencyMs = Date.now() - startGroq;
-      // console.timeEnd(`Draft-GroqLatency-${emailId}`);
-
-      // console.log(`\n[SUCCESS] [AI] Draft generation completed in ${generationLatencyMs}ms.`);
-      // console.log(`--------------------------------------------------`);
-      // console.log(`\x1b[36m${groqResult.replyText}\x1b[0m`);
-      // console.log(`--------------------------------------------------\n`);
-
-      // console.time(`Draft-Save-${emailId}`);
 
       if (isRegeneration) {
         await draftDbService.markPreviousDraftsNonFinal(emailId, userId);
@@ -166,7 +148,6 @@ export class DraftService {
         confidence: groqResult.confidence,
         isFinal: true
       });
-      // console.timeEnd(`Draft-Save-${emailId}`);
 
       const eventName = isRegeneration ? 'draft:regenerated' : 'draft:generated';
       emitToUser(userId, eventName, {

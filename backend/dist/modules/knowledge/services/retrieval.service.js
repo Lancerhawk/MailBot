@@ -48,35 +48,26 @@ class RetrievalService {
         this.dbService = new knowledge_db_service_1.KnowledgeDbService();
     }
     async retrieveForDraft(userId, contextText) {
-        // console.time(`Knowledge-Retrieval-${userId}`);
         try {
             const latestBody = extractLatestEmailBody(contextText);
             if (this.isCasualEmail(latestBody)) {
                 logger_1.logger.debug({ userId }, 'Knowledge retrieval skipped: deterministic heuristic matched casual email');
                 return null;
             }
-            // console.log(`\n[INFO] [RAG] Evaluating need for external knowledge retrieval...`);
-            const decision = await this.makeRetrievalDecision(contextText);
+            const decision = await this.makeRetrievalDecision(userId, contextText);
             if (!decision.shouldRetrieve || decision.confidence < 0.5) {
-                // console.log(`[INFO] [RAG] Decision: SKIPPED (Confidence: ${(decision.confidence * 100).toFixed(0)}%) - No knowledge required`);
                 logger_1.logger.debug({ userId, confidence: decision.confidence, shouldRetrieve: decision.shouldRetrieve }, 'Knowledge retrieval skipped: AI decision');
                 return null;
             }
-            // console.log(`[INFO] [RAG] Decision: SEARCH INITIATED (Confidence: ${(decision.confidence * 100).toFixed(0)}%)`);
-            // console.log(`[INFO] [RAG] Generated Search Query: "${decision.searchQuery}"`);
             const chunks = await this.searchService.search(userId, decision.searchQuery, 20);
             if (chunks.length === 0) {
-                // console.log(`[WARN] [RAG] Vector Search returned 0 relevant documents.`);
                 logger_1.logger.debug({ userId, query: decision.searchQuery }, 'Knowledge retrieval: no relevant chunks found');
                 return null;
             }
-            // console.log(`[INFO] [RAG] Vector Search returned ${chunks.length} highly relevant chunks.`);
-            // console.log(`[INFO] [RAG] Top result snippet: "${chunks[0].content.substring(0, 100)}..." (Score: ${chunks[0].similarity.toFixed(2)})`);
             const formattedContext = this.buildContext(chunks);
             if (!formattedContext) {
                 return null;
             }
-            // console.log(`[INFO] [RAG] Context window successfully constructed.`);
             const documentIds = [...new Set(chunks.map(c => c.documentId))];
             for (const docId of documentIds) {
                 await this.dbService.incrementRetrievalCount(docId).catch(err => {
@@ -93,7 +84,6 @@ class RetrievalService {
             return { formattedContext, chunks, decision };
         }
         finally {
-            // console.timeEnd(`Knowledge-Retrieval-${userId}`);
         }
     }
     clearCacheForUser(userId) {
@@ -118,7 +108,7 @@ class RetrievalService {
             return true;
         return false;
     }
-    async makeRetrievalDecision(contextText) {
+    async makeRetrievalDecision(userId, contextText) {
         const prompt = `You are classifying whether an email requires external knowledge to answer.
 
 External knowledge means: resume, portfolio, pricing, company info, policies, product details, documentation, contracts, services, project details, or any factual information the user may have uploaded.
@@ -135,7 +125,7 @@ Return EXACTLY this JSON and absolutely nothing else:
 Email context:
 ${contextText.substring(0, 4000)}`;
         try {
-            const completion = await this.groqService.rawCompletion(prompt);
+            const completion = await this.groqService.rawCompletion(userId, prompt);
             const parsed = JSON.parse(completion);
             return {
                 shouldRetrieve: Boolean(parsed.shouldRetrieve),

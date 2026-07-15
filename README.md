@@ -6,7 +6,7 @@
   **An AI-Powered Email Assistant**
   
   [![Frontend Version](https://img.shields.io/badge/Frontend-v0.7.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
-  [![Backend Version](https://img.shields.io/badge/Backend-v0.7.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
+  [![Backend Version](https://img.shields.io/badge/Backend-v0.7.1-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)
 
@@ -47,6 +47,16 @@
     <td width="50%">
       <h3> RAG-Augmented Drafts</h3>
       <p>Injects exact context from your uploaded AWS S3 documents directly into the AI prompts, ensuring your drafts are factually accurate and personalized to your unique data.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3> Fair-Share Rate Limiting</h3>
+      <p>Built-in O(1) sequential queue architecture that perfectly balances API limits across multiple users, ensuring 100% CPU utilization without head-of-line blocking.</p>
+    </td>
+    <td width="50%">
+      <h3> Intelligent Retry Backoff</h3>
+      <p>Transient errors trigger exponential backoffs with jitter, holding user-specific locks while securely releasing global concurrency slots.</p>
     </td>
   </tr>
 </table>

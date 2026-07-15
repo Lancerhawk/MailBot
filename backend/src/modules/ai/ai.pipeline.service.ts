@@ -26,8 +26,8 @@ export class AiPipelineService {
     }
 
     const nextPromise = userProcessingQueue[userId].then(run);
-    userProcessingQueue[userId] = nextPromise.catch(() => {});
-    
+    userProcessingQueue[userId] = nextPromise.catch(() => { });
+
     return nextPromise;
   }
 
@@ -55,7 +55,6 @@ export class AiPipelineService {
       isSent ||
       isOld
     ) {
-      // logger.debug(`Skipping AI analysis for email ${emailId} - failed eligibility check.`);
       if (email.processingStatus === 'PENDING') {
         await prisma.email.update({
           where: { id: emailId },
@@ -66,13 +65,11 @@ export class AiPipelineService {
     }
 
     if (email.processingStatus !== 'PENDING') {
-      // logger.debug(`Skipping AI analysis for email ${emailId} - already processed (${email.processingStatus}).`);
       return;
     }
 
     const content = email.plainBody || email.htmlBody || email.snippet || '';
     if (!content || content.trim().length === 0) {
-      // logger.debug(`Skipping AI analysis for email ${emailId} - no readable content.`);
       await prisma.email.update({
         where: { id: emailId },
         data: { processingStatus: ProcessingStatus.SKIPPED }
@@ -126,7 +123,7 @@ export class AiPipelineService {
 
       const conversationContext = contextMessages.join('');
 
-      const result = await groqService.analyzeConversation(conversationContext);
+      const result = await groqService.analyzeConversation(userId, conversationContext);
 
       const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED'];
       const validIntents = ['INQUIRY', 'SUPPORT', 'MEETING', 'FEEDBACK', 'SPAM', 'OTHER'];
@@ -151,7 +148,6 @@ export class AiPipelineService {
         }
       });
 
-      // logger.info(`AI analysis completed for email ${emailId}`);
       emitToUser(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result: { ...result, sentiment, intent, priority, needsReply, confidence } });
 
       if (result.needsReply === false) {
