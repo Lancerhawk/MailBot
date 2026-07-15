@@ -63,9 +63,9 @@ ${contextText}`;
         error.name === 'TimeoutError' ||
         error instanceof SyntaxError;
 
-      if (isTransient && retryCount < 3) {
+      if (isTransient && retryCount < 6) {
         const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(`Groq analysis transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/3)`);
+        logger.warn(`Groq analysis transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/6)`);
         await sleep(backoffMs);
         return this.analyzeConversation(contextText, retryCount + 1);
       }
@@ -144,9 +144,9 @@ ${contextText}`;
         error.name === 'TimeoutError' ||
         error instanceof SyntaxError;
 
-      if (isTransient && retryCount < 3) {
+      if (isTransient && retryCount < 6) {
         const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(`Groq draft generation transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/3)`);
+        logger.warn(`Groq draft generation transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/6)`);
         await sleep(backoffMs);
         return this.generateDraftReply(contextText, retryCount + 1);
       }
@@ -173,9 +173,9 @@ ${contextText}`;
         error.name === 'TimeoutError' ||
         error instanceof SyntaxError;
 
-      if (isTransient && retryCount < 3) {
+      if (isTransient && retryCount < 6) {
         const backoffMs = Math.pow(2, retryCount) * 1000;
-        logger.warn(`Groq rawCompletion transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/3)`);
+        logger.warn(`Groq rawCompletion transient failure. Retrying in ${backoffMs}ms... (Attempt ${retryCount + 1}/6)`);
         await sleep(backoffMs);
         return this.rawCompletion(prompt, retryCount + 1);
       }

@@ -290,6 +290,10 @@ export function KnowledgeBase() {
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Manage documents the AI uses to draft smarter email replies.
           </p>
+          <p className="mt-2 text-xs font-medium text-orange-600 dark:text-orange-400">
+            <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
+            Note: There is a strict safety limit of 500 chunks (~50 dense pages) per document. Larger files will fail.
+          </p>
         </div>
 
         <div className="flex items-center gap-3">
