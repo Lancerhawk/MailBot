@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GmailDbService = void 0;
 const client_1 = require("@prisma/client");
 const prisma_1 = require("../../../lib/prisma");
+const analytics_event_service_1 = require("../../analytics/services/analytics-event.service");
 class GmailDbService {
     async getConnectionStatus(userId) {
         return prisma_1.prisma.emailAccountConnection.findFirst({
@@ -218,16 +219,13 @@ class GmailDbService {
         const user = await prisma_1.prisma.user.findUnique({ where: { id: userId } });
         if (!user)
             return;
-        // Filter out emails received before the user registered AND any native Gmail drafts
         const filteredEmails = parsedEmails.filter(e => e.internalDate.getTime() >= user.createdAt.getTime() &&
             !e.labels.includes("DRAFT"));
         if (filteredEmails.length === 0)
             return;
         const threadId = filteredEmails[0].providerThreadId;
         const latestEmail = filteredEmails.reduce((latest, current) => current.internalDate > latest.internalDate ? current : latest);
-        // console.time(`Prisma-Tx-${threadId}`);
         const createdEmails = [];
-        // 1. Upsert Thread
         const thread = await prisma_1.prisma.emailThread.upsert({
             where: {
                 accountConnectionId_providerThreadId: {
@@ -261,7 +259,6 @@ class GmailDbService {
             });
             const newIsSpam = parsed.labels.includes("SPAM");
             const newIsDeleted = parsed.labels.includes("TRASH");
-            // If email was restored from spam or trash, and was previously skipped by AI, reset to PENDING
             let processingStatusToUpdate = undefined;
             if (existingEmail && existingEmail.processingStatus === 'SKIPPED') {
                 if ((existingEmail.isSpam && !newIsSpam) || (existingEmail.isDeleted && !newIsDeleted)) {
@@ -329,6 +326,9 @@ class GmailDbService {
                                 }
                             });
                             organizationId = org.id;
+                            if (org.createdAt.getTime() > Date.now() - 5000) {
+                                analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.ORGANIZATION_CREATED);
+                            }
                         }
                     }
                     let contactId = null;
@@ -358,6 +358,7 @@ class GmailDbService {
                             }
                         });
                         contactId = newContact.id;
+                        analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.CONTACT_CREATED);
                     }
                     await prisma_1.prisma.emailParticipant.create({
                         data: {
@@ -399,7 +400,9 @@ class GmailDbService {
             where: { id: thread.id },
             data: { messageCount: actualMessageCount }
         });
-        // console.timeEnd(`Prisma-Tx-${threadId}`);
+        for (const _em of createdEmails) {
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.EMAIL_RECEIVED);
+        }
         return createdEmails;
     }
 }

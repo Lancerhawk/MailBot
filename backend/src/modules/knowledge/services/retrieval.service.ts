@@ -2,6 +2,7 @@ import { GroqService } from '../../ai/groq.service';
 import { SearchService, SearchResult } from './search.service';
 import { KnowledgeDbService } from '../knowledge.db.service';
 import { logger } from '../../../config/logger';
+import { AnalyticsEventService, AnalyticsEventType } from '../../analytics/services/analytics-event.service';
 
 interface RetrievalDecision {
   shouldRetrieve: boolean;
@@ -108,6 +109,8 @@ export class RetrievalService {
           logger.warn({ err, docId }, 'Failed to increment retrieval count');
         });
       }
+
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.KNOWLEDGE_RETRIEVAL);
 
       logger.info(
         {

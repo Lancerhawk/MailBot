@@ -9,6 +9,7 @@ import gmailRoute from '../../modules/gmail/gmail.route';
 import draftRoute from '../../modules/draft/draft.route';
 import knowledgeRoute from '../../modules/knowledge/knowledge.route';
 import contactRoute from '../../modules/contact/contact.route';
+import { analyticsRouter } from '../../modules/analytics/analytics.route';
 
 const defaultRoutes = [
   {
@@ -22,6 +23,10 @@ const defaultRoutes = [
   {
     path: '/gmail',
     route: gmailRoute,
+  },
+  {
+    path: '/analytics',
+    route: analyticsRouter,
   },
   {
     path: '/drafts',

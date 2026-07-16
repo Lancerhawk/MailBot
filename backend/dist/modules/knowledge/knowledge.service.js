@@ -41,6 +41,7 @@ const parser_service_1 = require("./services/parser.service");
 const chunking_service_1 = require("./services/chunking.service");
 const embedding_service_1 = require("./services/embedding.service");
 const retrieval_service_1 = require("./services/retrieval.service");
+const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
 const socket_1 = require("../../socket");
 const ApiError_1 = require("../../utils/ApiError");
 const logger_1 = require("../../config/logger");
@@ -90,6 +91,9 @@ class KnowledgeService {
             storageProvider: 'S3',
             fileHash,
         });
+        analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DOCUMENT_UPLOADED, {
+            storageUsedBytes: file.size
+        });
         (0, socket_1.emitToUser)(userId, 'knowledge:upload_started', { documentId: document.id, title: document.title });
         (0, socket_1.emitToUser)(userId, 'knowledge:uploaded', { documentId: document.id, title: document.title });
         this.processDocumentPipeline(userId, document.id, file.buffer, file.mimetype, document.version)
@@ -105,6 +109,7 @@ class KnowledgeService {
                 await dbService.updateDocumentStatus(documentId, client_1.ProcessingStatus.COMPLETED, {
                     processedAt: new Date(),
                 });
+                analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DOCUMENT_EMBEDDED);
                 (0, socket_1.emitToUser)(userId, 'knowledge:ready', { documentId, chunkCount: 0, isImage: true });
                 console.timeEnd(`Knowledge-TotalPipeline-${documentId}`);
                 return;
@@ -155,6 +160,7 @@ class KnowledgeService {
                 isEmbedded: true,
             });
             retrievalService.clearCacheForUser(userId);
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DOCUMENT_EMBEDDED);
             (0, socket_1.emitToUser)(userId, 'knowledge:ready', { documentId, chunkCount: chunks.length });
             logger_1.logger.info({ documentId, chunkCount: chunks.length }, 'Knowledge document processing completed');
         }
@@ -163,6 +169,7 @@ class KnowledgeService {
             await dbService.updateDocumentStatus(documentId, client_1.ProcessingStatus.FAILED, {
                 processingError: error.message || 'Unknown processing error',
             });
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.PROCESSING_FAILURE);
             (0, socket_1.emitToUser)(userId, 'knowledge:failed', { documentId, error: error.message });
         }
         finally {

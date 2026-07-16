@@ -38,6 +38,7 @@ const prisma_1 = require("../../../lib/prisma");
 const gmail_client_service_1 = require("./gmail.client.service");
 const gmail_db_service_1 = require("./gmail.db.service");
 const draft_db_service_1 = require("../../draft/draft.db.service");
+const analytics_event_service_1 = require("../../analytics/services/analytics-event.service");
 const socket_1 = require("../../../socket");
 const logger_1 = require("../../../config/logger");
 const ApiError_1 = require("../../../utils/ApiError");
@@ -208,6 +209,10 @@ class GmailSendService {
                 data: { deletedAt: new Date() }
             }));
             await prisma_1.prisma.$transaction(txns);
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.EMAIL_REPLIED);
+            if (draft) {
+                analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DRAFT_APPROVED);
+            }
             (0, socket_1.emitToUser)(userId, 'email:sent', {
                 emailId,
                 messageId: sentMessageId,

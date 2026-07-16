@@ -1,5 +1,6 @@
 import { SyncStatus, ProcessingStatus } from "@prisma/client";
 import { prisma } from "../../../lib/prisma";
+import { AnalyticsEventService, AnalyticsEventType } from "../../analytics/services/analytics-event.service";
 
 
 export class GmailDbService {
@@ -238,7 +239,6 @@ export class GmailDbService {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return;
 
-    // Filter out emails received before the user registered AND any native Gmail drafts
     const filteredEmails = parsedEmails.filter(e =>
       e.internalDate.getTime() >= user.createdAt.getTime() &&
       !e.labels.includes("DRAFT")
@@ -251,10 +251,8 @@ export class GmailDbService {
       current.internalDate > latest.internalDate ? current : latest
     );
 
-    // console.time(`Prisma-Tx-${threadId}`);
     const createdEmails: any[] = [];
 
-    // 1. Upsert Thread
     const thread = await prisma.emailThread.upsert({
       where: {
         accountConnectionId_providerThreadId: {
@@ -291,7 +289,6 @@ export class GmailDbService {
       const newIsSpam = parsed.labels.includes("SPAM");
       const newIsDeleted = parsed.labels.includes("TRASH");
 
-      // If email was restored from spam or trash, and was previously skipped by AI, reset to PENDING
       let processingStatusToUpdate: ProcessingStatus | undefined = undefined;
       if (existingEmail && existingEmail.processingStatus === 'SKIPPED') {
         if ((existingEmail.isSpam && !newIsSpam) || (existingEmail.isDeleted && !newIsDeleted)) {
@@ -363,6 +360,10 @@ export class GmailDbService {
                 }
               });
               organizationId = org.id;
+
+              if (org.createdAt.getTime() > Date.now() - 5000) {
+                AnalyticsEventService.recordEvent(userId, AnalyticsEventType.ORGANIZATION_CREATED);
+              }
             }
           }
 
@@ -394,6 +395,7 @@ export class GmailDbService {
               }
             });
             contactId = newContact.id;
+            AnalyticsEventService.recordEvent(userId, AnalyticsEventType.CONTACT_CREATED);
           }
 
           await prisma.emailParticipant.create({
@@ -440,7 +442,9 @@ export class GmailDbService {
       data: { messageCount: actualMessageCount }
     });
 
-    // console.timeEnd(`Prisma-Tx-${threadId}`);
+    for (const _em of createdEmails) {
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.EMAIL_RECEIVED);
+    }
 
     return createdEmails;
   }

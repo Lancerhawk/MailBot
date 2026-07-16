@@ -5,8 +5,8 @@
   
   **An AI-Powered Email Assistant**
   
-  [![Frontend Version](https://img.shields.io/badge/Frontend-v0.8.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
-  [![Backend Version](https://img.shields.io/badge/Backend-v0.8.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
+  [![Frontend Version](https://img.shields.io/badge/Frontend-v0.9.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
+  [![Backend Version](https://img.shields.io/badge/Backend-v0.9.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)
 
@@ -51,12 +51,12 @@
   </tr>
   <tr>
     <td width="50%">
-      <h3> Fair-Share Rate Limiting</h3>
-      <p>Built-in O(1) sequential queue architecture that perfectly balances API limits across multiple users, ensuring 100% CPU utilization without head-of-line blocking.</p>
+      <h3> Real-Time Analytics Dashboard</h3>
+      <p>Atomic event tracking for email volume, draft efficiency, and AI confidence with live WebSocket updates and interactive charting.</p>
     </td>
     <td width="50%">
-      <h3> Intelligent Retry Backoff</h3>
-      <p>Transient errors trigger exponential backoffs with jitter, holding user-specific locks while securely releasing global concurrency slots.</p>
+      <h3> Executive Briefing Exports</h3>
+      <p>Native vector PDF and CSV generation engines that convert raw analytics data into perfectly aligned, human-readable executive narratives.</p>
     </td>
   </tr>
 </table>
@@ -82,6 +82,8 @@ graph TD
     I --> J[View Inbox & Threads]
     I --> K[Manage Knowledge Base]
     I --> O[Contact Intelligence CRM]
+    I --> R[View Real-Time Analytics]
+    R --> S[Export Executive PDF/CSV Briefing]
     O --> P[Merge Duplicate Contacts]
     O --> Q[Configure Contact Tone & Relationship]
     K --> |Upload Documents| L[AWS S3 & pgvector Embeddings]
@@ -100,6 +102,7 @@ classDiagram
         +Inbox()
         +ContactProfile()
         +KnowledgeBase()
+        +AnalyticsDashboard()
     }
     class Backend_Controllers {
         +googleAuth()
@@ -113,6 +116,7 @@ classDiagram
         +ContactService
         +AiPipelineService
         +VectorSearchService
+        +AnalyticsEventService
     }
     class External_APIs {
         +Google OAuth
@@ -139,6 +143,7 @@ flowchart LR
     API -->|Generate Vectors| API
     API -->|Send Prompt Context| LLM([Groq AI])
     LLM -->|Return Draft| API
+    API -->|Atomic Event Fire| AnalyticsDB[(Analytics DB Models)]
 ```
 
 ### 4. AI Prompt Priority Pipeline
@@ -559,6 +564,13 @@ erDiagram
         Int totalCompletionTokens
         Decimal estimatedCost
         Int timeSavedSeconds
+        Int knowledgeRetrievalCount
+        Int documentsUploaded
+        Int documentsEmbedded
+        Int processingFailures
+        BigInt storageUsedBytes
+        Int contactsCreated
+        Int organizationsCreated
         DateTime createdAt
         DateTime updatedAt
     }

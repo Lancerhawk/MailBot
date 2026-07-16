@@ -1,12 +1,72 @@
 {
   "versions": [
     {
+      "id": "fe-0.9.0",
+      "version": "v0.9.0",
+      "service": "Frontend",
+      "date": "2026-07-17",
+      "title": "Analytics Dashboard",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Analytics Dashboard",
+          "description": "Replaced the 'Coming Soon' screen with a full-blown responsive enterprise dashboard featuring the signature dark zinc, orange accent, and glassmorphic MailBot design system."
+        },
+        {
+          "title": "Interactive Recharts Visualization",
+          "description": "Implemented highly animated, fluid line charts and area charts tracking Email Volume, Draft Automation Efficiency, AI Confidence Matrices, and Knowledge Base Scaling over time."
+        },
+        {
+          "title": "Live WebSocket Synchronization",
+          "description": "The dashboard seamlessly listens for sync:completed and analytics:updated Socket.IO events, fetching fresh data instantaneously without requiring manual page reloads or polling."
+        },
+        {
+          "title": "Executive PDF Briefing",
+          "description": "Completely rewrote the PDF generation engine using jsPDF and jspdf-autotable. It constructs a pure native vector PDF containing dynamic plain-English Executive Summaries followed by distinct data breakdowns."
+        },
+        {
+          "title": "Granular Date Filtering",
+          "description": "Added a robust state-managed date selector allowing seamless toggling between 7D, 30D, 90D, or completely custom start/end timestamp ranges."
+        }
+      ]
+    },
+    {
+      "id": "be-0.9.0",
+      "version": "v0.9.0",
+      "service": "Backend",
+      "date": "2026-07-17",
+      "title": "Analytics Engine & AI Insights",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Real-Time Analytics Event Service",
+          "description": "Implemented a highly scalable, centralized AnalyticsEventService acting as the sole writer for the Analytics table using safe, atomic Prisma upserts and fire-and-forget execution."
+        },
+        {
+          "title": "Historical Analytics Backfill Engine",
+          "description": "Created an idempotent AnalyticsBackfillService capable of parsing years of historical production data to reconstruct exact daily time-series analytics as if they were recorded from day one."
+        },
+        {
+          "title": "Executive CSV Export System",
+          "description": "Re-architected CSV exports from a raw data dump into a highly structured, spreadsheet-native professional layout utilizing clean key-value pairs for KPIs and spaced tables for historical trends."
+        },
+        {
+          "title": "Universal Event Integrations",
+          "description": "Successfully wired analytics event recording into all existing systems without modifying their business logic. Real-time events include: EMAIL_RECEIVED, DRAFT_GENERATED, KNOWLEDGE_RETRIEVED, and more."
+        },
+        {
+          "title": "Database Schema Updates",
+          "description": "Expanded the Prisma schema by activating the Analytics and ActivityLog tables, enriching them with fields for tracking document embeddings, contacts created, storage used, and processing failures."
+        }
+      ]
+    },
+    {
       "id": "fe-0.8.0",
       "version": "v0.8.0",
       "service": "Frontend",
       "date": "2026-07-16",
       "title": "Contact Intelligence CRM",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Unified Contact Profile UI",
@@ -36,7 +96,7 @@
       "service": "Backend",
       "date": "2026-07-16",
       "title": "Contact Merging System",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Contact Pointer System",

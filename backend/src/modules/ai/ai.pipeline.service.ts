@@ -7,6 +7,7 @@ import { emitToUser } from '../../socket';
 import { DraftService } from '../draft/draft.service';
 import { DraftDbService } from '../draft/draft.db.service';
 import { ContactDbService } from '../contact/contact.db.service';
+import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
 
 const groqService = new GroqService();
 const contactDbService = new ContactDbService();
@@ -170,6 +171,11 @@ export class AiPipelineService {
           processingStatus: ProcessingStatus.COMPLETED
         }
       });
+
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.EMAIL_ANALYZED);
+      if (result.summary) {
+        AnalyticsEventService.recordEvent(userId, AnalyticsEventType.EMAIL_SUMMARIZED);
+      }
 
       emitToUser(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result: { ...result, sentiment, intent, priority, needsReply, confidence } });
 

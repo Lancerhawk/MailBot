@@ -11,6 +11,7 @@ const gmail_route_1 = __importDefault(require("../../modules/gmail/gmail.route")
 const draft_route_1 = __importDefault(require("../../modules/draft/draft.route"));
 const knowledge_route_1 = __importDefault(require("../../modules/knowledge/knowledge.route"));
 const contact_route_1 = __importDefault(require("../../modules/contact/contact.route"));
+const analytics_route_1 = require("../../modules/analytics/analytics.route");
 const defaultRoutes = [
     {
         path: '/health',
@@ -23,6 +24,10 @@ const defaultRoutes = [
     {
         path: '/gmail',
         route: gmail_route_1.default,
+    },
+    {
+        path: '/analytics',
+        route: analytics_route_1.analyticsRouter,
     },
     {
         path: '/drafts',

@@ -16,6 +16,9 @@ const gmailDbService = new gmail_db_service_1.GmailDbService();
 const knowledgeDbService = new knowledge_db_service_1.KnowledgeDbService();
 const retrievalService = new retrieval_service_1.RetrievalService();
 const contactDbService = new contact_db_service_1.ContactDbService();
+const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
+const pricing_config_1 = require("../analytics/services/pricing.config");
+const client_1 = require("@prisma/client");
 const userProcessingQueue = new Map();
 const activeGenerations = new Set();
 class DraftService {
@@ -138,6 +141,14 @@ class DraftService {
                 generationLatencyMs,
                 confidence: groqResult.confidence,
                 isFinal: true
+            });
+            const estCost = pricing_config_1.PricingConfig.calculateCost(client_1.AiProvider.GROQ, 'llama-3.1-8b-instant', groqResult.promptTokens || 0, groqResult.completionTokens || 0);
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DRAFT_GENERATED, {
+                latency: generationLatencyMs,
+                promptTokens: groqResult.promptTokens,
+                completionTokens: groqResult.completionTokens,
+                estimatedCost: estCost,
+                confidence: groqResult.confidence
             });
             const eventName = isRegeneration ? 'draft:regenerated' : 'draft:generated';
             (0, socket_1.emitToUser)(userId, eventName, {

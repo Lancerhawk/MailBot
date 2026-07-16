@@ -4,6 +4,7 @@ exports.DraftController = void 0;
 const draft_service_1 = require("./draft.service");
 const draft_db_service_1 = require("./draft.db.service");
 const ApiError_1 = require("../../utils/ApiError");
+const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
 const draftService = new draft_service_1.DraftService();
 const draftDbService = new draft_db_service_1.DraftDbService();
 class DraftController {
@@ -63,6 +64,7 @@ class DraftController {
             if (!userId)
                 throw new ApiError_1.ApiError(401, 'Unauthorized');
             await draftDbService.discardDraft(draftId, userId);
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DRAFT_REJECTED);
             res.status(200).json({ status: 'success', message: 'Draft discarded' });
         }
         catch (error) {

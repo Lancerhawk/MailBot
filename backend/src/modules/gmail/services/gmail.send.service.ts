@@ -2,6 +2,7 @@ import { prisma } from '../../../lib/prisma';
 import { GmailClientService } from './gmail.client.service';
 import { GmailDbService } from './gmail.db.service';
 import { DraftDbService } from '../../draft/draft.db.service';
+import { AnalyticsEventService, AnalyticsEventType } from '../../analytics/services/analytics-event.service';
 import { emitToUser } from '../../../socket';
 import { logger } from '../../../config/logger';
 import { ApiError } from '../../../utils/ApiError';
@@ -216,6 +217,11 @@ export class GmailSendService {
       );
 
       await prisma.$transaction(txns);
+
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.EMAIL_REPLIED);
+      if (draft) {
+        AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DRAFT_APPROVED);
+      }
 
       emitToUser(userId, 'email:sent', {
         emailId,

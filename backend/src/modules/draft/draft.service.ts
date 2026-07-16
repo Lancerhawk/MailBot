@@ -14,6 +14,9 @@ const gmailDbService = new GmailDbService();
 const knowledgeDbService = new KnowledgeDbService();
 const retrievalService = new RetrievalService();
 const contactDbService = new ContactDbService();
+import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
+import { PricingConfig } from '../analytics/services/pricing.config';
+import { AiProvider } from '@prisma/client';
 
 const userProcessingQueue = new Map<string, Promise<void>>();
 const activeGenerations = new Set<string>();
@@ -120,7 +123,7 @@ export class DraftService {
       }
 
       let contextText = `You are writing a reply on behalf of: ${userEmail}\nYou must write as ${userEmail}, NOT as the person who sent the email.\n\nThread Context (All participants: ${allRecipientsList}):\n\n` + contextBlocks.join('\n');
-      
+
       contextText += contactContextString;
 
       let knowledgeContext = '';
@@ -131,7 +134,7 @@ export class DraftService {
           if (retrievalResult) {
             knowledgeContext = retrievalResult.formattedContext;
           }
-          }
+        }
       } catch (err) {
         logger.warn({ err, emailId }, 'Knowledge retrieval failed, continuing without knowledge');
       }
@@ -161,6 +164,16 @@ export class DraftService {
         generationLatencyMs,
         confidence: groqResult.confidence,
         isFinal: true
+      });
+
+      const estCost = PricingConfig.calculateCost(AiProvider.GROQ, 'llama-3.1-8b-instant', groqResult.promptTokens || 0, groqResult.completionTokens || 0);
+
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DRAFT_GENERATED, {
+        latency: generationLatencyMs,
+        promptTokens: groqResult.promptTokens,
+        completionTokens: groqResult.completionTokens,
+        estimatedCost: estCost,
+        confidence: groqResult.confidence
       });
 
       const eventName = isRegeneration ? 'draft:regenerated' : 'draft:generated';

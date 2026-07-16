@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { DraftService } from './draft.service';
 import { DraftDbService } from './draft.db.service';
 import { ApiError } from '../../utils/ApiError';
+import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
 
 const draftService = new DraftService();
 const draftDbService = new DraftDbService();
@@ -72,6 +73,8 @@ export class DraftController {
       if (!userId) throw new ApiError(401, 'Unauthorized');
 
       await draftDbService.discardDraft(draftId, userId);
+
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DRAFT_REJECTED);
 
       res.status(200).json({ status: 'success', message: 'Draft discarded' });
     } catch (error) {

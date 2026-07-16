@@ -5,6 +5,7 @@ import { ParserService } from './services/parser.service';
 import { ChunkingService } from './services/chunking.service';
 import { EmbeddingService } from './services/embedding.service';
 import { RetrievalService } from './services/retrieval.service';
+import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
 import { emitToUser } from '../../socket';
 import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../config/logger';
@@ -73,6 +74,10 @@ export class KnowledgeService {
       fileHash,
     });
 
+    AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DOCUMENT_UPLOADED, {
+      storageUsedBytes: file.size
+    });
+
     emitToUser(userId, 'knowledge:upload_started', { documentId: document.id, title: document.title });
     emitToUser(userId, 'knowledge:uploaded', { documentId: document.id, title: document.title });
 
@@ -99,6 +104,7 @@ export class KnowledgeService {
         await dbService.updateDocumentStatus(documentId, ProcessingStatus.COMPLETED, {
           processedAt: new Date(),
         });
+        AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DOCUMENT_EMBEDDED);
         emitToUser(userId, 'knowledge:ready', { documentId, chunkCount: 0, isImage: true });
         console.timeEnd(`Knowledge-TotalPipeline-${documentId}`);
         return;
@@ -160,6 +166,8 @@ export class KnowledgeService {
 
       retrievalService.clearCacheForUser(userId);
 
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DOCUMENT_EMBEDDED);
+
       emitToUser(userId, 'knowledge:ready', { documentId, chunkCount: chunks.length });
       logger.info({ documentId, chunkCount: chunks.length }, 'Knowledge document processing completed');
 
@@ -168,6 +176,7 @@ export class KnowledgeService {
       await dbService.updateDocumentStatus(documentId, ProcessingStatus.FAILED, {
         processingError: error.message || 'Unknown processing error',
       });
+      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.PROCESSING_FAILURE);
       emitToUser(userId, 'knowledge:failed', { documentId, error: error.message });
     } finally {
       console.timeEnd(`Knowledge-TotalPipeline-${documentId}`);

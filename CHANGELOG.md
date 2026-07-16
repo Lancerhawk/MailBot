@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.9.0] & [Backend v0.9.0] - Analytics & AI Insights Dashboard
+
+### Added (Backend)
+- **Real-Time Analytics Event Service**: Implemented a highly scalable, centralized `AnalyticsEventService`. It acts as the sole writer for the `Analytics` table using safe, atomic Prisma upserts and fire-and-forget execution to guarantee absolutely zero impact or blocking on core application performance.
+- **Universal Event Integrations**: Successfully wired analytics event recording into all existing systems without modifying their business logic. Real-time events include: `EMAIL_RECEIVED`, `DRAFT_GENERATED`, `KNOWLEDGE_RETRIEVED`, `CONTACT_CREATED`, `ORGANIZATION_CREATED`, `LOGIN`, and `SETTINGS_CHANGE`.
+- **Historical Analytics Backfill Engine**: Created an idempotent `AnalyticsBackfillService` capable of parsing years of historical production data (Emails, Drafts, Sent Replies, Contacts, Documents, etc.) to reconstruct exact daily time-series analytics as if they were recorded from day one.
+- **Executive CSV Export System**: Re-architected CSV exports from a raw data dump into a highly structured, spreadsheet-native professional layout utilizing clean key-value pairs for KPIs and spaced tables for historical trends.
+- **Advanced API Architecture**: Built a complete analytics module matching the MailBot architecture containing `/overview`, `/charts`, `/export`, and Activity endpoints. All queries are strictly protected by `userId` and optimized against N+1 queries.
+
+### Added (Frontend)
+- **Premium Analytics Dashboard**: Replaced the "Coming Soon" screen with a full-blown responsive enterprise dashboard featuring the signature dark zinc, orange accent, and glassmorphic MailBot design system.
+- **Interactive Recharts Visualization**: Implemented highly animated, fluid line charts and area charts tracking Email Volume, Draft Automation Efficiency, AI Confidence Matrices, and Knowledge Base Scaling over time.
+- **Live WebSocket Synchronization**: The dashboard seamlessly listens for `sync:completed` and `analytics:updated` Socket.IO events, fetching fresh data instantaneously without requiring manual page reloads or polling.
+- **Executive PDF Briefing**: Completely rewrote the PDF generation engine using `jsPDF` and `jspdf-autotable`. It strips away screenshots and constructs a pure native vector PDF containing dynamic plain-English Executive Summaries followed by distinct data breakdowns.
+- **Granular Date Filtering**: Added a robust state-managed date selector allowing seamless toggling between 7D, 30D, 90D, or completely custom start/end timestamp ranges.
+
+### Changed
+- **Database Schema**: Expanded the Prisma schema by activating the `Analytics` and `ActivityLog` tables, enriching them with fields for tracking document embeddings, contacts created, storage used, and processing failures.
+
 ## [Frontend v0.8.0] & [Backend v0.8.0] - Contact Intelligence CRM & Merging System
 
 ### Added (Frontend)
@@ -146,7 +165,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Backend v0.1.0] - Database Schema Architecture
 
 ### Added
-- **Database Architecture (Phase 1):** Complete Prisma schema for a production AI email platform.
+- **Database Architecture:** Complete Prisma schema for a production AI email platform.
 - **AI & RAG Foundation:** `KnowledgeBaseDocument` and `KnowledgeBaseChunk` models with `pgvector` for AI embeddings.
 - **Core Email Models:** `Email`, `EmailThread`, `EmailAccountConnection` optimized for Gmail/Outlook integrations.
 - **CRM System:** `Contact` and `Organization` models for relationship tracking.

@@ -5,6 +5,7 @@ const groq_service_1 = require("../../ai/groq.service");
 const search_service_1 = require("./search.service");
 const knowledge_db_service_1 = require("../knowledge.db.service");
 const logger_1 = require("../../../config/logger");
+const analytics_event_service_1 = require("../../analytics/services/analytics-event.service");
 const CASUAL_PATTERNS = [
     /^(thanks|thank you|thx|ty|thankyou)[.!\s]*$/i,
     /^(hi|hello|hey|howdy|greetings)[.!\s,]*$/i,
@@ -74,6 +75,7 @@ class RetrievalService {
                     logger_1.logger.warn({ err, docId }, 'Failed to increment retrieval count');
                 });
             }
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.KNOWLEDGE_RETRIEVAL);
             logger_1.logger.info({
                 userId,
                 chunksUsed: chunks.length,

@@ -131,7 +131,12 @@ enum ActivityType {
   LOGIN
   SETTINGS_CHANGE
   EMAIL_SENT
+  EMAIL_RECEIVED
+  EMAIL_ANALYZED
   DRAFT_APPROVED
+  DOCUMENT_EMBEDDED
+  CONTACT_CREATED
+  ORGANIZATION_CREATED
   DATA_EXPORT
   SYSTEM_ERROR
 }
@@ -698,6 +703,14 @@ model Analytics {
   totalCompletionTokens Int     @default(0)
   estimatedCost         Decimal @default(0)
   timeSavedSeconds      Int     @default(0)
+
+  knowledgeRetrievalCount Int    @default(0)
+  documentsUploaded       Int    @default(0)
+  documentsEmbedded       Int    @default(0)
+  processingFailures      Int    @default(0)
+  storageUsedBytes        BigInt @default(0)
+  contactsCreated         Int    @default(0)
+  organizationsCreated    Int    @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

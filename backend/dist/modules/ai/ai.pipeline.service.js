@@ -10,6 +10,7 @@ const socket_1 = require("../../socket");
 const draft_service_1 = require("../draft/draft.service");
 const draft_db_service_1 = require("../draft/draft.db.service");
 const contact_db_service_1 = require("../contact/contact.db.service");
+const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
 const groqService = new groq_service_1.GroqService();
 const contactDbService = new contact_db_service_1.ContactDbService();
 const userProcessingQueue = {};
@@ -143,6 +144,10 @@ class AiPipelineService {
                     processingStatus: client_1.ProcessingStatus.COMPLETED
                 }
             });
+            analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.EMAIL_ANALYZED);
+            if (result.summary) {
+                analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.EMAIL_SUMMARIZED);
+            }
             (0, socket_1.emitToUser)(userId, 'analysis:completed', { emailId, threadId: email.emailThreadId, result: { ...result, sentiment, intent, priority, needsReply, confidence } });
             if (result.needsReply === false) {
                 return;
