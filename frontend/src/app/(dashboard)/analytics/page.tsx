@@ -145,6 +145,10 @@ function AnalyticsContent() {
               </span>
             </h1>
             <p className="text-zinc-400 text-sm">Real-time metrics and AI usage trends.</p>
+            <div className="flex items-center space-x-2 text-xs text-zinc-400 mt-2 bg-blue-500/10 p-2 rounded-md border border-blue-500/20 w-fit">
+              <AlertCircle className="w-4 h-4 text-blue-400" />
+              <span><strong>Note:</strong> All analytics data is recorded and grouped according to standard UTC time.</span>
+            </div>
           </motion.div>
 
           <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
@@ -168,9 +172,9 @@ function AnalyticsContent() {
 
               {dateRange === 'custom' && (
                 <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex items-center space-x-2 bg-zinc-900/50 p-1.5 rounded-lg border border-zinc-800/80 w-full sm:w-auto overflow-x-auto">
-                  <input type="date" className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+                  <input type="date" max={new Date().toISOString().split('T')[0]} className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto [&::-webkit-calendar-picker-indicator]:invert" value={customStart} onChange={e => setCustomStart(e.target.value)} />
                   <span className="text-zinc-500 text-xs font-medium px-1">to</span>
-                  <input type="date" className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+                  <input type="date" max={new Date().toISOString().split('T')[0]} className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto [&::-webkit-calendar-picker-indicator]:invert" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
                 </motion.div>
               )}
             </div>

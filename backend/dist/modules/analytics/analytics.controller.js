@@ -14,7 +14,9 @@ class AnalyticsController {
             filter.gte = new Date(startDate);
         }
         if (endDate) {
-            filter.lte = new Date(endDate);
+            const end = new Date(endDate);
+            end.setUTCHours(23, 59, 59, 999);
+            filter.lte = end;
         }
         return Object.keys(filter).length > 0 ? filter : undefined;
     }
