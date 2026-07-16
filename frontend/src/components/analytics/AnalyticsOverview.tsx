@@ -42,7 +42,7 @@ export function AnalyticsOverview({ data, isLoading }: AnalyticsOverviewProps) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[1, 2, 3, 4].map((i) => (
-          <Skeleton key={i} className="h-32 rounded-xl bg-zinc-900 border border-zinc-800" />
+          <Skeleton key={i} className="h-32 rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 shadow-sm dark:shadow-none" />
         ))}
       </div>
     );
@@ -87,17 +87,17 @@ export function AnalyticsOverview({ data, isLoading }: AnalyticsOverviewProps) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: idx * 0.05 }}
-          className={`p-5 rounded-xl border flex flex-col justify-between ${kpi.color} hover:bg-opacity-20 transition-all cursor-default`}
+          className={`p-5 rounded-xl border border-zinc-300 dark:border-transparent flex flex-col justify-between ${kpi.color} hover:bg-opacity-20 transition-all cursor-default shadow-sm dark:shadow-none`}
         >
           <div className="flex justify-between items-start mb-4">
-            <h3 className="text-zinc-300 font-medium text-sm">{kpi.title}</h3>
+            <h3 className="text-zinc-700 dark:text-zinc-300 font-medium text-sm">{kpi.title}</h3>
             <div className="p-2 rounded-lg bg-black/20 backdrop-blur-sm shadow-inner">
               {kpi.icon}
             </div>
           </div>
           <div>
-            <div className="text-3xl font-semibold text-white tracking-tight">{kpi.value}</div>
-            <div className="text-xs text-zinc-400 mt-1 font-medium">{kpi.subtitle}</div>
+            <div className="text-3xl font-semibold text-zinc-900 dark:text-white tracking-tight">{kpi.value}</div>
+            <div className="text-xs text-zinc-600 dark:text-zinc-400 mt-1 font-medium">{kpi.subtitle}</div>
           </div>
         </motion.div>
       ))}

@@ -130,8 +130,7 @@ function AnalyticsContent() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-hidden bg-zinc-950 text-zinc-50 relative">
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6 pb-24">
+    <div className="flex flex-col gap-6 h-full relative pb-10">
 
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
           <motion.div
@@ -139,16 +138,14 @@ function AnalyticsContent() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col space-y-1"
           >
-            <h1 className="text-3xl font-bold tracking-tight flex items-center space-x-2">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-orange-500 to-amber-500">
-                Analytics & Insights
-              </span>
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50 flex items-center space-x-2">
+              Analytics & Insights
             </h1>
-            <p className="text-zinc-400 text-sm">Real-time metrics and AI usage trends.</p>
-            <div className="flex items-center space-x-2 text-xs text-zinc-400 mt-2 bg-blue-500/10 p-2 rounded-md border border-blue-500/20 w-fit">
-              <AlertCircle className="w-4 h-4 text-blue-400" />
-              <span><strong>Note:</strong> All analytics data is recorded and grouped according to standard UTC time.</span>
-            </div>
+            <p className="text-zinc-500 dark:text-zinc-400 text-sm">Real-time metrics and AI usage trends.</p>
+            <p className="mt-2 text-xs font-medium text-orange-600 dark:text-orange-400">
+              <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
+              Note: All analytics data is recorded and grouped according to standard UTC time.
+            </p>
           </motion.div>
 
           <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full md:w-auto mt-4 md:mt-0">
@@ -156,7 +153,7 @@ function AnalyticsContent() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full xl:w-auto">
               <div className="relative w-full sm:w-auto">
                 <select
-                  className="w-full sm:w-auto appearance-none bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/50 hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer"
+                  className="w-full sm:w-auto appearance-none bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-lg pl-4 pr-10 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/50 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition-colors shadow-sm cursor-pointer"
                   value={dateRange}
                   onChange={(e) => setDateRange(e.target.value)}
                 >
@@ -165,32 +162,32 @@ function AnalyticsContent() {
                   <option value="90d">Last 90 Days</option>
                   <option value="custom">Custom Range...</option>
                 </select>
-                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-500">
+                <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-zinc-400 dark:text-zinc-500">
                   <ChevronDown className="w-4 h-4" />
                 </div>
               </div>
 
               {dateRange === 'custom' && (
-                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex items-center space-x-2 bg-zinc-900/50 p-1.5 rounded-lg border border-zinc-800/80 w-full sm:w-auto overflow-x-auto">
-                  <input type="date" max={new Date().toISOString().split('T')[0]} className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto [&::-webkit-calendar-picker-indicator]:invert" value={customStart} onChange={e => setCustomStart(e.target.value)} />
+                <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="flex items-center space-x-2 bg-zinc-50 dark:bg-zinc-900/50 p-1.5 rounded-lg border border-zinc-200 dark:border-zinc-800/80 w-full sm:w-auto overflow-x-auto">
+                  <input type="date" max={new Date().toISOString().split('T')[0]} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto dark:[&::-webkit-calendar-picker-indicator]:invert" value={customStart} onChange={e => setCustomStart(e.target.value)} />
                   <span className="text-zinc-500 text-xs font-medium px-1">to</span>
-                  <input type="date" max={new Date().toISOString().split('T')[0]} className="bg-zinc-900 border border-zinc-800 text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto [&::-webkit-calendar-picker-indicator]:invert" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
+                  <input type="date" max={new Date().toISOString().split('T')[0]} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500/50 h-8 w-full sm:w-auto dark:[&::-webkit-calendar-picker-indicator]:invert" value={customEnd} onChange={e => setCustomEnd(e.target.value)} />
                 </motion.div>
               )}
             </div>
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="border-zinc-800 text-zinc-300 hover:text-white w-full xl:w-auto" disabled={isExportingPDF}>
+                <Button variant="outline" className="border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800 w-full xl:w-auto" disabled={isExportingPDF}>
                   {isExportingPDF ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
                   Export
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="bg-zinc-950 border-zinc-800/80">
-                <DropdownMenuItem onClick={handleExportPDF} className="text-zinc-300 focus:bg-zinc-800 cursor-pointer">
+              <DropdownMenuContent align="end" className="bg-white dark:bg-zinc-950 border-zinc-200 dark:border-zinc-800/80">
+                <DropdownMenuItem onClick={handleExportPDF} className="text-zinc-700 dark:text-zinc-300 focus:bg-zinc-100 dark:focus:bg-zinc-800 cursor-pointer">
                   Export as PDF (Report)
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportCSV} className="text-zinc-300 focus:bg-zinc-800 cursor-pointer">
+                <DropdownMenuItem onClick={handleExportCSV} className="text-zinc-700 dark:text-zinc-300 focus:bg-zinc-100 dark:focus:bg-zinc-800 cursor-pointer">
                   Export as CSV (Data)
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -210,9 +207,9 @@ function AnalyticsContent() {
 
         <div className="space-y-6">
           {isCustomMissingDates ? (
-            <div className="flex flex-col items-center justify-center py-32 text-zinc-500 border border-zinc-800/80 rounded-xl bg-zinc-900/20 border-dashed">
+            <div className="flex flex-col items-center justify-center py-32 text-zinc-500 border border-zinc-200 dark:border-zinc-800/80 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 border-dashed">
               <Calendar className="w-12 h-12 mb-4 opacity-50 text-orange-500" />
-              <h3 className="text-lg font-medium text-zinc-300">Select Date Range</h3>
+              <h3 className="text-lg font-medium text-zinc-800 dark:text-zinc-300">Select Date Range</h3>
               <p className="text-sm mt-1">Please select both a start and end date to view custom analytics.</p>
             </div>
           ) : (
@@ -225,7 +222,6 @@ function AnalyticsContent() {
           )}
         </div>
 
-      </div>
     </div>
   );
 }
