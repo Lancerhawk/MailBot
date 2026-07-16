@@ -262,10 +262,16 @@ export class GmailSyncService {
 
           if (existingThread) {
             // console.time(`Gmail-MissingMessages-${threadId}`);
-            const fetchedMessages = await Promise.all(Array.from(messageIds).map(async (msgId) => {
-              const fullMsgRes = await gmail.users.messages.get({ userId: "me", id: msgId, format: "full" });
-              return fullMsgRes.data;
+            const fetchedMessagesRaw = await Promise.all(Array.from(messageIds).map(async (msgId) => {
+              try {
+                const fullMsgRes = await gmail.users.messages.get({ userId: "me", id: msgId, format: "full" });
+                return fullMsgRes.data;
+              } catch (err: any) {
+                if (err.code === 404 || err.status === 404) return null;
+                throw err;
+              }
             }));
+            const fetchedMessages = fetchedMessagesRaw.filter(m => m !== null);
             // console.timeEnd(`Gmail-MissingMessages-${threadId}`);
 
             const parsedEmails = fetchedMessages.map(m => this.parserService.parseMessage(m));

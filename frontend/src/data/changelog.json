@@ -1,12 +1,76 @@
 {
   "versions": [
     {
+      "id": "fe-0.8.0",
+      "version": "v0.8.0",
+      "service": "Frontend",
+      "date": "2026-07-16",
+      "title": "Contact Intelligence CRM",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Unified Contact Profile UI",
+          "description": "Complete rewrite of the Contact Profile with instant-cache tabs (Overview, Timeline, Emails, Merged), preserving state across navigation without unnecessary network requests."
+        },
+        {
+          "title": "Deep Email Thread Integration",
+          "description": "Added live-rendered email history directly inside the Contact Profile, integrated seamlessly with the native ThreadViewer component via Stale-While-Revalidate caching."
+        },
+        {
+          "title": "Merge Contacts UI",
+          "description": "New interface allowing users to manually merge duplicate contacts, consolidating history and AI preferences under a single master profile."
+        },
+        {
+          "title": "Frontend Type Safety",
+          "description": "Replaced ambiguous any types with strict interfaces, resolved set-state-in-effect violations, and migrated to optimized Next.js Image components."
+        },
+        {
+          "title": "CI/CD Pipeline",
+          "description": "Added GitHub Actions workflow for automated ESLint checking on PRs and main branch pushes."
+        }
+      ]
+    },
+    {
+      "id": "be-0.8.0",
+      "version": "v0.8.0",
+      "service": "Backend",
+      "date": "2026-07-16",
+      "title": "Contact Merging System",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Contact Pointer System",
+          "description": "Implemented a self-referencing mergedIntoId schema update to maintain referential integrity when merging contacts, avoiding cascade deletion of email associations."
+        },
+        {
+          "title": "Context Priority AI Pipeline",
+          "description": "Enhanced the prompt compilation logic to strictly respect: (1) Conversation Context, (2) Contact Intelligence, and (3) Knowledge Base."
+        },
+        {
+          "title": "Inherited Tone Configuration",
+          "description": "When an email is received from a merged/deleted contact alias, the AI now successfully resolves the merge pointer and inherits the master contact's tone and AI preferences."
+        },
+        {
+          "title": "Ghost Draft 404 Fix",
+          "description": "Fixed a critical bug in the Gmail Sync engine where encountering a 404 error on a background-deleted draft would crash the incremental sync batch."
+        },
+        {
+          "title": "Backend Cleanups",
+          "description": "Disabled conflicting ESLint rules for circular dependencies, ignored compiled outputs, applied safe non-null assertions, and pruned genuinely unused variables across all services."
+        },
+        {
+          "title": "CI/CD Pipeline",
+          "description": "Added GitHub Actions workflow for automated ESLint checking on PRs and main branch pushes."
+        }
+      ]
+    },
+    {
       "id": "be-0.7.1",
       "version": "v0.7.1",
       "service": "Backend",
       "date": "2026-07-15",
       "title": "Fair-Share Rate Limit Scheduler",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "O(1) Fair-Share Rate Limiter",
@@ -28,7 +92,7 @@
       "service": "Frontend",
       "date": "2026-07-14",
       "title": "Knowledge Base Interface & RAG UI",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Complete Knowledge Base UI",

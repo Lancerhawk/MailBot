@@ -9,7 +9,9 @@ const logger_1 = require("../../config/logger");
 const socket_1 = require("../../socket");
 const draft_service_1 = require("../draft/draft.service");
 const draft_db_service_1 = require("../draft/draft.db.service");
+const contact_db_service_1 = require("../contact/contact.db.service");
 const groqService = new groq_service_1.GroqService();
+const contactDbService = new contact_db_service_1.ContactDbService();
 const userProcessingQueue = {};
 class AiPipelineService {
     scheduleAnalysis(userId, emailId) {
@@ -95,14 +97,32 @@ class AiPipelineService {
                 const sender = msg.participants.find(p => p.role === 'SENDER')?.emailAddress || 'Unknown';
                 const msgHeader = `--- Message from: ${sender} on ${msg.providerInternalDate.toISOString()} ---\nSubject: ${msg.subject || '(No Subject)'}`;
                 const msgBlock = `${msgHeader}\n${cleanText}\n\n`;
-                if (currentLength + msgBlock.length > MAX_CONTEXT_LENGTH && contextMessages.length > 0) {
+                let blockToAdd = msgBlock;
+                if (contextMessages.length === 0 && blockToAdd.length > MAX_CONTEXT_LENGTH) {
+                    blockToAdd = blockToAdd.substring(0, MAX_CONTEXT_LENGTH) + '\n... [TRUNCATED DUE TO LENGTH]';
+                }
+                if (currentLength + blockToAdd.length > MAX_CONTEXT_LENGTH && contextMessages.length > 0) {
                     break;
                 }
-                currentLength += msgBlock.length;
-                contextMessages.unshift(msgBlock);
+                currentLength += blockToAdd.length;
+                contextMessages.unshift(blockToAdd);
             }
             const conversationContext = contextMessages.join('');
-            const result = await groqService.analyzeConversation(userId, conversationContext);
+            let finalContext = conversationContext;
+            const currentMsg = threadEmails.find(e => e.id === emailId);
+            const senderEmail = currentMsg?.participants.find((p) => p.role === 'SENDER')?.emailAddress;
+            if (senderEmail) {
+                try {
+                    const contactContext = await contactDbService.getContactContextByEmail(userId, senderEmail);
+                    if (contactContext) {
+                        finalContext = conversationContext + "\n\n" + contactContext;
+                    }
+                }
+                catch (error) {
+                    logger_1.logger.error({ err: error }, 'Failed to fetch contact context for analysis');
+                }
+            }
+            const result = await groqService.analyzeConversation(userId, finalContext);
             const validSentiments = ['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED'];
             const validIntents = ['INQUIRY', 'SUPPORT', 'MEETING', 'FEEDBACK', 'SPAM', 'OTHER'];
             const validPriorities = ['LOW', 'NORMAL', 'HIGH', 'URGENT'];

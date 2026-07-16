@@ -14,6 +14,7 @@ import { DraftEditor, type Draft } from "./DraftEditor";
 import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2, ChevronLeft, Paperclip, FileText, Image as ImageIcon, Film, FileArchive, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/providers/AuthProvider";
+import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -293,7 +294,7 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
   );
 }
 
-export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?: () => void }) {
+export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: string; onClose?: () => void; forceShowClose?: boolean }) {
   const { user } = useAuth();
   const { getThread, updateThreadInCache, cache } = useThreadCache();
   const [thread, setThread] = useState<Thread | null>(() => (cache[threadId] as Thread) || null);
@@ -454,7 +455,10 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
       <div className="shrink-0 border-b border-zinc-200 bg-white/90 px-4 sm:px-6 py-4 backdrop-blur-sm dark:border-zinc-800 dark:bg-zinc-950/90 flex flex-col sm:flex-row sm:items-center justify-between gap-4 sm:gap-2">
         <div className="flex flex-1 items-start sm:items-center gap-2 sm:gap-4 min-w-0">
           {onClose && (
-            <Button variant="ghost" size="icon" onClick={onClose} className="xl:hidden shrink-0 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 mt-0.5 sm:mt-0">
+            <Button variant="ghost" size="icon" onClick={onClose} className={cn(
+              "shrink-0 -ml-2 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-50 mt-0.5 sm:mt-0",
+              !forceShowClose && "xl:hidden"
+            )}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
           )}

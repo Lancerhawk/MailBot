@@ -133,7 +133,24 @@ Output format MUST be EXACTLY this JSON structure and absolutely nothing else (n
   "confidence": 0.0 to 1.0
 }
 
-Conversation Context:
+CRITICAL RULES FOR CONTACT CONTEXT:
+- If Contact Context is provided, use it to understand the social dynamic and intent of the message better.
+- Never invent facts or override the thread conversation.
+- Never expose internal notes or CRM structure.
+
+PROMPT CONTEXT PRIORITY RULES:
+Explicitly enforce the following hierarchy:
+1. Conversation Thread (highest priority)
+2. Contact Context
+3. Knowledge Base
+4. General Model Knowledge (lowest priority)
+- The conversation always represents the latest truth.
+- Contact Context is for personalization only and must never override facts from the conversation.
+- Knowledge Base is for factual reference only.
+- If Contact Context and Knowledge Base conflict, use Contact Context for style/tone and Knowledge Base for facts.
+- Never merge conflicting facts. Prefer Conversation first, then newest Knowledge Base.
+
+Conversation Context (including optional Contact Context):
 ${contextText}`;
         return enqueueTask(userId, async () => {
             const completion = await groq.chat.completions.create({
@@ -156,6 +173,28 @@ CRITICAL ZERO-TOLERANCE ANTI-HALLUCINATION & MEETING RULES:
 - If the sender asks a personal question (e.g., "How are you?"), provide a very brief, polite, generic response (e.g., "I'm doing well, thank you.") without making up a backstory.
 - ONLY include information that is explicitly stated in the Conversation Context or the Knowledge Documents.
 - NEVER mention, offer, or try to schedule meetings or calls on behalf of the user. If the sender requests a meeting, provide a polite response leaving a placeholder for the user to fill in their details (e.g., "[Insert meeting link or availability here]").
+
+CRITICAL RULES FOR CONTACT CONTEXT:
+- If Contact Context is provided, MATCH the Preferred AI Tone whenever appropriate.
+- Use the Relationship to adjust writing style only.
+- Respect Custom Notes for communication style (e.g. formatting, conciseness).
+- Never invent facts using Contact Context.
+- Never contradict the conversation.
+- Never expose internal notes, CRM mentions, or relationship labels in the output.
+- Never say "According to your contact information".
+- Use Contact Context strictly to personalize the response.
+
+PROMPT CONTEXT PRIORITY RULES:
+Explicitly enforce the following hierarchy:
+1. Conversation Thread (highest priority)
+2. Contact Context
+3. Knowledge Base
+4. General Model Knowledge (lowest priority)
+- The conversation always represents the latest truth.
+- Contact Context is for personalization only (tone, relationship, preferences, notes) and must never override facts from the conversation.
+- Knowledge Base is for factual reference only and must never override either the conversation or the contact's communication preferences.
+- If Contact Context and Knowledge Base conflict, use Contact Context for communication style and Knowledge Base for factual information.
+- Never merge conflicting facts. Prefer Conversation first, then newest Knowledge Base information.
 
 CRITICAL RULES FOR KNOWLEDGE CONFLICTS:
 - Documents in the knowledge context will have an "Uploaded X days ago" label.

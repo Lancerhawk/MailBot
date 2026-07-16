@@ -172,6 +172,11 @@ enum ContactRelationship {
   OTHER
 }
 
+enum ContactDirection {
+  INCOMING
+  OUTGOING
+}
+
 enum AttachmentCategory {
   IMAGE
   VIDEO
@@ -295,6 +300,18 @@ model Contact {
   interactionCount Int                  @default(0)
   lastInteraction  DateTime?
   customNotes      String?              @db.Text
+
+  favorite               Boolean           @default(false)
+  pinned                 Boolean           @default(false)
+  lastContactedDirection ContactDirection?
+  company                String?
+  linkedinUrl            String?
+  website                String?
+  twitterUrl             String?
+  labels                 String[]
+  aiSummary              String?           @db.Text
+  lastSummaryGeneratedAt DateTime?
+
   createdAt        DateTime             @default(now())
   updatedAt        DateTime             @updatedAt
   deletedAt        DateTime?
@@ -302,10 +319,19 @@ model Contact {
   user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   organization Organization?      @relation(fields: [organizationId], references: [id])
   participants EmailParticipant[]
+  
+  mergedIntoId String?
+  mergedInto   Contact?           @relation("ContactMerges", fields: [mergedIntoId], references: [id])
+  mergedFrom   Contact[]          @relation("ContactMerges")
 
   @@unique([userId, emailAddress])
   @@index([userId, displayName])
   @@index([organizationId])
+  @@index([userId, favorite])
+  @@index([userId, pinned])
+  @@index([userId, lastInteraction])
+  @@index([userId, interactionCount])
+  @@index([userId, deletedAt])
 }
 
 model EmailThread {

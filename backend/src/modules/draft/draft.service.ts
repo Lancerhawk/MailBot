@@ -3,6 +3,7 @@ import { GroqService } from '../ai/groq.service';
 import { GmailDbService } from '../gmail/services/gmail.db.service';
 import { KnowledgeDbService } from '../knowledge/knowledge.db.service';
 import { RetrievalService } from '../knowledge/services/retrieval.service';
+import { ContactDbService } from '../contact/contact.db.service';
 import { convert } from 'html-to-text';
 import { logger } from '../../config/logger';
 import { emitToUser } from '../../socket';
@@ -12,6 +13,7 @@ const groqService = new GroqService();
 const gmailDbService = new GmailDbService();
 const knowledgeDbService = new KnowledgeDbService();
 const retrievalService = new RetrievalService();
+const contactDbService = new ContactDbService();
 
 const userProcessingQueue = new Map<string, Promise<void>>();
 const activeGenerations = new Set<string>();
@@ -82,13 +84,18 @@ export class DraftService {
         const header = `--- Message from ${from?.emailAddress} on ${dateStr} ---\nTo: ${to}\nCc: ${cc}\nSubject: ${msg.subject || thread.subject}\n`;
         const block = `${header}\n${rawBody}\n`;
 
+        let blockToAdd = block;
+        if (i === sortedEmails.length - 1 && blockToAdd.length > MAX_CHARS) {
+          blockToAdd = blockToAdd.substring(0, MAX_CHARS) + '\n... [TRUNCATED DUE TO LENGTH]';
+        }
+
         if (i === sortedEmails.length - 1) {
-          contextBlocks.unshift(block);
-          currentChars += block.length;
+          contextBlocks.unshift(blockToAdd);
+          currentChars += blockToAdd.length;
         } else {
-          if (currentChars + block.length <= MAX_CHARS) {
-            contextBlocks.unshift(block);
-            currentChars += block.length;
+          if (currentChars + blockToAdd.length <= MAX_CHARS) {
+            contextBlocks.unshift(blockToAdd);
+            currentChars += blockToAdd.length;
           } else {
             break;
           }
@@ -99,7 +106,22 @@ export class DraftService {
 
       const userEmail = email.connection?.emailAddress || '';
 
+      const senderEmail = email.participants.find((p: any) => p.role === 'SENDER')?.emailAddress;
+      let contactContextString = '';
+      if (senderEmail) {
+        try {
+          const fetchedContactContext = await contactDbService.getContactContextByEmail(userId, senderEmail);
+          if (fetchedContactContext) {
+            contactContextString = "\n\n" + fetchedContactContext;
+          }
+        } catch (error) {
+          logger.error({ err: error }, 'Failed to fetch contact context for draft');
+        }
+      }
+
       let contextText = `You are writing a reply on behalf of: ${userEmail}\nYou must write as ${userEmail}, NOT as the person who sent the email.\n\nThread Context (All participants: ${allRecipientsList}):\n\n` + contextBlocks.join('\n');
+      
+      contextText += contactContextString;
 
       let knowledgeContext = '';
       try {

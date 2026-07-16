@@ -8,6 +8,7 @@ import gmailRoute from '../../modules/gmail/gmail.route';
 
 import draftRoute from '../../modules/draft/draft.route';
 import knowledgeRoute from '../../modules/knowledge/knowledge.route';
+import contactRoute from '../../modules/contact/contact.route';
 
 const defaultRoutes = [
   {
@@ -29,6 +30,10 @@ const defaultRoutes = [
   {
     path: '/knowledge',
     route: knowledgeRoute,
+  },
+  {
+    path: '/contacts',
+    route: contactRoute,
   }
 ];
 

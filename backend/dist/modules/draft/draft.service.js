@@ -6,6 +6,7 @@ const groq_service_1 = require("../ai/groq.service");
 const gmail_db_service_1 = require("../gmail/services/gmail.db.service");
 const knowledge_db_service_1 = require("../knowledge/knowledge.db.service");
 const retrieval_service_1 = require("../knowledge/services/retrieval.service");
+const contact_db_service_1 = require("../contact/contact.db.service");
 const html_to_text_1 = require("html-to-text");
 const logger_1 = require("../../config/logger");
 const socket_1 = require("../../socket");
@@ -14,6 +15,7 @@ const groqService = new groq_service_1.GroqService();
 const gmailDbService = new gmail_db_service_1.GmailDbService();
 const knowledgeDbService = new knowledge_db_service_1.KnowledgeDbService();
 const retrievalService = new retrieval_service_1.RetrievalService();
+const contactDbService = new contact_db_service_1.ContactDbService();
 const userProcessingQueue = new Map();
 const activeGenerations = new Set();
 class DraftService {
@@ -66,14 +68,18 @@ class DraftService {
                 const rawBody = msg.plainBody || (msg.htmlBody ? (0, html_to_text_1.convert)(msg.htmlBody, { wordwrap: false }) : 'No content');
                 const header = `--- Message from ${from?.emailAddress} on ${dateStr} ---\nTo: ${to}\nCc: ${cc}\nSubject: ${msg.subject || thread.subject}\n`;
                 const block = `${header}\n${rawBody}\n`;
+                let blockToAdd = block;
+                if (i === sortedEmails.length - 1 && blockToAdd.length > MAX_CHARS) {
+                    blockToAdd = blockToAdd.substring(0, MAX_CHARS) + '\n... [TRUNCATED DUE TO LENGTH]';
+                }
                 if (i === sortedEmails.length - 1) {
-                    contextBlocks.unshift(block);
-                    currentChars += block.length;
+                    contextBlocks.unshift(blockToAdd);
+                    currentChars += blockToAdd.length;
                 }
                 else {
-                    if (currentChars + block.length <= MAX_CHARS) {
-                        contextBlocks.unshift(block);
-                        currentChars += block.length;
+                    if (currentChars + blockToAdd.length <= MAX_CHARS) {
+                        contextBlocks.unshift(blockToAdd);
+                        currentChars += blockToAdd.length;
                     }
                     else {
                         break;
@@ -82,7 +88,21 @@ class DraftService {
             }
             const allRecipientsList = Array.from(allRecipients).join(', ');
             const userEmail = email.connection?.emailAddress || '';
+            const senderEmail = email.participants.find((p) => p.role === 'SENDER')?.emailAddress;
+            let contactContextString = '';
+            if (senderEmail) {
+                try {
+                    const fetchedContactContext = await contactDbService.getContactContextByEmail(userId, senderEmail);
+                    if (fetchedContactContext) {
+                        contactContextString = "\n\n" + fetchedContactContext;
+                    }
+                }
+                catch (error) {
+                    logger_1.logger.error({ err: error }, 'Failed to fetch contact context for draft');
+                }
+            }
             let contextText = `You are writing a reply on behalf of: ${userEmail}\nYou must write as ${userEmail}, NOT as the person who sent the email.\n\nThread Context (All participants: ${allRecipientsList}):\n\n` + contextBlocks.join('\n');
+            contextText += contactContextString;
             let knowledgeContext = '';
             try {
                 const hasDocuments = await knowledgeDbService.hasActiveDocuments(userId);

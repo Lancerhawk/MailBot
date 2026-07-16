@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v0.8.0] & [Backend v0.8.0] - Contact Intelligence CRM & Merging System
+
+### Added (Frontend)
+- **Unified Contact Profile UI**: Complete rewrite of the Contact Profile with instant-cache tabs (`Overview`, `Timeline`, `Emails`, `Merged`), preserving state across navigation.
+- **Deep Email Thread Integration**: Added live-rendered email history directly inside the Contact Profile, integrated seamlessly with the native ThreadViewer component via Stale-While-Revalidate caching.
+- **Merge Contacts UI**: New interface allowing users to manually merge duplicate contacts.
+
+### Added (Backend)
+- **Contact Pointer System**: Implemented a self-referencing `mergedIntoId` schema update to maintain referential integrity when merging contacts, avoiding cascade deletion of email associations.
+- **Context Priority AI Pipeline**: Enhanced the prompt compilation logic to strictly respect: (1) Conversation Context, (2) Contact Intelligence (Tone/Relationship), and (3) Knowledge Base. 
+- **Inherited Tone Configuration**: When an email is received from a merged/deleted contact alias, the AI now successfully resolves the merge pointer and inherits the master contact's tone and AI preferences.
+
+### Changed
+- **CI/CD Pipeline**: Added GitHub Actions workflow for automated ESLint checking across both frontend and backend on PRs and main branch pushes.
+- **Frontend Type Safety**: Replaced ambiguous `any` types with strict interfaces (`KnowledgeDocument`, `Thread`, `Email`, `Draft`), resolved `set-state-in-effect` violations, and migrated to optimized Next.js `<Image>` components.
+- **Backend Cleanups**: Disabled conflicting ESLint rules for circular dependencies, ignored compiled outputs, applied safe non-null assertions, and pruned genuinely unused variables across all services.
+
+### Fixed
+- **Ghost Draft 404 Crash**: Fixed a critical bug in the Gmail Sync engine where encountering a 404 error on a background-deleted draft would crash the `Promise.all` incremental sync batch.
+
 ## [Backend v0.7.1] - Fair-Share Rate Limit Scheduler
 
 ### Changed

@@ -10,6 +10,7 @@ const auth_route_1 = __importDefault(require("./auth.route"));
 const gmail_route_1 = __importDefault(require("../../modules/gmail/gmail.route"));
 const draft_route_1 = __importDefault(require("../../modules/draft/draft.route"));
 const knowledge_route_1 = __importDefault(require("../../modules/knowledge/knowledge.route"));
+const contact_route_1 = __importDefault(require("../../modules/contact/contact.route"));
 const defaultRoutes = [
     {
         path: '/health',
@@ -30,6 +31,10 @@ const defaultRoutes = [
     {
         path: '/knowledge',
         route: knowledge_route_1.default,
+    },
+    {
+        path: '/contacts',
+        route: contact_route_1.default,
     }
 ];
 defaultRoutes.forEach((route) => {
