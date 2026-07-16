@@ -10,8 +10,8 @@ import {
   CheckCircle,
   Loader2,
   WifiOff,
-  Users,
-  BookOpen
+  Settings,
+  LifeBuoy
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -315,13 +315,13 @@ export default function DashboardPage() {
             </h2>
             <div className="mt-4 space-y-3">
               <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/30">
-                <Users className="h-5 w-5 text-indigo-400" />
+                <Settings className="h-5 w-5 text-indigo-400" />
                 <div>
                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                    CRM & Contacts
+                    Advanced Settings
                   </p>
                   <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                    Relationship management
+                    Preferences & config
                   </p>
                 </div>
               </div>
@@ -337,13 +337,13 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3 rounded-lg border border-dashed border-zinc-200 bg-zinc-50/50 px-4 py-3 dark:border-zinc-700 dark:bg-zinc-800/30">
-                <BookOpen className="h-5 w-5 text-amber-400" />
+                <LifeBuoy className="h-5 w-5 text-amber-400" />
                 <div>
                   <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
-                    AI Knowledge Base
+                    Support Center
                   </p>
                   <p className="text-[11px] text-zinc-400 dark:text-zinc-500">
-                    Train your assistant
+                    Help & tutorials
                   </p>
                 </div>
               </div>
