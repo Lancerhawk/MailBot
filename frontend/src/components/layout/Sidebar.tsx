@@ -12,7 +12,6 @@ import {
   Users,
   BarChart3,
   Settings,
-  HelpCircle,
   X,
   ShieldAlert,
   Trash2
@@ -32,7 +31,6 @@ const navigation = [
 
 const secondaryNavigation = [
   { name: "Settings", href: "/settings", icon: Settings },
-  { name: "Support", href: "/support", icon: HelpCircle },
 ];
 
 interface SidebarProps {

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v1.0.0] & [Backend v1.0.0] - Settings Center & UI Perfection
+
+### Added (Frontend)
+- **Settings Center UI:** Implemented a full, production-grade Settings page featuring a premium dark zinc and glassmorphic design system.
+- **Account Profile Section:** Designed a beautifully balanced user profile header displaying live account information (Avatar, Email, Connection Status, and abbreviated Account ID).
+- **Responsive Layout:** Upgraded the settings dashboard to dynamically adapt across themes with soft orange gradients for light mode and sleek dark zinc for dark mode.
+- **Coming Soon Previews:** Added read-only toggles and fields for upcoming features (Auto-reply, Business Hours, RAG Confidence thresholds) with interactive "Coming Soon" badges and tooltip indicators.
+
+### Added (Backend)
+- **Settings Payload Expansion:** Updated the `getCurrentUser` authentication payload to automatically join and include the user's `UserSettings` from the database, eliminating the need for fallback configuration states.
+
+### Changed
+- **Dashboard Cleanup:** Cleaned up the Dashboard "Coming Soon" section to remove completed features like Email Analytics and Support Center.
+- **Sidebar Navigation:** Streamlined the sidebar by removing unused Support navigation routes.
+
 ## [Frontend v0.9.0] & [Backend v0.9.0] - Analytics & AI Insights Dashboard
 
 ### Added (Backend)

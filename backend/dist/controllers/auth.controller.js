@@ -60,7 +60,7 @@ const prisma_1 = require("../lib/prisma");
 exports.getCurrentUser = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const userWithConnections = await prisma_1.prisma.user.findUnique({
         where: { id: req.user.id },
-        include: { connections: true }
+        include: { connections: true, settings: true }
     });
     const connection = userWithConnections?.connections[0];
     const hasGmailAccess = connection ? connection.scope.includes('gmail.modify') : false;
@@ -70,6 +70,7 @@ exports.getCurrentUser = (0, catchAsync_1.catchAsync)(async (req, res) => {
             user: {
                 ...req.user,
                 hasGmailAccess,
+                settings: userWithConnections?.settings || null,
             },
         }
     });

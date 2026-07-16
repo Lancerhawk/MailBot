@@ -1,12 +1,52 @@
 {
   "versions": [
     {
+      "id": "fe-v1.0.0",
+      "version": "v1.0.0",
+      "date": "2026-07-17",
+      "title": "Settings Center & UI Perfection",
+      "service": "Frontend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Settings Center UI",
+          "description": "Implemented a full, production-grade Settings page featuring a premium dark zinc and glassmorphic design system."
+        },
+        {
+          "title": "Account Profile Section",
+          "description": "Designed a beautifully balanced user profile header displaying live account information (Avatar, Email, Connection Status, and abbreviated Account ID)."
+        },
+        {
+          "title": "Responsive Layout",
+          "description": "Upgraded the settings dashboard to dynamically adapt across themes with soft orange gradients for light mode and sleek dark zinc for dark mode."
+        },
+        {
+          "title": "Dashboard Cleanup",
+          "description": "Cleaned up the Dashboard \"Coming Soon\" section and Sidebar navigation to remove unused and completed features."
+        }
+      ]
+    },
+    {
+      "id": "be-v1.0.0",
+      "version": "v1.0.0",
+      "date": "2026-07-17",
+      "title": "Settings Payload Expansion",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Settings Payload Expansion",
+          "description": "Updated the `getCurrentUser` authentication payload to automatically join and include the user's `UserSettings` from the database, eliminating the need for fallback configuration states."
+        }
+      ]
+    },
+    {
       "id": "fe-0.9.0",
       "version": "v0.9.0",
       "service": "Frontend",
       "date": "2026-07-17",
       "title": "Analytics Dashboard",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Analytics Dashboard",
@@ -36,7 +76,7 @@
       "service": "Backend",
       "date": "2026-07-17",
       "title": "Analytics Engine & AI Insights",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Real-Time Analytics Event Service",

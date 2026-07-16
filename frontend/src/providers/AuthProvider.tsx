@@ -4,12 +4,34 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import { Loader2 } from "lucide-react";
 import api from "../lib/api";
 
-interface User {
+export interface UserSettings {
+  id: string;
+  userId: string;
+  autoReply: boolean;
+  businessHoursStart: string;
+  businessHoursEnd: string;
+  businessHoursTimezone: string;
+  replySignature: string | null;
+  preferredAiProvider: string;
+  preferredAiModel: string;
+  theme: string;
+  notifyOnNewEmail: boolean;
+  notifyOnDraftReady: boolean;
+  notifyOnErrors: boolean;
+  confidenceThreshold: number;
+  draftApprovalMode: string;
+  dynamicConfig: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface User {
   id: string;
   email: string;
   name?: string;
   avatarUrl?: string;
   hasGmailAccess?: boolean;
+  settings?: UserSettings;
 }
 
 interface AuthContextType {
