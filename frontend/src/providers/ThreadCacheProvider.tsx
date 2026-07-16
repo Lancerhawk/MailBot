@@ -4,19 +4,18 @@ import React, { createContext, useContext, useState, useRef, useCallback } from 
 import api from "@/lib/api";
 
 interface ThreadCacheContextType {
-  getThread: (threadId: string) => Promise<any>;
+  getThread: (threadId: string) => Promise<unknown>;
   prefetchThreads: (threadIds: string[]) => void;
-  updateThreadInCache: (threadId: string, data: any) => void;
-  cache: Record<string, any>;
+  updateThreadInCache: (threadId: string, data: unknown) => void;
+  cache: Record<string, unknown>;
 }
 
 const ThreadCacheContext = createContext<ThreadCacheContextType | undefined>(undefined);
 
 export function ThreadCacheProvider({ children }: { children: React.ReactNode }) {
-  const [cache, setCache] = useState<Record<string, any>>({});
-  const prefetchingRef = useRef<Set<string>>(new Set());
-  const cacheRef = useRef<Record<string, any>>({});
-  const promisesRef = useRef<Record<string, Promise<any> | undefined>>({});
+  const [cache, setCache] = useState<Record<string, unknown>>({});
+  const cacheRef = useRef<Record<string, unknown>>({});
+  const promisesRef = useRef<Record<string, Promise<unknown> | undefined>>({});
 
   const getThread = useCallback(async (threadId: string) => {
     if (cacheRef.current[threadId]) {
@@ -65,15 +64,13 @@ export function ThreadCacheProvider({ children }: { children: React.ReactNode })
 
       try {
         await promise;
-
         await new Promise(r => setTimeout(r, 50));
-      } catch (e) {
-
+      } catch {
       }
     }
   }, []);
 
-  const updateThreadInCache = useCallback((threadId: string, data: any) => {
+  const updateThreadInCache = useCallback((threadId: string, data: unknown) => {
     cacheRef.current[threadId] = data;
     setCache(prev => ({ ...prev, [threadId]: data }));
   }, []);

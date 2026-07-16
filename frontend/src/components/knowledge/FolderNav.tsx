@@ -10,7 +10,6 @@ import {
   Building2,
   DollarSign,
   Scale,
-  BookOpen,
   MoreHorizontal,
 } from "lucide-react";
 

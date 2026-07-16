@@ -1,14 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import Link from "next/link";
 import { useAuth } from "../providers/AuthProvider";
 import { Button } from "../components/ui/button";
-import { Loader2, Mail, Shield, Zap, Sparkles, Moon, Sun, ChevronDown, LogOut, LayoutDashboard } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useTheme } from "next-themes";
+import { Zap, Sparkles, LayoutDashboard } from "lucide-react";
 import LandingNavbar from "../components/layout/LandingNavbar";
 import LandingFooter from "../components/layout/LandingFooter";
 import ChangelogWidget from "../components/layout/ChangelogWidget";
@@ -55,7 +49,6 @@ const AmbientBackground = () => {
 };
 
 export default function LandingPage() {
-  const router = useRouter();
   const { setLoading } = useAuth();
 
   const handleGoogleLogin = () => {

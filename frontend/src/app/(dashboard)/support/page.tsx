@@ -1,8 +1,6 @@
 import * as React from "react";
 import { HelpCircle } from "lucide-react";
 import { EmptyState } from "@/components/common/EmptyState";
-import { Button } from "@/components/ui/button";
-
 export default function SupportPage() {
   return (
     <div className="flex flex-col gap-8 h-full">

@@ -110,7 +110,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
   useEffect(() => {
     if (!socket) return;
 
-    const handleEvent = (stage: UploadStage) => (data: any) => {
+    const handleEvent = (stage: UploadStage) => (data: { documentId?: string; error?: string }) => {
       setQueue((prev) =>
         prev.map((item) =>
           item.documentId === data.documentId
@@ -199,8 +199,9 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
             q.id === item.id ? { ...q, stage: "uploaded" as UploadStage, documentId } : q
           )
         );
-      } catch (err: any) {
-        const message = err.response?.data?.message || "Upload failed";
+      } catch (err: unknown) {
+        const error = err as { response?: { data?: { message?: string } } };
+        const message = error.response?.data?.message || "Upload failed";
         setQueue((prev) =>
           prev.map((q) =>
             q.id === item.id ? { ...q, stage: "failed" as UploadStage, error: message } : q

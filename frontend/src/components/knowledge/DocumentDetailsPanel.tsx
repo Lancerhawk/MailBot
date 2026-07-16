@@ -36,8 +36,34 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
+interface KnowledgeDocument {
+  id: string;
+  title: string;
+  description?: string;
+  fileType?: string;
+  originalFileName?: string;
+  fileSize?: number;
+  sizeBytes?: number;
+  isArchived?: boolean;
+  processingStatus?: string;
+  processingError?: string;
+  createdAt?: string;
+  folder?: string;
+  mimeType?: string;
+  version?: number;
+  fileHash?: string;
+  storageProvider?: string;
+  embeddedAt?: string;
+  processedAt?: string;
+  lastRetrievedAt?: string;
+  retrievalCount?: number;
+  chunkCount?: number;
+  isEmbedded?: boolean;
+  [key: string]: unknown;
+}
+
 interface DocumentDetailsPanelProps {
-  document: any | null;
+  document: KnowledgeDocument | null;
   isOpen: boolean;
   onClose: () => void;
   onUpdate: () => void;
@@ -66,12 +92,14 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
     return () => document.removeEventListener("click", handleClickOutside);
   }, [isOpen, onClose]);
 
-  React.useEffect(() => {
+  const [prevDoc, setPrevDoc] = useState(doc);
+  if (doc !== prevDoc) {
+    setPrevDoc(doc);
     if (doc) {
       setTitleValue(doc.title || "");
       setDescValue(doc.description || "");
     }
-  }, [doc]);
+  }
 
   const handleSaveTitle = useCallback(async () => {
     if (!doc || !titleValue.trim()) return;
@@ -285,7 +313,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                 <div className="space-y-3">
                   <MetaRow icon={FileText} label="Original File" value={doc.originalFileName || "—"} />
                   <MetaRow icon={FileText} label="Type" value={`${doc.fileType} (${doc.mimeType || "—"})`} />
-                  <MetaRow icon={HardDrive} label="File Size" value={formatFileSize(doc.fileSize)} />
+                  <MetaRow icon={HardDrive} label="File Size" value={formatFileSize(doc.fileSize || 0)} />
                   <MetaRow icon={Hash} label="Version" value={`v${doc.version}`} />
                   <MetaRow icon={Hash} label="SHA-256" value={doc.fileHash ? doc.fileHash.substring(0, 16) + "..." : "—"} mono />
                   <MetaRow icon={HardDrive} label="Storage" value={doc.storageProvider || "S3"} />
@@ -358,9 +386,9 @@ function MetaRow({
   mono,
   valueColor,
 }: {
-  icon: any;
+  icon: React.ElementType;
   label: string;
-  value: string;
+  value: React.ReactNode;
   mono?: boolean;
   valueColor?: string;
 }) {

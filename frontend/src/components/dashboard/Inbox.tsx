@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import api from "@/lib/api";
 import { formatDistanceToNow } from "date-fns";
 import { ThreadViewer } from "./ThreadViewer";
@@ -105,7 +105,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchThreads = async (silent = false, pageNum = 1, append = false, isRefresh = false) => {
+  const fetchThreads = useCallback(async (silent = false, pageNum = 1, append = false, isRefresh = false) => {
     try {
       if (!silent && !append) setIsLoading(true);
       if (append) setIsFetchingMore(true);
@@ -134,16 +134,18 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
         setThreads(prev => [...prev, ...newThreads]);
       } else {
         setThreads(newThreads);
-        if (selectedThreadId && !newThreads.some((t: any) => t.id === selectedThreadId)) {
-          setSelectedThreadId(null);
-        }
+        setSelectedThreadId(prev => {
+          if (prev && !newThreads.some((t: { id: string }) => t.id === prev)) return null;
+          return prev;
+        });
       }
 
       setHasMore(pageNum < res.data.data.pagination.totalPages);
 
-      prefetchThreads(newThreads.map((t: any) => t.id));
-    } catch (error: any) {
-      if (error?.response?.status === 429) {
+      prefetchThreads(newThreads.map((t: { id: string }) => t.id));
+    } catch (error: unknown) {
+      const err = error as { response?: { status: number } };
+      if (err?.response?.status === 429) {
         toast.error("Please wait 1 minute before refreshing again.");
       } else {
         console.error(error);
@@ -152,12 +154,20 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       setIsLoading(false);
       setIsFetchingMore(false);
     }
-  };
+  }, [mode, filter, debouncedSearch, prefetchThreads]);
+
+  const [prevDeps, setPrevDeps] = useState({ mode, filter, debouncedSearch });
+  if (prevDeps.mode !== mode || prevDeps.filter !== filter || prevDeps.debouncedSearch !== debouncedSearch) {
+    setPrevDeps({ mode, filter, debouncedSearch });
+    setPage(1);
+  }
 
   useEffect(() => {
-    setPage(1);
-    fetchThreads(false, 1, false);
-  }, [mode, filter, debouncedSearch]);
+    const timer = setTimeout(() => {
+      fetchThreads(false, 1, false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [fetchThreads]);
 
   useEffect(() => {
     const handleRefresh = () => {
@@ -166,14 +176,14 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     };
     window.addEventListener('refresh-data', handleRefresh);
     return () => window.removeEventListener('refresh-data', handleRefresh);
-  }, [mode, filter, debouncedSearch]);
+  }, [fetchThreads]);
 
   const loadMore = useCallback(() => {
     if (isLoading || isFetchingMore || !hasMore) return;
     const nextPage = page + 1;
     setPage(nextPage);
     fetchThreads(false, nextPage, true);
-  }, [isLoading, isFetchingMore, hasMore, page, filter, mode, debouncedSearch]);
+  }, [isLoading, isFetchingMore, hasMore, page, fetchThreads]);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement) => {
@@ -208,40 +218,40 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       });
     };
 
-    const handleRead = (data: any) => updateThread(data.threadId, t => ({
+    const handleRead = (data: { threadId: string; value: boolean }) => updateThread(data.threadId, t => ({
       ...t, emails: t.emails.map(e => ({ ...e, isRead: data.value }))
     }));
 
-    const handleDeleted = (data: any) => {
+    const handleDeleted = (data: { threadId: string; value: boolean }) => {
       if (mode === "inbox" && data.value === true) {
         setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
       } else if (mode === "trash" && data.value === false) {
         setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
       } else {
         fetchThreads(true);
       }
     };
 
-    const handleSpam = (data: any) => {
+    const handleSpam = (data: { threadId: string; value: boolean }) => {
       if (mode === "inbox" && data.value === true) {
         setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
       } else if (mode === "spam" && data.value === false) {
         setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
       } else {
         fetchThreads(true);
       }
     };
 
-    const handlePermDelete = (data: any) => {
+    const handlePermDelete = (data: { threadId: string }) => {
       setThreads(prev => prev.filter(t => t.id !== data.threadId));
-      if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+      setSelectedThreadId(prev => prev === data.threadId ? null : prev);
     };
 
-    const handleThreadUpdated = (data: any) => {
+    const handleThreadUpdated = (data: { threadId: string; field: string; value: boolean }) => {
       const { threadId, field, value } = data;
       if (field === 'isRead') {
         updateThread(threadId, t => ({
@@ -250,27 +260,27 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       } else if (field === 'isDeleted') {
         if (mode === 'inbox' && value === true) {
           setThreads(prev => prev.filter(t => t.id !== threadId));
-          if (selectedThreadId === threadId) setSelectedThreadId(null);
+          setSelectedThreadId(prev => prev === threadId ? null : prev);
         } else if (mode === 'trash' && value === false) {
           setThreads(prev => prev.filter(t => t.id !== threadId));
-          if (selectedThreadId === threadId) setSelectedThreadId(null);
+          setSelectedThreadId(prev => prev === threadId ? null : prev);
         } else {
           fetchThreads(true);
         }
       } else if (field === 'isSpam') {
         if (mode === 'inbox' && value === true) {
           setThreads(prev => prev.filter(t => t.id !== threadId));
-          if (selectedThreadId === threadId) setSelectedThreadId(null);
+          setSelectedThreadId(prev => prev === threadId ? null : prev);
         } else if (mode === 'spam' && value === false) {
           setThreads(prev => prev.filter(t => t.id !== threadId));
-          if (selectedThreadId === threadId) setSelectedThreadId(null);
+          setSelectedThreadId(prev => prev === threadId ? null : prev);
         } else {
           fetchThreads(true);
         }
       } else if (field === 'isArchived') {
         if (mode === 'inbox' && value === true) {
           setThreads(prev => prev.filter(t => t.id !== threadId));
-          if (selectedThreadId === threadId) setSelectedThreadId(null);
+          setSelectedThreadId(prev => prev === threadId ? null : prev);
         } else {
           fetchThreads(true);
         }
@@ -279,9 +289,9 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       }
     };
 
-    const handleThreadPermDelete = (data: any) => {
+    const handleThreadPermDelete = (data: { threadId: string }) => {
       setThreads(prev => prev.filter(t => t.id !== data.threadId));
-      if (selectedThreadId === data.threadId) setSelectedThreadId(null);
+      setSelectedThreadId(prev => prev === data.threadId ? null : prev);
     };
 
     socket.on('sync:started', handleSyncStarted);
@@ -309,7 +319,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       socket.off('thread:updated', handleThreadUpdated);
       socket.off('thread:permanently_deleted', handleThreadPermDelete);
     };
-  }, [socket, mode, selectedThreadId, filter, debouncedSearch]);
+  }, [socket, mode, fetchThreads]);
 
   useEffect(() => {
     if (!socket) return;
@@ -324,7 +334,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       socket.off('draft:regenerated', handleRefresh);
       socket.off('email:sent', handleRefresh);
     };
-  }, [socket, mode, filter, debouncedSearch]);
+  }, [socket, fetchThreads]);
 
   const getSenderInfo = (thread: EmailThread) => {
     const sender = thread.emails[0]?.participants.find(p => p.role === "SENDER");

@@ -3,7 +3,6 @@
 import React, { useEffect, useState } from "react";
 import {
   Inbox,
-  Sparkles,
   BarChart3,
   Mail,
   Clock,
@@ -108,8 +107,9 @@ export default function DashboardPage() {
         syncStatus: statusData.activeSync ? "SYNCING" : statusData.connectionStatus,
         recentThreads: threadsData.threads,
       });
-    } catch (e: any) {
-      if (e?.response?.status === 429) {
+    } catch (e: unknown) {
+      const err = e as { response?: { status: number } };
+      if (err?.response?.status === 429) {
         toast.error("Please wait 1 minute before refreshing again.");
       }
     } finally {
@@ -118,7 +118,9 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchDashboardData();
+    const timer = setTimeout(() => {
+      fetchDashboardData();
+    }, 0);
 
     const handleRefresh = () => {
       fetchDashboardData();
@@ -147,6 +149,7 @@ export default function DashboardPage() {
       socket.off('sync:started', handleSyncStarted);
       socket.off('sync:completed', handleSyncCompleted);
       clearInterval(ticker);
+      clearTimeout(timer);
     };
   }, [socket]);
 
@@ -154,7 +157,6 @@ export default function DashboardPage() {
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
 
   let syncStatusLabel = "—";
-  let SyncIcon = CheckCircle;
   let syncAccent = "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
 
   if (!isConnected) {
@@ -176,7 +178,7 @@ export default function DashboardPage() {
           {greeting}, {firstName}
         </h1>
         <p className="mt-1 text-zinc-500 dark:text-zinc-400">
-          Here's what's happening with your email today.
+          Here&apos;s what&apos;s happening with your email today.
         </p>
       </div>
 
@@ -196,7 +198,7 @@ export default function DashboardPage() {
           isLoading={isLoading}
         />
         <StatCard
-          icon={stats?.syncStatus === "SYNCING" ? (props: any) => <Loader2 {...props} className={`${props.className || ''} animate-spin`} /> : (!isConnected ? WifiOff : CheckCircle)}
+          icon={stats?.syncStatus === "SYNCING" ? (props: React.ComponentProps<typeof Loader2>) => <Loader2 {...props} className={`${props.className || ''} animate-spin`} /> : (!isConnected ? WifiOff : CheckCircle)}
           label="Sync Status"
           value={syncStatusLabel}
           accent={syncAccent}

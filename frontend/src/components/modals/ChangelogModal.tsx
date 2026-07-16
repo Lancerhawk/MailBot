@@ -191,7 +191,7 @@ export default function ChangelogModal({ isOpen, onClose }: ChangelogModalProps)
                 </p>
 
                 <h3 className="text-[11px] font-bold tracking-widest text-zinc-400 uppercase mb-6">
-                  What's Included
+                  What&apos;s Included
                 </h3>
 
                 <div className="space-y-8">

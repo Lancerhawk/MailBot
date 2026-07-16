@@ -22,9 +22,7 @@ interface SyncStatusResponse {
 export function SyncIndicator() {
   const [status, setStatus] = useState<SyncStatusResponse | null>(null);
   const [isHovered, setIsHovered] = useState(false);
-  const prevStatusRef = useRef<string | null>(null);
   const isSyncingRef = useRef(false);
-  const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
 
   const { socket } = useSocket();
@@ -36,17 +34,19 @@ export function SyncIndicator() {
 
       const newStatus = res.data.data;
       setStatus(newStatus);
-    } catch (e) {
+    } catch {
     }
   }, []);
 
   useEffect(() => {
     mountedRef.current = true;
-    fetchStatus();
+    const timer = setTimeout(() => {
+      fetchStatus();
+    }, 0);
 
     if (!socket) return;
 
-    const handleSyncStarted = (data: any) => {
+    const handleSyncStarted = (data: { source?: string }) => {
       setStatus(prev => prev ? {
         ...prev,
         connectionStatus: "SYNCING",
@@ -70,6 +70,7 @@ export function SyncIndicator() {
       mountedRef.current = false;
       socket.off('sync:started', handleSyncStarted);
       socket.off('sync:completed', handleSyncCompleted);
+      clearTimeout(timer);
     };
   }, [fetchStatus, socket]);
 
@@ -90,8 +91,9 @@ export function SyncIndicator() {
 
     try {
       await api.post("/gmail/sync");
-    } catch (e: any) {
-      if (e?.response?.status !== 409) {
+    } catch (e: unknown) {
+      const err = e as { response?: { status: number } };
+      if (err?.response?.status !== 409) {
         isSyncingRef.current = false;
         fetchStatus();
       }
@@ -112,7 +114,7 @@ export function SyncIndicator() {
 
     try {
       await api.post("/gmail/sync/stop");
-    } catch (e) {
+    } catch {
     }
   };
 

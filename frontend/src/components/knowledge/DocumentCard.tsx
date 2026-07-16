@@ -33,16 +33,42 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 
+interface KnowledgeDocument {
+  id: string;
+  title: string;
+  description?: string;
+  fileType?: string;
+  originalFileName?: string;
+  fileSize?: number;
+  sizeBytes?: number;
+  isArchived?: boolean;
+  processingStatus?: string;
+  processingError?: string;
+  createdAt?: string;
+  folder?: string;
+  mimeType?: string;
+  version?: number;
+  fileHash?: string;
+  storageProvider?: string;
+  embeddedAt?: string;
+  processedAt?: string;
+  lastRetrievedAt?: string;
+  retrievalCount?: number;
+  chunkCount?: number;
+  isEmbedded?: boolean;
+  [key: string]: unknown;
+}
+
 interface DocumentCardProps {
-  document: any;
+  document: KnowledgeDocument;
   isSelected: boolean;
   onSelect: (id: string) => void;
   onUpdate: () => void;
-  onDetailsOpen: (doc: any) => void;
+  onDetailsOpen: (doc: KnowledgeDocument) => void;
   onProcessingChange?: (isProcessing: boolean) => void;
 }
 
-const FILE_ICONS: Record<string, { icon: any; color: string }> = {
+const FILE_ICONS: Record<string, { icon: React.ElementType; color: string }> = {
   PDF: { icon: FileText, color: "text-red-500 dark:text-red-400" },
   DOCX: { icon: FileText, color: "text-blue-500 dark:text-blue-400" },
   DOC: { icon: FileText, color: "text-blue-500 dark:text-blue-400" },
@@ -64,7 +90,7 @@ function formatFileSize(bytes: number | null): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function getStatusConfig(doc: any) {
+function getStatusConfig(doc: KnowledgeDocument) {
   if (doc.isArchived) {
     return { label: "Archived", color: "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400", icon: Archive };
   }
@@ -88,11 +114,13 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
   const [optimisticDoc, setOptimisticDoc] = useState(doc);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  React.useEffect(() => {
+  const [prevDoc, setPrevDoc] = useState(doc);
+  if (doc !== prevDoc) {
+    setPrevDoc(doc);
     setOptimisticDoc(doc);
-  }, [doc]);
+  }
 
-  const fileInfo = FILE_ICONS[doc.fileType?.toUpperCase()] || { icon: File, color: "text-zinc-400" };
+  const fileInfo = FILE_ICONS[doc.fileType?.toUpperCase() || ""] || { icon: File, color: "text-zinc-400" };
   const FileIcon = fileInfo.icon;
   const status = getStatusConfig(optimisticDoc);
   const StatusIcon = status.icon;
@@ -105,14 +133,14 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
     }
 
     const prevTitle = optimisticDoc.title;
-    setOptimisticDoc((prev: any) => ({ ...prev, title: renameValue }));
+    setOptimisticDoc((prev: KnowledgeDocument) => ({ ...prev, title: renameValue }));
     setIsRenaming(false);
 
     try {
       await api.patch(`/knowledge/${doc.id}`, { title: renameValue });
       onUpdate();
     } catch {
-      setOptimisticDoc((prev: any) => ({ ...prev, title: prevTitle }));
+      setOptimisticDoc((prev: KnowledgeDocument) => ({ ...prev, title: prevTitle }));
       toast.error("Failed to rename document");
     }
   }, [renameValue, doc.id, doc.title, optimisticDoc.title, onUpdate]);
@@ -120,7 +148,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
   const handleArchive = useCallback(async () => {
     onProcessingChange?.(true);
     const wasArchived = optimisticDoc.isArchived;
-    setOptimisticDoc((prev: any) => ({ ...prev, isArchived: !wasArchived }));
+    setOptimisticDoc((prev: KnowledgeDocument) => ({ ...prev, isArchived: !wasArchived }));
 
     try {
       if (wasArchived) {
@@ -132,7 +160,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
       }
       onUpdate();
     } catch {
-      setOptimisticDoc((prev: any) => ({ ...prev, isArchived: wasArchived }));
+      setOptimisticDoc((prev: KnowledgeDocument) => ({ ...prev, isArchived: wasArchived }));
       toast.error(wasArchived ? "Failed to restore" : "Failed to archive");
     } finally {
       onProcessingChange?.(false);
@@ -290,19 +318,19 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
           {status.label}
         </span>
 
-        {doc.version > 1 && (
+        {(doc.version || 0) > 1 && (
           <Badge variant="outline" className="text-xs px-1.5 py-0">v{doc.version}</Badge>
         )}
 
-        <Badge variant="outline" className="text-xs px-1.5 py-0">{doc.folder}</Badge>
+        <Badge variant="outline" className="text-xs px-1.5 py-0">{doc.folder || "Uncategorized"}</Badge>
       </div>
 
       {/* Metadata */}
       <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-zinc-400 dark:text-zinc-500">
-        <span className="whitespace-nowrap">{formatFileSize(doc.fileSize)}</span>
+        <span className="whitespace-nowrap">{formatFileSize(doc.fileSize || 0)}</span>
         <span className="text-zinc-300 dark:text-zinc-700">•</span>
         <span className="whitespace-nowrap">{doc.createdAt ? formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true }) : "—"}</span>
-        {doc.chunkCount > 0 && (
+        {(doc.chunkCount || 0) > 0 && (
           <>
             <span className="text-zinc-300 dark:text-zinc-700">•</span>
             <span className="whitespace-nowrap">{doc.chunkCount} chunks</span>
@@ -318,7 +346,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
           ) : doc.processingStatus === "PROCESSING" ? (
             <Loader2 className="h-3 w-3 animate-spin text-blue-400" />
           ) : null}
-          {doc.retrievalCount > 0
+          {(doc.retrievalCount || 0) > 0
             ? `Used ${doc.retrievalCount}×`
             : "Never used"}
         </span>

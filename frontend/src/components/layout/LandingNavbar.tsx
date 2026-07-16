@@ -11,7 +11,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 
 export default function LandingNavbar() {
-  const { user, isLoading, logout, setLoading } = useAuth();
+  const { user, logout, setLoading } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -39,7 +39,10 @@ export default function LandingNavbar() {
   }, []);
 
   useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleGoogleLogin = () => {
@@ -81,7 +84,7 @@ export default function LandingNavbar() {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
             >
               {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className="h-7 w-7 rounded-full object-cover border border-zinc-200 dark:border-zinc-700/50" />
+                <Image src={user.avatarUrl} alt="Avatar" width={28} height={28} className="h-7 w-7 rounded-full object-cover border border-zinc-200 dark:border-zinc-700/50" unoptimized />
               ) : (
                 <div className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-xs font-bold text-white shadow-inner">
                   {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}
@@ -105,7 +108,7 @@ export default function LandingNavbar() {
 
                   <div className="flex items-center gap-3 px-3 py-3 mb-2 rounded-xl bg-zinc-50 dark:bg-zinc-900/50 border border-zinc-100 dark:border-zinc-800/50">
                     {user.avatarUrl ? (
-                      <img src={user.avatarUrl} alt="Avatar" className="h-10 w-10 rounded-full object-cover border border-zinc-700" />
+                      <Image src={user.avatarUrl} alt="Avatar" width={40} height={40} className="h-10 w-10 rounded-full object-cover border border-zinc-700" unoptimized />
                     ) : (
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-red-600 text-lg font-bold text-white shadow-inner">
                         {user.name?.charAt(0) || user.email?.charAt(0) || 'U'}

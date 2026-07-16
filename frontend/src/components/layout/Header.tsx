@@ -1,17 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { Bell, Menu, Moon, Sun, RefreshCw } from "lucide-react";
+import { Menu, Moon, Sun, RefreshCw } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { useAuth } from "@/providers/AuthProvider";
 import { SyncIndicator } from "@/components/dashboard/SyncIndicator";
 import { ComposeModal } from "@/components/dashboard/ComposeModal";
 import { Edit } from "lucide-react";
-import { toast } from "@/lib/toast";
-
+import Image from "next/image";
 interface HeaderProps {
   setSidebarOpen: (open: boolean) => void;
 }
@@ -25,7 +24,10 @@ export function Header({ setSidebarOpen }: HeaderProps) {
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   React.useEffect(() => {
-    setMounted(true);
+    const timer = setTimeout(() => {
+      setMounted(true);
+    }, 0);
+    return () => clearTimeout(timer);
   }, []);
 
   const handleRefreshClick = () => {
@@ -105,7 +107,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
             >
               <span className="sr-only">Open user menu</span>
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl} alt="Avatar" className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800" />
+                <Image src={user.avatarUrl} alt="Avatar" width={32} height={32} className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800" unoptimized />
               ) : (
                 <div className="h-8 w-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-sm font-medium text-zinc-600 dark:text-zinc-300">
                   {user?.name?.charAt(0) || user?.email?.charAt(0) || 'U'}

@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Users } from "lucide-react";
 import { EmptyState } from "@/components/common/EmptyState";
-import { Button } from "@/components/ui/button";
 
 export default function ContactsPage() {
   return (

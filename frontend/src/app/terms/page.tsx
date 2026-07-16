@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import LandingNavbar from "../../components/layout/LandingNavbar";
 import LandingFooter from "../../components/layout/LandingFooter";
 import { FileText, Scale, CheckCircle, AlertTriangle } from "lucide-react";
@@ -24,7 +23,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="text-lg text-zinc-600 dark:text-zinc-400 font-medium">
-            The rules of the road. Let's keep things clear and fair.
+            The rules of the road. Let&apos;s keep things clear and fair.
           </p>
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-zinc-200/50 dark:bg-zinc-800/50 border border-zinc-300/50 dark:border-zinc-700/50 text-sm font-medium text-zinc-600 dark:text-zinc-400 mt-4">
             <span className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
@@ -49,7 +48,7 @@ export default function TermsPage() {
                   By accessing or using MailBot, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services.
                 </p>
                 <p>
-                  MailBot is designed to interface directly with Google's Gmail APIs, and your continued usage implies acceptance of both MailBot's terms and Google's API service policies.
+                  MailBot is designed to interface directly with Google&apos;s Gmail APIs, and your continued usage implies acceptance of both MailBot&apos;s terms and Google&apos;s API service policies.
                 </p>
               </div>
             </section>
@@ -81,7 +80,7 @@ export default function TermsPage() {
               </div>
               <div className="pl-14 space-y-4 text-zinc-600 dark:text-zinc-400 leading-relaxed text-base">
                 <p>
-                  MailBot generates automated drafts and insights using third-party Language Models (LLMs). While we strive for accuracy, MailBot is provided "as is" without warranty of any kind.
+                  MailBot generates automated drafts and insights using third-party Language Models (LLMs). While we strive for accuracy, MailBot is provided &quot;as is&quot; without warranty of any kind.
                 </p>
                 <div className="p-4 rounded-xl bg-red-500/5 border border-red-500/10 text-red-800 dark:text-red-200 text-sm font-medium">
                   We are not liable for any miscommunications, lost emails, or damages resulting from the use of AI-generated content. Always review drafts before sending.

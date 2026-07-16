@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import LandingNavbar from "../../components/layout/LandingNavbar";
 import LandingFooter from "../../components/layout/LandingFooter";
 import { HelpCircle, MessagesSquare, Zap, ShieldCheck } from "lucide-react";
@@ -56,7 +55,7 @@ export default function FAQPage() {
                   What LLM is used for the AI drafts?
                 </h3>
                 <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-base">
-                  We use Groq's ultra-fast LPU inference engine running advanced open-source models like Llama 3. This allows us to generate intelligent, context-aware draft responses in a fraction of a second, completely eliminating the waiting time you usually experience with other AI assistants.
+                  We use Groq&apos;s ultra-fast LPU inference engine running advanced open-source models like Llama 3. This allows us to generate intelligent, context-aware draft responses in a fraction of a second, completely eliminating the waiting time you usually experience with other AI assistants.
                 </p>
               </div>
             </div>
@@ -72,7 +71,7 @@ export default function FAQPage() {
                   Is my data secure and private?
                 </h3>
                 <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-base">
-                  Absolutely. We encrypt all access tokens using AES-256-GCM. We never use your emails to train our own or third-party AI models, and your data is never sold to advertisers. We strictly adhere to Google's API Services User Data Policy.
+                  Absolutely. We encrypt all access tokens using AES-256-GCM. We never use your emails to train our own or third-party AI models, and your data is never sold to advertisers. We strictly adhere to Google&apos;s API Services User Data Policy.
                 </p>
               </div>
             </div>

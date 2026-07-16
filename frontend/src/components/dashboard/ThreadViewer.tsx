@@ -10,7 +10,7 @@ import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { useSocket } from "@/providers/SocketProvider";
 import { useThreadCache } from "@/providers/ThreadCacheProvider";
-import { DraftEditor } from "./DraftEditor";
+import { DraftEditor, type Draft } from "./DraftEditor";
 import { Archive, Star, Trash2, Mail, MailOpen, ShieldAlert, MoreVertical, Loader2, ChevronLeft, Paperclip, FileText, Image as ImageIcon, Film, FileArchive, ExternalLink } from "lucide-react";
 import { toast } from "@/lib/toast";
 import { useAuth } from "@/providers/AuthProvider";
@@ -41,8 +41,8 @@ interface Email {
   needsReply?: boolean;
   priority?: string;
   processingStatus?: string;
-  labels?: any[];
-  drafts?: any[];
+  labels?: { providerLabelId: string; [key: string]: unknown }[];
+  drafts?: Draft[];
   attachments?: {
     id: string;
     filename: string;
@@ -296,19 +296,25 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
 export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?: () => void }) {
   const { user } = useAuth();
   const { getThread, updateThreadInCache, cache } = useThreadCache();
-  const [thread, setThread] = useState<Thread | null>(() => cache[threadId] || null);
+  const [thread, setThread] = useState<Thread | null>(() => (cache[threadId] as Thread) || null);
   const [isLoading, setIsLoading] = useState(!cache[threadId]);
+  const [optimisticSentText, setOptimisticSentText] = useState<string | null>(null);
+
+  const cacheRef = useRef(cache);
+  useEffect(() => {
+    cacheRef.current = cache;
+  }, [cache]);
 
   useEffect(() => {
     if (!threadId) return;
 
     const fetchThread = async () => {
       try {
-        if (!cache[threadId]) setIsLoading(true);
+        if (!cacheRef.current[threadId]) setIsLoading(true);
         const data = await getThread(threadId);
-        setThread(data);
+        setThread(data as Thread);
 
-        if (cache[threadId]) {
+        if (cacheRef.current[threadId]) {
           api.get(`/gmail/threads/${threadId}`).then(res => {
             setThread(res.data.data);
             updateThreadInCache(threadId, res.data.data);
@@ -329,8 +335,9 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
         const res = await api.get(`/gmail/threads/${threadId}?refresh=true`);
         setThread(res.data.data);
         updateThreadInCache(threadId, res.data.data);
-      } catch (e: any) {
-        if (e?.response?.status === 429) {
+      } catch (e: unknown) {
+        const err = e as { response?: { status: number } };
+        if (err?.response?.status === 429) {
           toast.error("Please wait 1 minute before refreshing again.");
         } else {
           console.error("Failed to refresh thread", e);
@@ -348,7 +355,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
   useEffect(() => {
     if (!socket || !threadId) return;
 
-    const handleUpdate = (data: any) => {
+    const handleUpdate = (data: { threadId?: string; result?: unknown }) => {
       if (data.threadId === threadId || (data.result && !data.threadId)) {
         // Simple re-fetch to get new emails or AI fields
         api.get(`/gmail/threads/${threadId}`).then(res => {
@@ -396,7 +403,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
       socket.off('draft:generated', handleUpdate);
       socket.off('draft:regenerated', handleUpdate);
     };
-  }, [socket, threadId]);
+  }, [socket, threadId, updateThreadInCache]);
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -406,12 +413,12 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
     try {
       await api.post(`/gmail/threads/${threadId}/${action}`);
       toast.success(`Action applied successfully`);
-    } catch (e) {
+    } catch {
       if (action === 'permanent') {
         try {
           await api.delete(`/gmail/threads/${threadId}/${action}`);
           toast.success(`Deleted permanently`);
-        } catch (err) {
+        } catch {
           toast.error(`Failed to apply action`);
         }
       } else {
@@ -422,7 +429,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
     }
   };
 
-  const [optimisticSentText, setOptimisticSentText] = useState<string | null>(null);
+
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -434,7 +441,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
         }
       }, 100);
     }
-  }, [thread?.id, thread?.emails?.length]);
+  }, [thread]);
 
   if (isLoading) {
     return <ThreadSkeleton />;
@@ -546,7 +553,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
             const isEmailSentByUser = (email: Email) => {
               const sender = email.participants?.find((p: { role: string }) => p.role === 'SENDER');
               if (!sender) return false;
-              const hasSentLabel = email.labels?.some((l: { providerLabelId: string }) => l.providerLabelId === 'SENT');
+              const hasSentLabel = email.labels?.some((l) => l.providerLabelId === 'SENT');
               const senderMatchesUser = sender.emailAddress?.toLowerCase() === user?.email?.toLowerCase();
               return hasSentLabel || senderMatchesUser;
             };
@@ -565,8 +572,7 @@ export function ThreadViewer({ threadId, onClose }: { threadId: string; onClose?
             return (
               <DraftEditor
                 emailId={targetEmail.id}
-                threadId={thread.id}
-                initialDraft={draftFromLatest}
+                initialDraft={draftFromLatest as Draft | null}
                 isProcessing={isCurrentlyProcessing}
                 onSent={(text) => setOptimisticSentText(text)}
               />

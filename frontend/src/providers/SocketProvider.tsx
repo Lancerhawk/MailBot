@@ -40,7 +40,9 @@ export const SocketProvider = ({ children }: { children: ReactNode }) => {
       setIsConnected(false);
     });
 
-    setSocket(socketInstance);
+    setTimeout(() => {
+      setSocket(socketInstance);
+    }, 0);
 
     return () => {
       socketInstance.disconnect();

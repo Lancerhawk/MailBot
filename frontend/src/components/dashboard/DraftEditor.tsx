@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useSocket } from "@/providers/SocketProvider";
 import { Button } from "../ui/button";
 import { Sparkles, Send, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
-interface Draft {
+export interface Draft {
   id: string;
   generatedText: string;
   editedText: string | null;
@@ -13,7 +13,7 @@ interface Draft {
   createdAt: string;
 }
 
-export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcessing }: { emailId: string; threadId: string; initialDraft?: Draft | null; onSent?: (text: string) => void; isProcessing?: boolean }) {
+export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { emailId: string; initialDraft?: Draft | null; onSent?: (text: string) => void; isProcessing?: boolean }) {
   const [draft, setDraft] = useState<Draft | null>(initialDraft || null);
   const [text, setText] = useState(initialDraft?.editedText ?? initialDraft?.generatedText ?? "");
   const [isGenerating, setIsGenerating] = useState(isProcessing || false);
@@ -22,45 +22,51 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
   const [isManualReply, setIsManualReply] = useState(false);
   const { socket } = useSocket();
 
-  useEffect(() => {
-    if (initialDraft) {
-      setDraft(initialDraft);
-      setText(initialDraft.editedText ?? initialDraft.generatedText ?? "");
-      setIsGenerating(false);
-    } else {
+  const [prevInitialDraft, setPrevInitialDraft] = useState(initialDraft);
+  const [prevIsProcessing, setPrevIsProcessing] = useState(isProcessing);
+
+  if (initialDraft !== prevInitialDraft) {
+    setPrevInitialDraft(initialDraft);
+    setDraft(initialDraft || null);
+    setText(initialDraft?.editedText ?? initialDraft?.generatedText ?? "");
+    setIsGenerating(false);
+  }
+
+  if (isProcessing !== prevIsProcessing) {
+    setPrevIsProcessing(isProcessing);
+    if (!initialDraft) {
       setIsGenerating(isProcessing || false);
     }
-  }, [initialDraft, isProcessing]);
-
+  }
 
   useEffect(() => {
     if (!socket) return;
 
-    const handleStarted = (data: any) => {
+    const handleStarted = (data: { emailId?: string }) => {
       if (data.emailId === emailId) setIsGenerating(true);
     };
 
-    const handleGenerated = (data: any) => {
-      if (data.emailId === emailId) {
+    const handleGenerated = (data: { emailId?: string; draft?: Draft }) => {
+      if (data.emailId === emailId && data.draft) {
         setIsGenerating(false);
         setDraft(data.draft);
         setText(data.draft.editedText ?? data.draft.generatedText);
       }
     };
 
-    const handleFailed = (data: any) => {
+    const handleFailed = (data: { emailId?: string; error?: string }) => {
       if (data.emailId === emailId) {
         setIsGenerating(false);
         toast.error("Draft generation failed: " + data.error);
       }
     };
 
-    const handleSent = (data: any) => {
+    const handleSent = () => {
       // The optimistic UI update in handleSend handles this now.
       // We just keep this listener to avoid race conditions.
     };
 
-    const handleSendFailed = (data: any) => {
+    const handleSendFailed = (data: { emailId?: string; error?: string }) => {
       if (data.emailId === emailId) {
         setIsSending(false);
         toast.error("Failed to send: " + data.error);
@@ -93,8 +99,8 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
       try {
         setIsSaving(true);
         await api.put(`/drafts/${draft.id}`, { editedText: text });
-      } catch (e) {
-        console.error("Auto-save failed", e);
+      } catch {
+        console.error("Auto-save failed");
       } finally {
         setIsSaving(false);
       }
@@ -107,8 +113,9 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
     try {
       setIsGenerating(true);
       await api.post(`/drafts/${emailId}/regenerate`);
-    } catch (error: any) {
-      if (error.response?.status === 409) {
+    } catch (error: unknown) {
+      const err = error as { response?: { status: number } };
+      if (err.response?.status === 409) {
         toast.error("Draft is already regenerating.");
       } else {
         toast.error("Failed to trigger regeneration.");
@@ -132,8 +139,9 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
       .then(() => {
         toast.success("Reply sent successfully!");
       })
-      .catch((error: any) => {
-        if (error.response?.status === 409) {
+      .catch((error: unknown) => {
+        const err = error as { response?: { status: number } };
+        if (err.response?.status === 409) {
           toast.error("Already sending this draft.");
         } else {
           toast.error("Failed to send reply.");
@@ -146,7 +154,7 @@ export function DraftEditor({ emailId, threadId, initialDraft, onSent, isProcess
     try {
       await api.delete(`/drafts/${draft.id}`);
       setDraft(null);
-    } catch (e) {
+    } catch {
       toast.error("Failed to discard draft");
     }
   };

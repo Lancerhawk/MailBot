@@ -13,7 +13,6 @@ import {
   BarChart3,
   Settings,
   HelpCircle,
-  Mail,
   X,
   ShieldAlert,
   Trash2

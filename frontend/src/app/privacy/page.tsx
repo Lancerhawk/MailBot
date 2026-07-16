@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import LandingNavbar from "../../components/layout/LandingNavbar";
 import LandingFooter from "../../components/layout/LandingFooter";
 import { Shield, Lock, Sparkles, Database } from "lucide-react";

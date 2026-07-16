@@ -63,8 +63,34 @@ function formatStorageSize(bytes: number): string {
   return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GB`;
 }
 
+interface KnowledgeDocument {
+  id: string;
+  title: string;
+  description?: string;
+  fileType?: string;
+  originalFileName?: string;
+  fileSize?: number;
+  sizeBytes?: number;
+  isArchived?: boolean;
+  processingStatus?: string;
+  processingError?: string;
+  createdAt?: string;
+  folder?: string;
+  mimeType?: string;
+  version?: number;
+  fileHash?: string;
+  storageProvider?: string;
+  embeddedAt?: string;
+  processedAt?: string;
+  lastRetrievedAt?: string;
+  retrievalCount?: number;
+  chunkCount?: number;
+  isEmbedded?: boolean;
+  [key: string]: unknown;
+}
+
 export function KnowledgeBase() {
-  const [allDocuments, setAllDocuments] = useState<any[]>([]);
+  const [allDocuments, setAllDocuments] = useState<KnowledgeDocument[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeFolder, setActiveFolder] = useState("All");
@@ -73,7 +99,7 @@ export function KnowledgeBase() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showUpload, setShowUpload] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [detailsDoc, setDetailsDoc] = useState<any | null>(null);
+  const [detailsDoc, setDetailsDoc] = useState<KnowledgeDocument | null>(null);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [isPageProcessing, setIsPageProcessing] = useState(false);
 
@@ -99,16 +125,21 @@ export function KnowledgeBase() {
   }, [fetchAll]);
 
   useEffect(() => {
-    setLoading(true);
-    fetchAll().finally(() => setLoading(false));
+    const timer = setTimeout(() => {
+      setLoading(true);
+      fetchAll().finally(() => setLoading(false));
+    }, 0);
+    return () => clearTimeout(timer);
   }, [fetchAll]);
 
   // ─── NAVBAR REFRESH LISTENER ─────────────────────────────
 
   useEffect(() => {
     const handleRefresh = () => {
-      setLoading(true);
-      fetchAll().finally(() => setLoading(false));
+      setTimeout(() => {
+        setLoading(true);
+        fetchAll().finally(() => setLoading(false));
+      }, 0);
     };
     window.addEventListener("refresh-data", handleRefresh);
     return () => window.removeEventListener("refresh-data", handleRefresh);
@@ -144,7 +175,8 @@ export function KnowledgeBase() {
     // 1. Compute folder counts from ALL docs (before filtering)
     const counts: Record<string, number> = { All: allDocuments.length };
     for (const doc of allDocuments) {
-      counts[doc.folder] = (counts[doc.folder] || 0) + 1;
+      const folderKey = doc.folder || "Uncategorized";
+      counts[folderKey] = (counts[folderKey] || 0) + 1;
     }
 
     // 2. Filter by folder
@@ -182,9 +214,9 @@ export function KnowledgeBase() {
     const sorted = [...filtered].sort((a, b) => {
       switch (activeSort) {
         case "newest":
-          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+          return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
         case "oldest":
-          return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+          return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
         case "a-z":
           return (a.title || "").localeCompare(b.title || "");
         case "largest":
@@ -551,9 +583,9 @@ function StatCard({
   loading,
   iconColor,
 }: {
-  icon: any;
+  icon: React.ElementType;
   label: string;
-  value: any;
+  value: string | number | null | undefined;
   loading: boolean;
   iconColor?: string;
 }) {

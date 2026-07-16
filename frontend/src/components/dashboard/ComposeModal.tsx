@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import api from "@/lib/api";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "../ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, Send, X, Trash2 } from "lucide-react";
+import { Loader2, Send, Trash2 } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 interface ComposeModalProps {
@@ -39,6 +39,8 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
     // Optimistically close modal
     onClose();
 
+    setIsSending(true);
+
     api.post("/gmail/send/compose", {
       to: toArray,
       cc: ccArray,
@@ -52,8 +54,11 @@ export function ComposeModal({ isOpen, onClose }: ComposeModalProps) {
       setBcc("");
       setSubject("");
       setBody("");
-    }).catch((error: any) => {
-      toast.error(error.response?.data?.message || "Failed to send email");
+    }).catch((error: unknown) => {
+      const err = error as { response?: { data?: { message?: string } } };
+      toast.error(err.response?.data?.message || "Failed to send email");
+    }).finally(() => {
+      setIsSending(false);
     });
   };
 
