@@ -59,23 +59,23 @@ function StatCard({
   isLoading: boolean;
 }) {
   return (
-    <div className="min-w-0 animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
-      <div className="flex items-center gap-3 sm:gap-4">
-        <div className={`flex h-10 w-10 sm:h-11 sm:w-11 shrink-0 items-center justify-center rounded-xl ${accent}`}>
+    <div className={`min-w-0 animate-fade-in rounded-xl border border-zinc-300 dark:border-transparent p-5 shadow-sm dark:shadow-none transition-all flex flex-col justify-between ${accent} hover:bg-opacity-20`}>
+      <div className="flex justify-between items-start mb-4">
+        <h3 className="text-zinc-700 dark:text-zinc-300 font-medium text-sm tracking-wide uppercase">
+          {label}
+        </h3>
+        <div className="p-2 rounded-lg bg-black/5 dark:bg-black/20 backdrop-blur-sm shadow-inner">
           <Icon className="h-5 w-5" />
         </div>
-        <div className="min-w-0">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
-            {label}
-          </p>
-          {isLoading ? (
-            <Skeleton className="mt-1 h-6 w-16" />
-          ) : (
-            <p className="mt-0.5 text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 truncate">
-              {value}
-            </p>
-          )}
-        </div>
+      </div>
+      <div>
+        {isLoading ? (
+          <Skeleton className="mt-1 h-8 w-24 bg-white/50 dark:bg-zinc-800/50" />
+        ) : (
+          <div className="text-3xl font-semibold text-zinc-900 dark:text-white tracking-tight truncate">
+            {value}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -155,18 +155,13 @@ export default function DashboardPage() {
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";
 
   let syncStatusLabel = "—";
-  let syncAccent = "bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400";
 
   if (!isConnected) {
     syncStatusLabel = "Disconnected";
-    syncAccent = "bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400";
-
   } else if (stats?.syncStatus === "SYNCING") {
     syncStatusLabel = "Syncing...";
-    syncAccent = "bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400";
   } else {
     syncStatusLabel = "Connected";
-    syncAccent = "bg-emerald-100 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400";
   }
 
   return (
@@ -185,21 +180,21 @@ export default function DashboardPage() {
           icon={Mail}
           label="Conversations"
           value={stats?.totalThreads?.toString() || "0"}
-          accent="bg-orange-100 text-orange-600 dark:bg-orange-500/15 dark:text-orange-400"
+          accent="bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400"
           isLoading={isLoading}
         />
         <StatCard
           icon={Inbox}
           label="Total Emails"
           value={stats?.totalEmails?.toString() || "0"}
-          accent="bg-sky-100 text-sky-600 dark:bg-sky-500/15 dark:text-sky-400"
+          accent="bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400"
           isLoading={isLoading}
         />
         <StatCard
           icon={stats?.syncStatus === "SYNCING" ? (props: React.ComponentProps<typeof Loader2>) => <Loader2 {...props} className={`${props.className || ''} animate-spin`} /> : (!isConnected ? WifiOff : CheckCircle)}
           label="Sync Status"
           value={syncStatusLabel}
-          accent={syncAccent}
+          accent={stats?.syncStatus === "SYNCING" ? "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" : (!isConnected ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400" : "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400")}
           isLoading={isLoading}
         />
         <StatCard
@@ -212,13 +207,13 @@ export default function DashboardPage() {
                 .replace("less than a minute ago", "Just now")
               : "Never"
           }
-          accent="bg-violet-100 text-violet-600 dark:bg-violet-500/15 dark:text-violet-400"
+          accent="bg-indigo-500/10 border-indigo-500/20 text-indigo-600 dark:text-indigo-400"
           isLoading={isLoading}
         />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="min-w-0 animate-fade-in lg:col-span-2 rounded-xl border border-zinc-200/80 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+        <div className="min-w-0 animate-fade-in lg:col-span-2 rounded-xl border border-zinc-300 bg-white shadow-md dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
           <div className="flex items-center justify-between border-b border-zinc-100 px-3 sm:px-5 py-3 sm:py-4 dark:border-zinc-800">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Recent Conversations
@@ -293,7 +288,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="min-w-0 flex flex-col gap-4">
-          <div className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white p-4 sm:p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900/80">
+          <div className="animate-fade-in rounded-xl border border-zinc-300 bg-white p-4 sm:p-5 shadow-md dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
             <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Quick Actions
             </h2>

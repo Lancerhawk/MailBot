@@ -211,11 +211,11 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       className={cn(
-        "group relative flex flex-col rounded-xl border p-4 transition-all duration-200",
-        "bg-white dark:bg-zinc-900",
+        "group relative flex flex-col rounded-xl border p-4 shadow-md transition-all duration-200",
+        "bg-white dark:bg-zinc-900/80 dark:shadow-xl",
         isSelected
           ? "border-orange-300 ring-2 ring-orange-200 dark:border-orange-600 dark:ring-orange-500/20"
-          : "border-zinc-200 hover:border-zinc-300 hover:shadow-sm dark:border-zinc-800 dark:hover:border-zinc-700"
+          : "border-zinc-300 hover:border-zinc-400 hover:shadow-lg dark:border-zinc-800/80 dark:hover:border-zinc-700"
       )}
     >
       {isProcessing && (

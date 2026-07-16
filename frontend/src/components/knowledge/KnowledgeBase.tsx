@@ -365,34 +365,34 @@ export function KnowledgeBase() {
         </div>
       </div>
 
-      {/* ─── STATS CARDS ───────────────────────────────────── */}
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={Database}
           label="Total Documents"
           value={stats?.totalDocuments}
           loading={loading}
+          accent="bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400"
         />
         <StatCard
           icon={CheckCircle2}
-          label="Embedded & Ready"
+          label="Processed"
           value={stats?.embeddedCount}
           loading={loading}
-          iconColor="text-emerald-500"
+          accent="bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400"
         />
         <StatCard
           icon={AlertCircle}
           label="Processing / Failed"
           value={stats ? `${stats.processingCount} / ${stats.failedCount}` : undefined}
           loading={loading}
-          iconColor={stats && stats.failedCount > 0 ? "text-red-500" : "text-blue-500"}
+          accent={stats && stats.failedCount > 0 ? "bg-red-500/10 border-red-500/20 text-red-600 dark:text-red-400" : "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400"}
         />
         <StatCard
           icon={BarChart3}
           label="Total Retrievals"
           value={stats?.totalRetrievals}
           loading={loading}
-          iconColor="text-orange-500"
+          accent="bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400"
         />
       </div>
 
@@ -581,17 +581,17 @@ function StatCard({
   label,
   value,
   loading,
-  iconColor,
+  accent = "bg-white border-zinc-300 dark:border-zinc-800/80 dark:bg-zinc-900/80",
 }: {
   icon: React.ElementType;
   label: string;
   value: string | number | null | undefined;
   loading: boolean;
-  iconColor?: string;
+  accent?: string;
 }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
-      <div className={cn("rounded-lg bg-zinc-100 p-2 dark:bg-zinc-800", iconColor)}>
+    <div className={cn("flex items-center gap-3 rounded-xl border p-4 shadow-md dark:shadow-xl", accent)}>
+      <div className="rounded-lg bg-white/50 p-2 dark:bg-black/20">
         <Icon className="h-4 w-4" />
       </div>
       <div>
@@ -602,7 +602,7 @@ function StatCard({
             {value ?? "—"}
           </p>
         )}
-        <p className="text-xs text-zinc-400 dark:text-zinc-500">{label}</p>
+        <p className="text-xs opacity-80">{label}</p>
       </div>
     </div>
   );

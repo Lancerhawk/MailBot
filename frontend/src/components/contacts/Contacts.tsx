@@ -310,17 +310,17 @@ export function Contacts() {
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
         {[
-          { label: "Total", value: stats?.total, icon: Users },
-          { label: "Favorites", value: stats?.favorites, icon: Star, color: "text-amber-500" },
-          { label: "Pinned", value: stats?.pinned, icon: Pin, color: "text-blue-500" },
-          { label: "Active (7d)", value: stats?.recentActive, icon: TrendingUp, color: "text-emerald-500" },
-          { label: "With Org", value: stats?.withOrg, icon: Building2, color: "text-violet-500" },
+          { label: "Total", value: stats?.total, icon: Users, accent: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400" },
+          { label: "Favorites", value: stats?.favorites, icon: Star, accent: "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" },
+          { label: "Pinned", value: stats?.pinned, icon: Pin, accent: "bg-emerald-500/10 border-emerald-500/20 text-emerald-600 dark:text-emerald-400" },
+          { label: "Active (7d)", value: stats?.recentActive, icon: TrendingUp, accent: "bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400" },
+          { label: "With Org", value: stats?.withOrg, icon: Building2, accent: "bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-400" },
         ].map((card) => (
           <div
             key={card.label}
-            className="flex items-center gap-3 rounded-xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+            className={cn("flex items-center gap-3 rounded-xl border p-4 shadow-md dark:shadow-xl", card.accent)}
           >
-            <div className={cn("rounded-lg bg-zinc-100 p-2 dark:bg-zinc-800", card.color)}>
+            <div className="rounded-lg bg-white/50 p-2 dark:bg-black/20">
               <card.icon className="h-4 w-4" />
             </div>
             <div>
@@ -331,7 +331,7 @@ export function Contacts() {
                   {card.value ?? "—"}
                 </p>
               )}
-              <p className="text-xs text-zinc-400 dark:text-zinc-500">{card.label}</p>
+              <p className="text-xs opacity-80">{card.label}</p>
             </div>
           </div>
         ))}
@@ -438,7 +438,7 @@ export function Contacts() {
           loading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <div key={i} className="rounded-xl border border-zinc-300 bg-white shadow-md p-5 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
                   <div className="flex items-start gap-3">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="flex-1 space-y-2">
@@ -517,7 +517,7 @@ export function Contacts() {
           orgLoading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+                <div key={i} className="rounded-xl border border-zinc-300 bg-white shadow-md p-5 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
                   <Skeleton className="h-6 w-32 mb-2" />
                   <Skeleton className="h-4 w-24 mb-4" />
                   <Skeleton className="h-4 w-40" />
@@ -548,7 +548,7 @@ export function Contacts() {
                       key={org.id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="rounded-xl border border-zinc-200 bg-white p-5 transition-all hover:shadow-md hover:border-zinc-300 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-700 flex flex-col"
+                      className="rounded-xl border border-zinc-300 bg-white p-5 shadow-md transition-all hover:shadow-lg hover:border-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl dark:hover:border-zinc-700 flex flex-col"
                     >
                       <div className="flex-1">
                         <h3 className="font-semibold text-zinc-900 dark:text-zinc-100">{org.name}</h3>
