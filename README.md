@@ -81,9 +81,13 @@ graph TD
     B -->|Yes| I[Dashboard]
     I --> J[View Inbox & Threads]
     I --> K[Manage Knowledge Base]
+    I --> O[Contact Intelligence CRM]
+    O --> P[Merge Duplicate Contacts]
+    O --> Q[Configure Contact Tone & Relationship]
     K --> |Upload Documents| L[AWS S3 & pgvector Embeddings]
     J --> M[View RAG-Augmented AI Drafts]
     L --> M
+    Q --> M
     M --> N[Approve & Send Email]
 ```
 
@@ -92,30 +96,28 @@ graph TD
 classDiagram
     class Frontend {
         +AuthContext
-        +SocketContext
-        +api (AxiosClient)
         +DashboardLayout()
+        +Inbox()
+        +ContactProfile()
         +KnowledgeBase()
     }
     class Backend_Controllers {
         +googleAuth()
         +processWebhook()
-        +uploadDocument()
+        +getContactById()
         +searchKnowledge()
     }
     class Backend_Services {
         +AuthService
         +GmailSyncService
+        +ContactService
         +AiPipelineService
-        +DocumentParserService
-        +EmbeddingService
         +VectorSearchService
     }
     class External_APIs {
         +Google OAuth
         +Gmail API
         +AWS S3
-        +Google Gemini
         +Groq LLM
     }
     Frontend --> Backend_Controllers : REST API calls
@@ -130,14 +132,40 @@ flowchart LR
     User([User]) -->|HTTP GET / POST| UI[Next.js Frontend]
     UI -->|API Requests| API[Express Backend]
     Gmail([Gmail Servers]) -->|Pub/Sub Webhook| API
-    API -->|Read/Write via Prisma| DB[(PostgreSQL + pgvector)]
-    API -->|Fetch Email Content| Gmail
+    API -->|Read/Write| DB[(PostgreSQL + pgvector)]
+    API -->|Fetch Content| Gmail
     UI -->|Upload Document| API
     API -->|Upload to Bucket| S3[(AWS S3)]
-    API -->|Generate Vectors| Gemini([Google Gemini])
-    Gemini -->|Embeddings| API
-    API -->|Send RAG Context| LLM([Groq AI])
+    API -->|Generate Vectors| API
+    API -->|Send Prompt Context| LLM([Groq AI])
     LLM -->|Return Draft| API
+```
+
+### 4. AI Prompt Priority Pipeline
+```mermaid
+flowchart TD
+    Incoming[New Incoming Email Webhook] --> Check{Contact Exists in CRM?}
+    
+    Check -->|No| Create[Create New Contact Profile]
+    Create --> Compile
+    
+    Check -->|Yes| CheckMerge{Is Merged Alias?}
+    
+    CheckMerge -->|Yes, it's an alias| Resolve[Resolve Pointer to Master Contact]
+    Resolve --> ExtractTone
+    
+    CheckMerge -->|No, it's Master| ExtractTone
+    
+    ExtractTone[Extract Master Tone & Preferences] --> Compile
+    
+    Compile[1. Compile Conversation History] --> Combine
+    ExtractTone --> Combine[2. Inject Contact Tone/Relationship]
+    
+    Combine --> FetchKB[3. pgvector Knowledge Base Search]
+    FetchKB --> FinalPrompt[Generate Final System Prompt]
+    
+    FinalPrompt --> Groq[Groq LLM Generation]
+    Groq --> Save[Save Auto-Draft to DB]
 ```
 
 ---
@@ -194,6 +222,8 @@ mailman/
 
 ```mermaid
 erDiagram
+    Contact ||--o| Contact : mergedInto
+
     User {
         String id PK
         String email UK
@@ -251,6 +281,17 @@ erDiagram
         String phoneNumber
         String preferredTone
         ContactRelationship relationship
+        Boolean favorite
+        Boolean pinned
+        ContactDirection lastContactedDirection
+        String company
+        String linkedinUrl
+        String website
+        String twitterUrl
+        StringArray labels
+        String aiSummary
+        DateTime lastSummaryGeneratedAt
+        String mergedIntoId FK "Points to master contact"
         Int interactionCount
         DateTime lastInteraction
         String customNotes
