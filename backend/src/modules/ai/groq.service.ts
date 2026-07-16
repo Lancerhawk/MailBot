@@ -157,7 +157,7 @@ export class GroqService {
     const prompt = `You are an AI assistant analyzing an email conversation.
 Read the conversation history and the latest email, then return a strict JSON object with your analysis of the newest message in the context of the whole thread.
 
-CRITICAL: Determine if the latest email actually requires a human response. If it is a newsletter, an automated receipt, a system notification, a social media/LinkedIn connection request or update, a simple "thank you" message, or otherwise does not require a reply, you MUST set "needsReply": false.
+CRITICAL: Determine if the latest email actually requires a human response. If it is a newsletter, a marketing ad, a cold sales pitch, a generic company announcement, an automated receipt, a system notification, a social media/LinkedIn connection invite or update, a simple "thank you" message, or otherwise does not require a reply, you MUST set "needsReply": false.
 
 Output format MUST be EXACTLY this JSON structure and absolutely nothing else (no markdown, no explanations):
 {
