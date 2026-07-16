@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsBackfillService = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 class AnalyticsBackfillService {
     static async runBackfill(userId) {
         console.log(`[AnalyticsBackfill] Starting backfill for user: ${userId}`);
@@ -45,7 +44,7 @@ class AnalyticsBackfillService {
         };
         let lastId = undefined;
         while (true) {
-            const emails = await prisma.email.findMany({
+            const emails = await prisma_1.prisma.email.findMany({
                 where: { userId },
                 take: batchSize,
                 ...(lastId ? { skip: 1, cursor: { id: lastId } } : {}),
@@ -73,7 +72,7 @@ class AnalyticsBackfillService {
         }
         lastId = undefined;
         while (true) {
-            const drafts = await prisma.aiDraftReply.findMany({
+            const drafts = await prisma_1.prisma.aiDraftReply.findMany({
                 where: { userId },
                 take: batchSize,
                 ...(lastId ? { skip: 1, cursor: { id: lastId } } : {}),
@@ -104,7 +103,7 @@ class AnalyticsBackfillService {
         }
         lastId = undefined;
         while (true) {
-            const replies = await prisma.sentReply.findMany({
+            const replies = await prisma_1.prisma.sentReply.findMany({
                 where: { originalEmail: { userId } },
                 include: { originalEmail: true },
                 take: batchSize,
@@ -121,7 +120,7 @@ class AnalyticsBackfillService {
         }
         lastId = undefined;
         while (true) {
-            const docs = await prisma.knowledgeBaseDocument.findMany({
+            const docs = await prisma_1.prisma.knowledgeBaseDocument.findMany({
                 where: { userId },
                 take: batchSize,
                 ...(lastId ? { skip: 1, cursor: { id: lastId } } : {}),
@@ -147,7 +146,7 @@ class AnalyticsBackfillService {
         }
         lastId = undefined;
         while (true) {
-            const contacts = await prisma.contact.findMany({
+            const contacts = await prisma_1.prisma.contact.findMany({
                 where: { userId },
                 take: batchSize,
                 ...(lastId ? { skip: 1, cursor: { id: lastId } } : {}),
@@ -164,7 +163,7 @@ class AnalyticsBackfillService {
         }
         lastId = undefined;
         while (true) {
-            const orgs = await prisma.organization.findMany({
+            const orgs = await prisma_1.prisma.organization.findMany({
                 where: { userId },
                 take: batchSize,
                 ...(lastId ? { skip: 1, cursor: { id: lastId } } : {}),
@@ -184,7 +183,7 @@ class AnalyticsBackfillService {
             const avgConfidence = data.draftsGenerated > 0 ? data._confidenceSum / data.draftsGenerated : 0;
             const avgLatency = data.draftsGenerated > 0 ? data._latencySum / data.draftsGenerated : 0;
             const avgGenTime = data.draftsGenerated > 0 ? data._generationTimeSum / data.draftsGenerated : 0;
-            await prisma.analytics.upsert({
+            await prisma_1.prisma.analytics.upsert({
                 where: {
                     userId_date: {
                         userId,
@@ -242,7 +241,7 @@ class AnalyticsBackfillService {
             });
         }
         console.log(`[AnalyticsBackfill] Purging old activity logs (excluding LOGIN/SETTINGS)...`);
-        await prisma.activityLog.deleteMany({
+        await prisma_1.prisma.activityLog.deleteMany({
             where: {
                 userId,
                 action: { notIn: ['LOGIN', 'SETTINGS_CHANGE'] }
@@ -251,7 +250,7 @@ class AnalyticsBackfillService {
         console.log(`[AnalyticsBackfill] Inserting ${activityLogsToInsert.length} activity logs...`);
         const chunkSize = 5000;
         for (let i = 0; i < activityLogsToInsert.length; i += chunkSize) {
-            await prisma.activityLog.createMany({
+            await prisma_1.prisma.activityLog.createMany({
                 data: activityLogsToInsert.slice(i, i + chunkSize)
             });
         }

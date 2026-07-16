@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsController = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../lib/prisma");
 function serializeData(obj) {
     return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? value.toString() : value));
 }
@@ -27,7 +26,7 @@ class AnalyticsController {
             const where = { userId };
             if (dateFilter)
                 where.date = dateFilter;
-            const aggregate = await prisma.analytics.aggregate({
+            const aggregate = await prisma_1.prisma.analytics.aggregate({
                 where,
                 _sum: {
                     emailsReceived: true,
@@ -71,7 +70,7 @@ class AnalyticsController {
             const where = { userId };
             if (dateFilter)
                 where.date = dateFilter;
-            const data = await prisma.analytics.findMany({
+            const data = await prisma_1.prisma.analytics.findMany({
                 where,
                 orderBy: { date: 'asc' }
             });
@@ -95,7 +94,7 @@ class AnalyticsController {
             const where = { userId };
             if (dateFilter)
                 where.createdAt = dateFilter;
-            const logs = await prisma.activityLog.findMany({
+            const logs = await prisma_1.prisma.activityLog.findMany({
                 where,
                 take,
                 ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
@@ -119,11 +118,11 @@ class AnalyticsController {
             const where = { userId };
             if (dateFilter)
                 where.date = dateFilter;
-            const data = await prisma.analytics.findMany({
+            const data = await prisma_1.prisma.analytics.findMany({
                 where,
                 orderBy: { date: 'asc' }
             });
-            const aggregate = await prisma.analytics.aggregate({
+            const aggregate = await prisma_1.prisma.analytics.aggregate({
                 where,
                 _sum: {
                     emailsReceived: true,
@@ -200,11 +199,11 @@ class AnalyticsController {
             const where = { userId };
             if (dateFilter)
                 where.date = dateFilter;
-            const data = await prisma.analytics.findMany({
+            const data = await prisma_1.prisma.analytics.findMany({
                 where,
                 orderBy: { date: 'asc' }
             });
-            const aggregate = await prisma.analytics.aggregate({
+            const aggregate = await prisma_1.prisma.analytics.aggregate({
                 where,
                 _sum: {
                     emailsReceived: true,
@@ -220,7 +219,7 @@ class AnalyticsController {
             const activityWhere = { userId };
             if (dateFilter)
                 activityWhere.createdAt = dateFilter;
-            const activities = await prisma.activityLog.findMany({
+            const activities = await prisma_1.prisma.activityLog.findMany({
                 where: activityWhere,
                 orderBy: { createdAt: 'desc' },
                 take: 1000

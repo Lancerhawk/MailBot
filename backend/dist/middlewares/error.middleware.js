@@ -7,6 +7,9 @@ const ApiError_1 = require("../utils/ApiError");
 const env_1 = require("../config/env");
 const logger_1 = require("../config/logger");
 const errorHandler = (err, req, res, _next) => {
+    if (res.headersSent) {
+        return _next(err);
+    }
     let error = err;
     if (!(error instanceof ApiError_1.ApiError)) {
         let statusCode = error.statusCode || 500;

@@ -1,8 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsEventService = exports.AnalyticsEventType = void 0;
-const client_1 = require("@prisma/client");
-const prisma = new client_1.PrismaClient();
+const prisma_1 = require("../../../lib/prisma");
 var AnalyticsEventType;
 (function (AnalyticsEventType) {
     AnalyticsEventType["EMAIL_RECEIVED"] = "EMAIL_RECEIVED";
@@ -80,7 +79,7 @@ class AnalyticsEventService {
                         if (metrics.storageUsedBytes)
                             updateData.storageUsedBytes = { increment: metrics.storageUsedBytes };
                     }
-                    await prisma.analytics.upsert({
+                    await prisma_1.prisma.analytics.upsert({
                         where: {
                             userId_date: {
                                 userId,
@@ -115,7 +114,7 @@ class AnalyticsEventService {
                         update: updateData
                     });
                     if (metrics && (metrics.confidence !== undefined || metrics.latency !== undefined || metrics.replyGenerationTime !== undefined)) {
-                        await prisma.$executeRaw `
+                        await prisma_1.prisma.$executeRaw `
               UPDATE "Analytics"
               SET 
                 "averageConfidence" = CASE WHEN "draftsGenerated" > 0 THEN (("averageConfidence" * ("draftsGenerated" - 1)) + ${metrics.confidence || 0}) / "draftsGenerated" ELSE "averageConfidence" END,
@@ -161,7 +160,7 @@ class AnalyticsEventService {
                             break;
                     }
                     if (activityAction) {
-                        await prisma.activityLog.create({
+                        await prisma_1.prisma.activityLog.create({
                             data: {
                                 userId,
                                 action: activityAction,
