@@ -348,6 +348,10 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
           ) : null}
           {(doc.retrievalCount || 0) > 0
             ? `Used ${doc.retrievalCount}×`
+            : doc.processingStatus === "PROCESSING"
+            ? "Processing..."
+            : doc.processingStatus === "PENDING"
+            ? "Queued..."
             : "Never used"}
         </span>
         {doc.lastRetrievedAt && (

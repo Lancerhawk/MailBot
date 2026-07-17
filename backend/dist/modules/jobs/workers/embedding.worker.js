@@ -71,15 +71,16 @@ class EmbeddingWorker {
                 const batch = chunks.slice(i, i + batchSize);
                 const texts = batch.map(c => c.content);
                 const embeddings = await local_embedding_service_1.localEmbeddingService.embedBatch(texts);
-                for (let j = 0; j < batch.length; j++) {
-                    const chunk = batch[j];
+                const updatePromises = batch.map((chunk, j) => {
                     const embeddingStr = `[${embeddings[j].join(',')}]`;
-                    await prisma_1.prisma.$executeRawUnsafe(`
+                    return prisma_1.prisma.$executeRawUnsafe(`
             UPDATE "KnowledgeBaseChunk"
             SET embedding = $1::vector, "embeddingModel" = 'bge-small-en-v1.5'
             WHERE id = $2
           `, embeddingStr, chunk.id);
-                }
+                });
+                // Execute all updates for this batch in a single transaction (1 network round-trip)
+                await prisma_1.prisma.$transaction(updatePromises);
                 const progress = Math.min(100, Math.round(((i + batch.length) / totalChunks) * 100));
                 (0, socket_1.emitToUser)(userId, 'knowledge:embedding_progress', { documentId, progress, processedChunks: i + batch.length, totalChunks });
                 await new Promise(resolve => setImmediate(resolve));
