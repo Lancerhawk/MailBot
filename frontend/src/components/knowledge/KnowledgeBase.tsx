@@ -581,7 +581,7 @@ function StatCard({
   label,
   value,
   loading,
-  accent = "bg-white border-zinc-300 dark:border-zinc-800/80 dark:bg-zinc-900/80",
+  accent = "border-zinc-300 dark:border-zinc-800/80",
 }: {
   icon: React.ElementType;
   label: string;
@@ -590,19 +590,19 @@ function StatCard({
   accent?: string;
 }) {
   return (
-    <div className={cn("flex items-center gap-3 rounded-xl border p-4 shadow-md dark:shadow-xl", accent)}>
-      <div className="rounded-lg bg-white/50 p-2 dark:bg-black/20">
+    <div className={cn("relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border p-3 sm:p-4 shadow-md dark:shadow-xl bg-white dark:bg-zinc-900", accent)}>
+      <div className="rounded-lg bg-black/5 p-2 dark:bg-white/10 shrink-0">
         <Icon className="h-4 w-4" />
       </div>
-      <div>
+      <div className="min-w-0 flex-1">
         {loading ? (
           <Skeleton className="h-6 w-12" />
         ) : (
-          <p className="text-lg font-bold text-zinc-900 dark:text-zinc-100 tabular-nums">
+          <p className="text-base sm:text-lg font-bold text-zinc-900 dark:text-zinc-100 tabular-nums truncate">
             {value ?? "—"}
           </p>
         )}
-        <p className="text-xs opacity-80">{label}</p>
+        <p className="text-xs opacity-80 truncate">{label}</p>
       </div>
     </div>
   );

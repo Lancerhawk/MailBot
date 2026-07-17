@@ -77,10 +77,8 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
                 )}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
+                  <div
                     className="absolute inset-0 rounded-md bg-orange-100 dark:bg-red-500/20"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
                 <item.icon
@@ -114,10 +112,8 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
                 )}
               >
                 {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active"
+                  <div
                     className="absolute inset-0 rounded-md bg-orange-100 dark:bg-red-500/20"
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}
                 <item.icon
@@ -151,7 +147,7 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-zinc-950/80 backdrop-blur-sm"
+              className="fixed inset-0 bg-zinc-950/90"
               onClick={() => setMobileOpen && setMobileOpen(false)}
             />
             <motion.div
