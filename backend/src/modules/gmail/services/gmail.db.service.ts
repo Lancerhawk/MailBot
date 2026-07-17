@@ -167,6 +167,28 @@ export class GmailDbService {
     });
   }
 
+  async getThreadsBulk(userId: string, threadIds: string[]) {
+    return prisma.emailThread.findMany({
+      where: { id: { in: threadIds }, userId },
+      include: {
+        emails: {
+          where: { isDraft: false },
+          orderBy: { providerInternalDate: 'asc' },
+          include: {
+            participants: true,
+            attachments: true,
+            labels: true,
+            drafts: {
+              where: { isFinal: true, deletedAt: null },
+              orderBy: { createdAt: 'desc' },
+              take: 1
+            }
+          }
+        }
+      }
+    });
+  }
+
   async getThreadByProviderId(userId: string, providerThreadId: string) {
     return prisma.emailThread.findFirst({
       where: { providerThreadId, userId },
