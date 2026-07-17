@@ -1,6 +1,6 @@
 import { createHash } from 'crypto';
 import { prisma } from '../../../lib/prisma';
-import { EmbeddingService } from './embedding.service';
+import { localEmbeddingService } from './local-embedding.service';
 import { logger } from '../../../config/logger';
 
 export interface SearchResult {
@@ -34,12 +34,9 @@ interface CacheEntry {
 const CACHE_TTL_MS = 60_000;
 
 export class SearchService {
-  private embeddingService: EmbeddingService;
   private cache: Map<string, CacheEntry> = new Map();
 
-  constructor() {
-    this.embeddingService = new EmbeddingService();
-  }
+  constructor() { }
 
   clearCacheForUser(userId: string): void {
     for (const [key] of this.cache) {
@@ -90,9 +87,8 @@ export class SearchService {
       return cached;
     }
 
-    // console.time(`Knowledge-Search-${userId}`);
 
-    const queryEmbedding = await this.embeddingService.embedSingleText(queryText);
+    const queryEmbedding = await localEmbeddingService.embedSingleText(queryText);
     const embeddingStr = `[${queryEmbedding.join(',')}]`;
 
     const rawResults: any[] = await prisma.$queryRawUnsafe(
@@ -151,7 +147,6 @@ export class SearchService {
     const reranked = this.rerank(merged, queryText);
     const topResults = reranked.slice(0, 8);
 
-    // console.timeEnd(`Knowledge-Search-${userId}`);
 
     logger.info(
       {

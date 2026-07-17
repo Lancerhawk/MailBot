@@ -3,15 +3,12 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.SearchService = void 0;
 const crypto_1 = require("crypto");
 const prisma_1 = require("../../../lib/prisma");
-const embedding_service_1 = require("./embedding.service");
+const local_embedding_service_1 = require("./local-embedding.service");
 const logger_1 = require("../../../config/logger");
 const CACHE_TTL_MS = 60_000;
 class SearchService {
-    embeddingService;
     cache = new Map();
-    constructor() {
-        this.embeddingService = new embedding_service_1.EmbeddingService();
-    }
+    constructor() { }
     clearCacheForUser(userId) {
         for (const [key] of this.cache) {
             if (key.startsWith(userId + ':')) {
@@ -51,8 +48,7 @@ class SearchService {
             logger_1.logger.info({ userId, cacheHit: true }, 'Knowledge search cache hit');
             return cached;
         }
-        // console.time(`Knowledge-Search-${userId}`);
-        const queryEmbedding = await this.embeddingService.embedSingleText(queryText);
+        const queryEmbedding = await local_embedding_service_1.localEmbeddingService.embedSingleText(queryText);
         const embeddingStr = `[${queryEmbedding.join(',')}]`;
         const rawResults = await prisma_1.prisma.$queryRawUnsafe(`SELECT
         c.id as "chunkId",
@@ -102,7 +98,6 @@ class SearchService {
         const merged = this.mergeNeighbors(deduplicated);
         const reranked = this.rerank(merged, queryText);
         const topResults = reranked.slice(0, 8);
-        // console.timeEnd(`Knowledge-Search-${userId}`);
         logger_1.logger.info({
             userId,
             rawCount: rawResults.length,

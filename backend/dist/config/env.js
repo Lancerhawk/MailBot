@@ -23,7 +23,13 @@ const envSchema = zod_1.z.object({
     AWS_REGION: zod_1.z.string().default('ap-south-1'),
     AWS_S3_BUCKET: zod_1.z.string().min(1, 'AWS S3 Bucket is required'),
     OPENAI_API_KEY: zod_1.z.string().optional(),
-    GEMINI_API_KEY: zod_1.z.string().min(1, 'Gemini API Key is required'),
+    EMBEDDING_WORKERS: zod_1.z.coerce.number().default(2),
+    MAX_DOCUMENT_PAGES: zod_1.z.coerce.number().default(500),
+    MAX_DOCUMENT_SIZE_MB: zod_1.z.coerce.number().default(50),
+    MAX_CHUNKS_PER_DOCUMENT: zod_1.z.coerce.number().default(2000),
+    EMBEDDING_BATCH_SIZE: zod_1.z.coerce.number().default(32),
+    PROCESSING_JOB_TIMEOUT: zod_1.z.coerce.number().default(600000), // 10 minutes
+    MODEL_CACHE_DIRECTORY: zod_1.z.string().default('.cache/models'),
 });
 const _env = envSchema.safeParse(process.env);
 if (!_env.success) {

@@ -4,6 +4,9 @@ import { logger } from './config/logger';
 import { prisma } from './lib/prisma';
 import { Server } from 'http';
 import { initSocket } from './socket';
+import { localEmbeddingService } from './modules/knowledge/services/local-embedding.service';
+import { EmbeddingWorker } from './modules/jobs/workers/embedding.worker';
+import { jobService } from './modules/jobs/job.service';
 
 let server: Server;
 
@@ -29,8 +32,22 @@ const startServer = async () => {
       renewalService.runRenewalJob().catch((e: any) => logger.error({ err: e }, 'Failed scheduled watch renewal'));
     }, 24 * 60 * 60 * 1000);
 
-  } catch (error) {
-    logger.fatal({ error }, 'Failed to start server');
+    await localEmbeddingService.init();
+
+    const workerCount = env.EMBEDDING_WORKERS;
+    const workers: EmbeddingWorker[] = [];
+    for (let i = 1; i <= workerCount; i++) {
+      const worker = new EmbeddingWorker(i);
+      worker.start();
+      workers.push(worker);
+    }
+
+    setInterval(() => {
+      jobService.recoverStaleJobs().catch((e: any) => logger.error({ err: e }, 'Failed to recover stale jobs'));
+    }, 5 * 60 * 1000);
+
+  } catch (error: any) {
+    logger.fatal({ err: error, errorMessage: error.message }, 'Failed to start server');
     process.exit(1);
   }
 };

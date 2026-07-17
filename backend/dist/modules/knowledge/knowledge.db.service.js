@@ -221,20 +221,26 @@ class KnowledgeDbService {
         });
     }
     async insertChunksWithEmbeddings(documentId, chunks) {
+        if (chunks.length === 0)
+            return;
+        const values = [];
+        const placeholders = [];
+        let i = 1;
         for (const chunk of chunks) {
-            const embeddingStr = `[${chunk.embedding.join(',')}]`;
-            await prisma_1.prisma.$executeRawUnsafe(`INSERT INTO "KnowledgeBaseChunk" (
-          id, "documentId", "chunkIndex", content, "tokenCount",
-          "embeddingModel", embedding, metadata,
-          "pageNumber", heading, section,
-          "sourceOffsetStart", "sourceOffsetEnd", "documentVersion"
-        ) VALUES (
-          gen_random_uuid(), $1, $2, $3, $4,
-          $5, $6::vector, $7::jsonb,
-          $8, $9, $10,
-          $11, $12, $13
-        )`, documentId, chunk.chunkIndex, chunk.content, chunk.tokenCount, 'text-embedding-3-small', embeddingStr, JSON.stringify({}), chunk.pageNumber, chunk.heading, chunk.section, chunk.sourceOffsetStart, chunk.sourceOffsetEnd, chunk.documentVersion);
+            const embeddingStr = chunk.embedding ? `[${chunk.embedding.join(',')}]` : null;
+            const embeddingModel = chunk.embedding ? 'bge-small-en-v1.5' : null;
+            placeholders.push(`(gen_random_uuid(), $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}::vector, $${i++}::jsonb, $${i++}, $${i++}, $${i++}, $${i++}, $${i++}, $${i++})`);
+            values.push(documentId, chunk.chunkIndex, chunk.content, chunk.tokenCount, embeddingModel, embeddingStr, JSON.stringify({}), chunk.pageNumber, chunk.heading, chunk.section, chunk.sourceOffsetStart, chunk.sourceOffsetEnd, chunk.documentVersion);
         }
+        const query = `
+      INSERT INTO "KnowledgeBaseChunk" (
+        id, "documentId", "chunkIndex", content, "tokenCount",
+        "embeddingModel", embedding, metadata,
+        "pageNumber", heading, section,
+        "sourceOffsetStart", "sourceOffsetEnd", "documentVersion"
+      ) VALUES ${placeholders.join(', ')}
+    `;
+        await prisma_1.prisma.$executeRawUnsafe(query, ...values);
     }
     async updateDocumentStatus(documentId, status, extra) {
         return prisma_1.prisma.knowledgeBaseDocument.update({

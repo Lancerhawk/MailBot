@@ -324,7 +324,7 @@ export function KnowledgeBase() {
           </p>
           <p className="mt-2 text-xs font-medium text-orange-600 dark:text-orange-400">
             <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
-            Note: There is a strict safety limit of 500 chunks (~50 dense pages) per document. Larger files will fail.
+            Note: There is a strict safety limit of 2000 chunks (~200 dense pages) and 50MB per document. Larger files will fail.
           </p>
         </div>
 

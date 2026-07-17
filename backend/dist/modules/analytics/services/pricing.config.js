@@ -34,12 +34,6 @@ class PricingConfig {
                 completionTokenCostPer1k: 0.015,
             }
         },
-        [client_1.AiProvider.GEMINI]: {
-            'default': {
-                promptTokenCostPer1k: 0.000125,
-                completionTokenCostPer1k: 0.000375,
-            }
-        },
         [client_1.AiProvider.CUSTOM]: {
             'default': {
                 promptTokenCostPer1k: 0,

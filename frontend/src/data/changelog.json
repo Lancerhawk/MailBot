@@ -1,6 +1,24 @@
 {
   "versions": [
     {
+      "id": "be-v1.1.0",
+      "version": "v1.1.0",
+      "date": "2026-07-17",
+      "title": "Local Embedding Model Migration",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Local AI Worker",
+          "description": "Replaced external Google Gemini API with a local CPU-based bge-small-en-v1.5 Transformers.js embedding model for document chunking, completely eliminating API costs and rate limits."
+        },
+        {
+          "title": "Worker Configuration",
+          "description": "Added .env flags for EMBEDDING_WORKERS and EMBEDDING_BATCH_SIZE to safely control memory consumption on free-tier EC2 instances."
+        }
+      ]
+    },
+    {
       "id": "fe-v1.0.0",
       "version": "v1.0.0",
       "date": "2026-07-17",
@@ -32,7 +50,7 @@
       "date": "2026-07-17",
       "title": "Settings Payload Expansion",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Settings Payload Expansion",

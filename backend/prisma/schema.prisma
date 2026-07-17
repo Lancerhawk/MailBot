@@ -159,7 +159,6 @@ enum AiProvider {
   GROQ
   OPENAI
   ANTHROPIC
-  GEMINI
   CUSTOM
 }
 
@@ -574,7 +573,7 @@ model KnowledgeBaseChunk {
   content        String                       @db.Text
   tokenCount     Int?
   embeddingModel String?
-  embedding      Unsupported("vector(1536)")?
+  embedding      Unsupported("vector(384)")?
   metadata       Json?                        @default("{}")
   deletedAt      DateTime?
 
