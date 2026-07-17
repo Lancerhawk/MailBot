@@ -308,7 +308,7 @@ export function Contacts() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 lg:grid-cols-5">
         {[
           { label: "Total", value: stats?.total, icon: Users, accent: "bg-blue-500/10 border-blue-500/20 text-blue-600 dark:text-blue-400" },
           { label: "Favorites", value: stats?.favorites, icon: Star, accent: "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400" },
@@ -319,7 +319,7 @@ export function Contacts() {
           <div
             key={card.label}
             className={cn(
-              "relative overflow-hidden flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border p-3 sm:p-4 shadow-md dark:shadow-xl bg-white dark:bg-zinc-900",
+              "flex flex-col sm:flex-row items-start sm:items-center gap-3 rounded-xl border p-3 sm:p-4 shadow-md dark:shadow-xl bg-white dark:bg-zinc-900",
               card.accent
             )}
           >
