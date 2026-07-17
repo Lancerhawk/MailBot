@@ -12,7 +12,7 @@ export function MainLayout({ children }: { children: React.ReactNode }) {
   const isFullWidth = ["/inbox", "/spam", "/trash", "/drafts"].includes(pathname);
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-stone-50 transition-colors duration-300 dark:bg-zinc-950">
+    <div className="flex h-[100dvh] w-full overflow-hidden bg-stone-50 transition-colors duration-300 dark:bg-zinc-950">
       <Sidebar mobileOpen={sidebarOpen} setMobileOpen={setSidebarOpen} />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
