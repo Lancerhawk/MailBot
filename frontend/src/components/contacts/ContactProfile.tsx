@@ -299,7 +299,7 @@ export function ContactProfile() {
             )}
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
             <Button variant="outline" size="icon" onClick={handleToggleFavorite}>
               <Star className={cn("h-4 w-4", contact.favorite && "fill-amber-400 text-amber-400")} />
             </Button>

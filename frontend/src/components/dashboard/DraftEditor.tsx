@@ -181,7 +181,7 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
   return (
     <div className={`mt-4 animate-fade-in rounded-xl border bg-white shadow-sm overflow-hidden ${draft ? 'border-orange-200 dark:border-orange-500/20' : 'border-zinc-200 dark:border-zinc-800'} dark:bg-zinc-900/80`}>
       {draft && (
-        <div className="flex items-center justify-between border-b border-orange-100 bg-orange-50/50 px-4 py-3 dark:border-orange-900/30 dark:bg-orange-500/5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-orange-100 bg-orange-50/50 px-4 py-3 dark:border-orange-900/30 dark:bg-orange-500/5">
           <div className="flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-orange-500" />
             <span className="text-sm font-semibold text-orange-700 dark:text-orange-300">AI Draft Reply</span>

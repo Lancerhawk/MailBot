@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import {
   Star,
   Pin,
@@ -83,13 +82,8 @@ export function ContactCard({ contact, onFavorite, onPin, onEdit, onArchive, onM
   const avatarColor = getAvatarColor(contact.emailAddress);
 
   return (
-    <motion.div
-      layout
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      transition={{ duration: 0.2 }}
-      className="group relative flex h-full flex-col rounded-xl border border-zinc-300 bg-white p-5 shadow-md transition-all hover:shadow-lg hover:border-zinc-400 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl dark:hover:border-zinc-700"
+    <div
+      className="group relative flex h-full flex-col rounded-xl border border-zinc-300 bg-white p-5 shadow-md transition-all hover:shadow-lg hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-xl dark:hover:border-zinc-700 animate-in fade-in duration-300 slide-in-from-bottom-2"
     >
       {contact.pinned && (
         <div className="absolute -top-1.5 -right-1.5 rounded-full bg-blue-500 p-1">
@@ -208,6 +202,6 @@ export function ContactCard({ contact, onFavorite, onPin, onEdit, onArchive, onM
           </>
         )}
       </div>
-    </motion.div>
+    </div>
   );
 }

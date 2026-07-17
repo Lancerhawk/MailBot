@@ -280,30 +280,30 @@ export function Contacts() {
           </p>
         </div>
 
-        <div className="flex items-center gap-1 rounded-lg bg-zinc-100/80 p-1 dark:bg-zinc-800/80 shrink-0 border border-zinc-200/50 dark:border-zinc-700/50">
+        <div className="flex w-full sm:w-auto items-center gap-1 rounded-lg bg-zinc-100/80 p-1 dark:bg-zinc-800/80 shrink-0 border border-zinc-200/50 dark:border-zinc-700/50">
           <button
             onClick={() => setActiveView("contacts")}
             className={cn(
-              "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all cursor-pointer",
+              "flex flex-1 sm:flex-none justify-center items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all cursor-pointer",
               activeView === "contacts"
                 ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600"
                 : "text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-700/50 dark:hover:text-zinc-200"
             )}
           >
-            <Users className="h-4 w-4" />
-            Contacts
+            <Users className="h-4 w-4 shrink-0" />
+            <span className="truncate">Contacts</span>
           </button>
           <button
             onClick={() => setActiveView("organizations")}
             className={cn(
-              "flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all cursor-pointer",
+              "flex flex-1 sm:flex-none justify-center items-center gap-2 rounded-md px-4 py-2 text-sm font-medium transition-all cursor-pointer",
               activeView === "organizations"
                 ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200 dark:bg-zinc-700 dark:text-zinc-100 dark:ring-zinc-600"
                 : "text-zinc-500 hover:bg-zinc-200/50 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-700/50 dark:hover:text-zinc-200"
             )}
           >
-            <Building2 className="h-4 w-4" />
-            Organizations
+            <Building2 className="h-4 w-4 shrink-0" />
+            <span className="truncate">Organizations</span>
           </button>
         </div>
       </div>
@@ -441,7 +441,7 @@ export function Contacts() {
           loading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="rounded-xl border border-zinc-300 bg-white shadow-md p-5 dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
+                <div key={i} className="rounded-xl border border-zinc-300 bg-white shadow-md p-5 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-xl">
                   <div className="flex items-start gap-3">
                     <Skeleton className="h-10 w-10 rounded-full" />
                     <div className="flex-1 space-y-2">
