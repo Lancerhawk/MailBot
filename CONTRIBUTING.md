@@ -36,4 +36,4 @@ We use a feature-branching model:
 3. You may merge the Pull Request in once you have the sign-off of two other developers, or if you do not have permission to do that, you may request the second reviewer to merge it for you.
 
 ## AI API Note
-MailBot relies on Groq and Gemini APIs. Please ensure you are not committing any of your personal API keys in your PRs. We use `.env` files which are ignored by git.
+MailBot relies on Groq APIs and local embeddings. Please ensure you are not committing any of your personal API keys in your PRs. We use `.env` files which are ignored by git.

@@ -1,25 +1,25 @@
-import { ProcessingStatus } from '@prisma/client';
+import { ProcessingStatus, JobType, ProcessingEntityType } from '@prisma/client';
 import { KnowledgeDbService } from './knowledge.db.service';
 import { StorageService } from './services/storage.service';
 import { ParserService } from './services/parser.service';
 import { ChunkingService } from './services/chunking.service';
-import { EmbeddingService } from './services/embedding.service';
 import { RetrievalService } from './services/retrieval.service';
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
+import { jobService } from '../jobs/job.service';
 import { emitToUser } from '../../socket';
 import { ApiError } from '../../utils/ApiError';
 import { logger } from '../../config/logger';
+import { env } from '../../config/env';
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_FILE_SIZE = env.MAX_DOCUMENT_SIZE_MB * 1024 * 1024;
 const MAX_STORAGE_PER_USER = 500 * 1024 * 1024;
 const MAX_DOCUMENTS_PER_USER = 100;
-const MAX_CHUNKS_PER_DOCUMENT = 500;
+const MAX_CHUNKS_PER_DOCUMENT = env.MAX_CHUNKS_PER_DOCUMENT;
 
 const dbService = new KnowledgeDbService();
 const storageService = new StorageService();
 const parserService = new ParserService();
 const chunkingService = new ChunkingService();
-const embeddingService = new EmbeddingService();
 const retrievalService = new RetrievalService();
 
 export class KnowledgeService {
@@ -106,14 +106,11 @@ export class KnowledgeService {
         });
         AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DOCUMENT_EMBEDDED);
         emitToUser(userId, 'knowledge:ready', { documentId, chunkCount: 0, isImage: true });
-        console.timeEnd(`Knowledge-TotalPipeline-${documentId}`);
         return;
       }
 
       emitToUser(userId, 'knowledge:parsing', { documentId });
-      console.time(`Knowledge-Parse-${documentId}`);
       const parseResult = await parserService.extractText(buffer, mimeType, '');
-      console.timeEnd(`Knowledge-Parse-${documentId}`);
 
       if (!parseResult.text || parseResult.text.trim().length === 0) {
         await dbService.updateDocumentStatus(documentId, ProcessingStatus.COMPLETED, {
@@ -121,14 +118,10 @@ export class KnowledgeService {
           chunkCount: 0,
         });
         emitToUser(userId, 'knowledge:ready', { documentId, chunkCount: 0, noText: true });
-        console.timeEnd(`Knowledge-TotalPipeline-${documentId}`);
         return;
       }
 
-      emitToUser(userId, 'knowledge:chunking', { documentId });
-      console.time(`Knowledge-Chunk-${documentId}`);
       const chunks = chunkingService.chunkText(parseResult.text, version);
-      console.timeEnd(`Knowledge-Chunk-${documentId}`);
 
       if (chunks.length === 0) {
         await dbService.updateDocumentStatus(documentId, ProcessingStatus.COMPLETED, {
@@ -136,7 +129,6 @@ export class KnowledgeService {
           chunkCount: 0,
         });
         emitToUser(userId, 'knowledge:ready', { documentId, chunkCount: 0 });
-        console.timeEnd(`Knowledge-TotalPipeline-${documentId}`);
         return;
       }
 
@@ -144,32 +136,22 @@ export class KnowledgeService {
         throw new Error(`Document produces ${chunks.length} chunks, exceeding the limit of ${MAX_CHUNKS_PER_DOCUMENT}`);
       }
 
-      emitToUser(userId, 'knowledge:embedding', { documentId, chunkCount: chunks.length });
-      console.time(`Knowledge-Embed-${documentId}`);
-      const texts = chunks.map(c => c.content);
-      const embeddings = await embeddingService.embedTexts(texts);
-      console.timeEnd(`Knowledge-Embed-${documentId}`);
-
-      const chunksWithEmbeddings = chunks.map((chunk, i) => ({
+      const chunksWithEmbeddings = chunks.map((chunk) => ({
         ...chunk,
-        embedding: embeddings[i],
+        embedding: null,
       }));
 
       await dbService.insertChunksWithEmbeddings(documentId, chunksWithEmbeddings);
 
-      await dbService.updateDocumentStatus(documentId, ProcessingStatus.COMPLETED, {
-        chunkCount: chunks.length,
-        processedAt: new Date(),
-        embeddedAt: new Date(),
-        isEmbedded: true,
-      });
-
-      retrievalService.clearCacheForUser(userId);
-
-      AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DOCUMENT_EMBEDDED);
-
-      emitToUser(userId, 'knowledge:ready', { documentId, chunkCount: chunks.length });
-      logger.info({ documentId, chunkCount: chunks.length }, 'Knowledge document processing completed');
+      emitToUser(userId, 'knowledge:queued', { documentId, chunkCount: chunks.length });
+      
+      await jobService.createJob(
+        userId,
+        JobType.DOCUMENT_EMBEDDING,
+        ProcessingEntityType.DOCUMENT,
+        documentId,
+        1
+      );
 
     } catch (error: any) {
       logger.error({ error, documentId }, 'Knowledge document processing failed');

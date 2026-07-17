@@ -19,7 +19,14 @@ const envSchema = z.object({
   AWS_REGION: z.string().default('ap-south-1'),
   AWS_S3_BUCKET: z.string().min(1, 'AWS S3 Bucket is required'),
   OPENAI_API_KEY: z.string().optional(),
-  GEMINI_API_KEY: z.string().min(1, 'Gemini API Key is required'),
+  
+  EMBEDDING_WORKERS: z.coerce.number().default(2),
+  MAX_DOCUMENT_PAGES: z.coerce.number().default(500),
+  MAX_DOCUMENT_SIZE_MB: z.coerce.number().default(50),
+  MAX_CHUNKS_PER_DOCUMENT: z.coerce.number().default(2000),
+  EMBEDDING_BATCH_SIZE: z.coerce.number().default(32),
+  PROCESSING_JOB_TIMEOUT: z.coerce.number().default(600000), // 10 minutes
+  MODEL_CACHE_DIRECTORY: z.string().default('.cache/models'),
 });
 
 const _env = envSchema.safeParse(process.env);

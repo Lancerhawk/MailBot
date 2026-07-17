@@ -26,12 +26,9 @@ const ACCEPTED_TYPES = [
   "text/csv",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-  "image/png",
-  "image/jpeg",
-  "image/webp",
 ];
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024;
+const MAX_FILE_SIZE = 50 * 1024 * 1024;
 
 const FOLDERS = ["Personal", "Career", "Projects", "Business", "Finance", "Legal", "Education", "Other"];
 
@@ -94,10 +91,10 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
   // Auto-close when all uploads succeed
   useEffect(() => {
     if (isOpen && queue.length > 0) {
-      const allDone = queue.every(q => q.stage === "ready" || q.stage === "failed");
-      const allSuccess = queue.every(q => q.stage === "ready");
+      const uploadFinished = queue.every(q => q.stage !== "queued" && q.stage !== "uploading");
+      const noErrors = !queue.some(q => q.stage === "failed");
 
-      if (allDone && allSuccess) {
+      if (uploadFinished && noErrors) {
         const t = setTimeout(() => {
           onClose();
         }, 1500);
@@ -147,7 +144,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
         continue;
       }
       if (file.size > MAX_FILE_SIZE) {
-        toast.error(`File too large: ${file.name} (max 25MB)`);
+        toast.error(`File too large: ${file.name} (max 50MB)`);
         continue;
       }
 
@@ -219,7 +216,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
   }, []);
 
   const hasQueued = queue.some((q) => q.stage === "queued");
-  const allDone = queue.length > 0 && queue.every((q) => q.stage === "ready" || q.stage === "failed");
+  const allDone = queue.length > 0 && queue.every((q) => q.stage !== "queued" && q.stage !== "uploading");
 
   if (!isOpen) return null;
 
@@ -248,7 +245,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
             <div>
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Upload Documents</h2>
               <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                PDF, DOCX, TXT, CSV, XLSX, and images supported
+                PDF, DOCX, PPTX, TXT, CSV, and XLSX supported
               </p>
             </div>
             <button
@@ -263,15 +260,16 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
           <div className="p-6">
             {/* Drop zone */}
             <div
-              onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
-              onDragLeave={() => setIsDragOver(false)}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
+              onDragOver={(e) => { e.preventDefault(); if (!isUploading) setIsDragOver(true); }}
+              onDragLeave={() => { if (!isUploading) setIsDragOver(false); }}
+              onDrop={(e) => { if (!isUploading) handleDrop(e); }}
+              onClick={() => { if (!isUploading) fileInputRef.current?.click(); }}
               className={cn(
-                "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-all duration-200",
-                isDragOver
+                "flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-all duration-200",
+                isUploading ? "cursor-not-allowed opacity-50 border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800/50" : "cursor-pointer",
+                !isUploading && isDragOver
                   ? "border-orange-400 bg-orange-50 dark:border-orange-500 dark:bg-orange-500/5"
-                  : "border-zinc-300 bg-zinc-50 hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-zinc-600"
+                  : !isUploading ? "border-zinc-300 bg-zinc-50 hover:border-zinc-400 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-800/50 dark:hover:border-zinc-600" : ""
               )}
             >
               <CloudUpload className={cn(
@@ -282,7 +280,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
                 {isDragOver ? "Drop files here" : "Drag & drop files or click to browse"}
               </p>
               <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">
-                Max 25MB per file
+                Max 50MB per file
               </p>
             </div>
 
@@ -290,6 +288,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
               ref={fileInputRef}
               type="file"
               multiple
+              disabled={isUploading}
               accept={ACCEPTED_TYPES.join(",")}
               className="hidden"
               onChange={(e) => {
@@ -307,7 +306,8 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
                 <select
                   value={folder}
                   onChange={(e) => setFolder(e.target.value)}
-                  className="w-full appearance-none cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 pr-10 text-sm text-zinc-900 outline-none transition-colors focus:border-orange-400 focus:ring-1 focus:ring-orange-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
+                  disabled={isUploading}
+                  className="w-full appearance-none cursor-pointer rounded-lg border border-zinc-300 bg-white px-3 py-2 pr-10 text-sm text-zinc-900 outline-none transition-colors focus:border-orange-400 focus:ring-1 focus:ring-orange-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {FOLDERS.map((f) => (
                     <option key={f} value={f}>{f}</option>

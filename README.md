@@ -6,7 +6,7 @@
   **An AI-Powered Email Assistant**
   
   [![Frontend Version](https://img.shields.io/badge/Frontend-v1.0.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
-  [![Backend Version](https://img.shields.io/badge/Backend-v1.0.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
+  [![Backend Version](https://img.shields.io/badge/Backend-v1.1.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)
 
@@ -86,9 +86,12 @@ graph TD
     R --> S[Export Executive PDF/CSV Briefing]
     O --> P[Merge Duplicate Contacts]
     O --> Q[Configure Contact Tone & Relationship]
-    K --> |Upload Documents| L[AWS S3 & pgvector Embeddings]
+    K --> |Upload Documents| L[AWS S3 Storage]
+    L --> |Enqueue Job| JobQ[Background Processing Queue]
+    JobQ --> |Worker Polls| Embed[Local Transformers.js Vectors]
+    Embed --> |Save pgvector| DB[(PostgreSQL)]
     J --> M[View RAG-Augmented AI Drafts]
-    L --> M
+    DB --> M
     Q --> M
     M --> N[Approve & Send Email]
 ```
@@ -140,7 +143,10 @@ flowchart LR
     API -->|Fetch Content| Gmail
     UI -->|Upload Document| API
     API -->|Upload to Bucket| S3[(AWS S3)]
-    API -->|Generate Vectors| API
+    API -->|Enqueue Processing Job| JobDB[(ProcessingJob Queue)]
+    JobDB -->|Polls Queue| Worker[Embedding Worker]
+    Worker -->|Local CPU Chunking| LocalAI([Transformers.js bge-small])
+    LocalAI -->|Save Vectors| DB
     API -->|Send Prompt Context| LLM([Groq AI])
     LLM -->|Return Draft| API
     API -->|Atomic Event Fire| AnalyticsDB[(Analytics DB Models)]
@@ -187,7 +193,7 @@ mailman/
 │   │   ├── modules/
 │   │   │   ├── ai/                  # AI drafting and pipeline services
 │   │   │   ├── gmail/               # Gmail synchronization and webhooks
-│   │   │   └── knowledge/           # Knowledge Base: Parsing, Chunking, S3 Storage, pgvector Search, Gemini Embeddings
+│   │   │   └── knowledge/           # Knowledge Base: Parsing, Chunking, S3 Storage, pgvector Search, bge-small-en-v1.5 Embeddings
 │   │   │       ├── knowledge.controller.ts
 │   │   │       ├── knowledge.route.ts
 │   │   │       └── services/

@@ -8,6 +8,9 @@ const env_1 = require("./config/env");
 const logger_1 = require("./config/logger");
 const prisma_1 = require("./lib/prisma");
 const socket_1 = require("./socket");
+const local_embedding_service_1 = require("./modules/knowledge/services/local-embedding.service");
+const embedding_worker_1 = require("./modules/jobs/workers/embedding.worker");
+const job_service_1 = require("./modules/jobs/job.service");
 let server;
 const startServer = async () => {
     BigInt.prototype.toJSON = function () {
@@ -26,9 +29,20 @@ const startServer = async () => {
         setInterval(() => {
             renewalService.runRenewalJob().catch((e) => logger_1.logger.error({ err: e }, 'Failed scheduled watch renewal'));
         }, 24 * 60 * 60 * 1000);
+        await local_embedding_service_1.localEmbeddingService.init();
+        const workerCount = env_1.env.EMBEDDING_WORKERS;
+        const workers = [];
+        for (let i = 1; i <= workerCount; i++) {
+            const worker = new embedding_worker_1.EmbeddingWorker(i);
+            worker.start();
+            workers.push(worker);
+        }
+        setInterval(() => {
+            job_service_1.jobService.recoverStaleJobs().catch((e) => logger_1.logger.error({ err: e }, 'Failed to recover stale jobs'));
+        }, 5 * 60 * 1000);
     }
     catch (error) {
-        logger_1.logger.fatal({ error }, 'Failed to start server');
+        logger_1.logger.fatal({ err: error, errorMessage: error.message }, 'Failed to start server');
         process.exit(1);
     }
 };

@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.1.0] - Local Embedding Model Migration
+
+### Changed
+- **Local AI Worker:** Replaced external Google Gemini API with a local CPU-based `bge-small-en-v1.5` Transformers.js embedding model for document chunking, completely eliminating API costs and rate limits.
+- **Worker Configuration:** Added `.env` flags for `EMBEDDING_WORKERS` and `EMBEDDING_BATCH_SIZE` to safely control memory consumption on free-tier EC2 instances.
+
 ## [Frontend v1.0.0] & [Backend v1.0.0] - Settings Center & UI Perfection
 
 ### Added (Frontend)
