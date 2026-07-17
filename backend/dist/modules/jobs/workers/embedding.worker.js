@@ -79,11 +79,10 @@ class EmbeddingWorker {
             WHERE id = $2
           `, embeddingStr, chunk.id);
                 });
-                // Execute all updates for this batch in a single transaction (1 network round-trip)
                 await prisma_1.prisma.$transaction(updatePromises);
                 const progress = Math.min(100, Math.round(((i + batch.length) / totalChunks) * 100));
                 (0, socket_1.emitToUser)(userId, 'knowledge:embedding_progress', { documentId, progress, processedChunks: i + batch.length, totalChunks });
-                await new Promise(resolve => setImmediate(resolve));
+                await new Promise(resolve => setTimeout(resolve, 50));
             }
             await prisma_1.prisma.knowledgeBaseDocument.update({
                 where: { id: documentId },

@@ -326,6 +326,12 @@ export function KnowledgeBase() {
             <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
             Note: There is a strict safety limit of 2000 chunks (~200 dense pages) and 50MB per document. Larger files will fail.
           </p>
+          <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 p-2 text-left text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 max-w-2xl">
+            <AlertCircle className="mt-0 h-4 w-4 shrink-0" />
+            <p>
+              <strong>Hardware Constraint:</strong> This entire project (AI Model + Database + API) is deployed on a single 1GB RAM instance. Uploading large files will take several minutes to process and may temporarily slow down the application.
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-3">

@@ -297,6 +297,8 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
               }}
             />
 
+
+
             {/* Folder selector */}
             <div className="mt-4">
               <label className="mb-1 block text-xs font-medium text-zinc-500 dark:text-zinc-400">
