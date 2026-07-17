@@ -314,7 +314,7 @@ export function KnowledgeBase() {
         </div>
       )}
       {/* ─── HEADER ────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
             Knowledge Base
@@ -322,22 +322,22 @@ export function KnowledgeBase() {
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Manage documents the AI uses to draft smarter email replies.
           </p>
-          <p className="mt-2 text-xs font-medium text-orange-600 dark:text-orange-400">
-            <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
-            Note: There is a strict safety limit of 2000 chunks (~200 dense pages) and 50MB per document. Larger files will fail.
-          </p>
-          <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 p-2 text-left text-xs text-amber-800 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-200 dark:border-amber-500/20 max-w-2xl">
-            <AlertCircle className="mt-0 h-4 w-4 shrink-0" />
+          <div className="mt-2 space-y-1 text-xs font-medium text-orange-600 dark:text-orange-400 max-w-3xl">
             <p>
-              <strong>Hardware Constraint:</strong> This entire project (AI Model + Database + API) is deployed on a single 1GB RAM instance. Uploading large files will take several minutes to process and may temporarily slow down the application.
+              <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
+              Note: There is a strict safety limit of 2000 chunks (~200 dense pages) and 50MB per document. Larger files will fail.
+            </p>
+            <p>
+              <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
+              Hardware Constraint: This entire project is deployed on a single 1GB RAM instance. Uploading large files will take several minutes and may temporarily slow down the app.
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-4">
           {/* Storage bar */}
           {stats && (
-            <div className="hidden items-center gap-2 sm:flex">
+            <div className="flex items-center gap-3">
               <div className="w-28">
                 <div className="flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-500">
                   <span>{formatStorageSize(stats.totalStorageBytes)}</span>

@@ -14,6 +14,7 @@ router.get("/status", gmailController.getStatus.bind(gmailController));
 router.get("/profile", gmailController.getProfile.bind(gmailController));
 router.get("/threads", rateLimiter_1.refreshRateLimiter, gmailController.listThreads.bind(gmailController));
 router.get("/threads/:id", rateLimiter_1.refreshRateLimiter, gmailController.getThread.bind(gmailController));
+router.post("/threads/bulk", rateLimiter_1.refreshRateLimiter, gmailController.getThreadsBulk.bind(gmailController));
 router.get("/emails/:id", gmailController.getEmail.bind(gmailController));
 router.post('/emails/:id/read', gmailController.markRead);
 router.post('/emails/:id/unread', gmailController.markUnread);

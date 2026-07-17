@@ -123,6 +123,20 @@ class GmailController {
             res.status(500).json({ status: "error", message: "Failed to get thread" });
         }
     }
+    async getThreadsBulk(req, res) {
+        const userId = req.session.userId;
+        const threadIds = req.body.threadIds;
+        if (!Array.isArray(threadIds)) {
+            return res.status(400).json({ status: "error", message: "threadIds must be an array" });
+        }
+        try {
+            const threads = await this.dbService.getThreadsBulk(userId, threadIds);
+            res.json({ status: "success", data: threads });
+        }
+        catch {
+            res.status(500).json({ status: "error", message: "Failed to get threads bulk" });
+        }
+    }
     async getEmail(req, res) {
         res.json({ status: "success", data: {} });
     }
