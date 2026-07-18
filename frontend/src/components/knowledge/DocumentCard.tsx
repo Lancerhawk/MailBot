@@ -211,7 +211,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       className={cn(
-        "group relative flex flex-col rounded-xl border p-4 shadow-md transition-all duration-200",
+        "group relative flex flex-col h-full rounded-xl border p-4 shadow-md transition-all duration-200",
         "bg-white dark:bg-zinc-900/80 dark:shadow-xl",
         isSelected
           ? "border-orange-300 ring-2 ring-orange-200 dark:border-orange-600 dark:ring-orange-500/20"
@@ -312,7 +312,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
       </div>
 
       {/* Status + badges row */}
-      <div className="mt-3 flex flex-wrap items-center gap-1.5">
+      <div className="mt-auto pt-4 flex flex-wrap items-center gap-1.5">
         <span className={cn("inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium", status.color)}>
           <StatusIcon className={cn("h-3 w-3", doc.processingStatus === "PROCESSING" && "animate-spin")} />
           {status.label}
