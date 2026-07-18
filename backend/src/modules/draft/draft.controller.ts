@@ -3,6 +3,7 @@ import { DraftService } from './draft.service';
 import { DraftDbService } from './draft.db.service';
 import { ApiError } from '../../utils/ApiError';
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
+import { logger } from '../../config/logger';
 
 const draftService = new DraftService();
 const draftDbService = new DraftDbService();
@@ -38,9 +39,11 @@ export class DraftController {
         throw new ApiError(409, 'Draft generation already in progress for this email');
       }
 
-      await draftService.generateDraft(userId, emailId, true);
+      draftService.generateDraft(userId, emailId, true).catch(err => {
+        logger.error({ err, emailId }, 'Background draft regeneration failed');
+      });
 
-      res.status(200).json({ status: 'success', message: 'Draft regenerated successfully' });
+      res.status(202).json({ status: 'success', message: 'Draft regeneration started' });
     } catch (error) {
       next(error);
     }

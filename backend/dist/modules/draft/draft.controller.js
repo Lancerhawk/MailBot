@@ -5,6 +5,7 @@ const draft_service_1 = require("./draft.service");
 const draft_db_service_1 = require("./draft.db.service");
 const ApiError_1 = require("../../utils/ApiError");
 const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
+const logger_1 = require("../../config/logger");
 const draftService = new draft_service_1.DraftService();
 const draftDbService = new draft_db_service_1.DraftDbService();
 class DraftController {
@@ -33,8 +34,10 @@ class DraftController {
             if (draftService.isGenerating(emailId)) {
                 throw new ApiError_1.ApiError(409, 'Draft generation already in progress for this email');
             }
-            await draftService.generateDraft(userId, emailId, true);
-            res.status(200).json({ status: 'success', message: 'Draft regenerated successfully' });
+            draftService.generateDraft(userId, emailId, true).catch(err => {
+                logger_1.logger.error({ err, emailId }, 'Background draft regeneration failed');
+            });
+            res.status(202).json({ status: 'success', message: 'Draft regeneration started' });
         }
         catch (error) {
             next(error);

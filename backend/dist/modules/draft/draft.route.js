@@ -2,12 +2,13 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const rateLimiter_1 = require("../../middlewares/rateLimiter");
 const draft_controller_1 = require("./draft.controller");
 const router = (0, express_1.Router)();
 const draftController = new draft_controller_1.DraftController();
 router.use(auth_middleware_1.requireAuth);
 router.get('/:emailId', draftController.getLatestDraft);
-router.post('/:emailId/regenerate', draftController.regenerateDraft);
+router.post('/:emailId/regenerate', rateLimiter_1.regenerateLimiter, draftController.regenerateDraft);
 router.put('/:draftId', draftController.updateDraft);
 router.delete('/:draftId', draftController.discardDraft);
 exports.default = router;

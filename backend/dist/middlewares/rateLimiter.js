@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.refreshRateLimiter = exports.authLimiter = exports.apiLimiter = void 0;
+exports.regenerateLimiter = exports.refreshRateLimiter = exports.authLimiter = exports.apiLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 exports.apiLimiter = (0, express_rate_limit_1.default)({
     windowMs: 1 * 60 * 1000,
@@ -51,4 +51,19 @@ exports.refreshRateLimiter = (0, express_rate_limit_1.default)({
         return req.ip;
     },
     skip: (req) => req.query.refresh !== 'true',
+});
+exports.regenerateLimiter = (0, express_rate_limit_1.default)({
+    windowMs: 5 * 60 * 1000,
+    limit: 2,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    message: 'Rate limit exceeded for regeneration. Please wait 5 minutes.',
+    keyGenerator: (req) => {
+        if (!req.ip)
+            return 'unknown';
+        if (req.ip.includes('.') && req.ip.includes(':')) {
+            return req.ip.split(':')[0];
+        }
+        return req.ip;
+    },
 });

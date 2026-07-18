@@ -227,12 +227,12 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
               <div className="px-5 py-4 text-sm">
                 {cleanHtml ? (
                   <div
-                    className="email-body-content rounded-lg bg-white p-4 text-zinc-900 prose prose-sm max-w-none prose-a:text-orange-500 hover:prose-a:text-orange-600 prose-img:rounded-lg"
+                    className="email-body-content overflow-x-auto break-words rounded-lg bg-white p-4 text-zinc-900 prose prose-sm max-w-none prose-a:text-orange-500 hover:prose-a:text-orange-600 prose-img:max-w-full prose-img:h-auto prose-img:rounded-lg"
                     style={{ colorScheme: "light" }}
                     dangerouslySetInnerHTML={{ __html: cleanHtml }}
                   />
                 ) : (
-                  <div className="email-body-content whitespace-pre-wrap font-sans leading-relaxed text-zinc-800 dark:text-zinc-300">
+                  <div className="email-body-content overflow-x-auto break-words whitespace-pre-wrap font-sans leading-relaxed text-zinc-800 dark:text-zinc-300">
                     {email.plainBody || "This message has no content."}
                   </div>
                 )}

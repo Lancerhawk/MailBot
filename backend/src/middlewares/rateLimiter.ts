@@ -46,3 +46,18 @@ export const refreshRateLimiter = rateLimit({
   },
   skip: (req) => req.query.refresh !== 'true',
 });
+
+export const regenerateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000,
+  limit: 2,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: 'Rate limit exceeded for regeneration. Please wait 5 minutes.',
+  keyGenerator: (req) => {
+    if (!req.ip) return 'unknown';
+    if (req.ip.includes('.') && req.ip.includes(':')) {
+      return req.ip.split(':')[0];
+    }
+    return req.ip;
+  },
+});

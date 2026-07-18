@@ -20,7 +20,19 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
   const [isSending, setIsSending] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isManualReply, setIsManualReply] = useState(false);
+  const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
+  const [timeLeft, setTimeLeft] = useState<number>(0);
   const { socket } = useSocket();
+
+  useEffect(() => {
+    if (!blockedUntil) return;
+    const interval = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000));
+      setTimeLeft(remaining);
+      if (remaining === 0) setBlockedUntil(null);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [blockedUntil]);
 
   const [prevInitialDraft, setPrevInitialDraft] = useState(initialDraft);
   const [prevIsProcessing, setPrevIsProcessing] = useState(isProcessing);
@@ -62,8 +74,6 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
     };
 
     const handleSent = () => {
-      // The optimistic UI update in handleSend handles this now.
-      // We just keep this listener to avoid race conditions.
     };
 
     const handleSendFailed = (data: { emailId?: string; error?: string }) => {
@@ -114,9 +124,20 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
       setIsGenerating(true);
       await api.post(`/drafts/${emailId}/regenerate`);
     } catch (error: unknown) {
-      const err = error as { response?: { status: number } };
+      const err = error as { response?: { status?: number; headers?: Record<string, string> } };
       if (err.response?.status === 409) {
         toast.error("Draft is already regenerating.");
+      } else if (err.response?.status === 429) {
+        const retryAfterStr = err.response?.headers?.['retry-after'];
+        let retrySeconds = 5 * 60;
+        if (retryAfterStr) {
+          const parsed = parseInt(retryAfterStr, 10);
+          if (!isNaN(parsed)) retrySeconds = parsed;
+        }
+        setBlockedUntil(Date.now() + retrySeconds * 1000);
+        setTimeLeft(retrySeconds);
+        toast.error("Rate limit exceeded. Please wait before regenerating again.");
+        setIsGenerating(false);
       } else {
         toast.error("Failed to trigger regeneration.");
         setIsGenerating(false);
@@ -125,12 +146,10 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
   };
 
   const handleSend = () => {
-    // Fire and forget optimistic update
     if (onSent) {
       onSent(text);
     }
 
-    // Immediately hide the draft editor
     setDraft(null);
     setIsManualReply(false);
     setText("");
@@ -187,10 +206,10 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
             <span className="text-sm font-semibold text-orange-700 dark:text-orange-300">AI Draft Reply</span>
             {isSaving && <span className="text-[10px] text-orange-400">Saving...</span>}
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={handleRegenerate} disabled={isSending} className="text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50">
-              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-              Regenerate
+          <div className="flex gap-2 relative">
+            <Button variant="ghost" size="sm" onClick={handleRegenerate} disabled={isGenerating || isSending || !!blockedUntil} className="text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50">
+              {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+              {blockedUntil ? `Wait ${Math.floor(timeLeft / 60)}m ${timeLeft % 60}s` : 'Regenerate'}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleDiscard} className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-500/10">
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />

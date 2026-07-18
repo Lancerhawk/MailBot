@@ -123,7 +123,7 @@ class DraftService {
                 contextText += '\n\n' + knowledgeContext;
             }
             const startGroq = Date.now();
-            const groqResult = await groqService.generateDraftReply(userId, contextText);
+            const groqResult = await groqService.generateDraftReply(userId, contextText, isRegeneration);
             const generationLatencyMs = Date.now() - startGroq;
             if (isRegeneration) {
                 await draftDbService.markPreviousDraftsNonFinal(emailId, userId);

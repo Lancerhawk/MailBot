@@ -186,9 +186,10 @@ ${sampledText}`;
             return parsed.summary || '';
         });
     }
-    async generateDraftReply(userId, contextText) {
+    async generateDraftReply(userId, contextText, isRegeneration = false) {
         const prompt = `You are an AI assistant writing a reply to an email conversation.
 Read the conversation history and the latest email carefully. Write a polite, appropriate reply that directly answers the latest email.
+${isRegeneration ? '\nIMPORTANT: The user rejected the previous draft. Please provide a fresh, alternative phrasing or a completely different approach to this reply.' : ''}
 
 CRITICAL ZERO-TOLERANCE ANTI-HALLUCINATION & MEETING RULES:
 - YOU ARE STRICTLY FORBIDDEN FROM HALLUCINATING, INVENTING, OR MAKING UP ANY FACTS, NUMBERS, NAMES, OR DETAILS WHATSOEVER.
@@ -254,7 +255,7 @@ ${contextText}`;
             const completion = await groq.chat.completions.create({
                 messages: [{ role: 'user', content: prompt }],
                 model: 'llama-3.1-8b-instant',
-                temperature: 0.3,
+                temperature: isRegeneration ? 0.6 : 0.3,
                 response_format: { type: 'json_object' },
             });
             const responseText = completion.choices[0]?.message?.content || '{}';
