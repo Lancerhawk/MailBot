@@ -93,6 +93,7 @@ class EmbeddingWorker {
                     chunkCount: totalChunks
                 }
             });
+            await job_service_1.jobService.createJob(userId, client_1.JobType.DOCUMENT_DESCRIPTION, job.entityType, documentId);
             await job_service_1.jobService.completeJob(job.id);
             retrievalService.clearCacheForUser(userId);
             logger_1.logger.info({ jobId: job.id, documentId }, `${this.workerId} completed job`);

@@ -6,7 +6,7 @@
   **An AI-Powered Email Assistant**
   
   [![Frontend Version](https://img.shields.io/badge/Frontend-v1.0.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
-  [![Backend Version](https://img.shields.io/badge/Backend-v1.1.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
+  [![Backend Version](https://img.shields.io/badge/Backend-v1.2.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)
 
@@ -57,6 +57,25 @@
     <td width="50%">
       <h3> Executive Briefing Exports</h3>
       <p>Native vector PDF and CSV generation engines that convert raw analytics data into perfectly aligned, human-readable executive narratives.</p>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <h3> Hybrid Metadata Retrieval</h3>
+      <ul>
+        <li>Metadata-Assisted Retrieval Decision</li>
+        <li>Hybrid Metadata Search (PostgreSQL Full-Text Search + pg_trgm)</li>
+        <li>Confidence-Based Retrieval Bypass</li>
+        <li>Fault-Tolerant Processing</li>
+      </ul>
+    </td>
+    <td width="50%">
+      <h3> Automated Document Processing</h3>
+      <ul>
+        <li>Automatic AI Document Description Generation</li>
+        <li>Background Description Worker</li>
+        <li>Intelligent Document Sampling</li>
+      </ul>
     </td>
   </tr>
 </table>
@@ -118,8 +137,15 @@ classDiagram
         +GmailSyncService
         +ContactService
         +AiPipelineService
+        +MetadataSearchService
+        +RetrievalService
         +VectorSearchService
         +AnalyticsEventService
+    }
+    class Background_Workers {
+        +ProcessingJob Queue
+        +EmbeddingWorker
+        +DescriptionWorker
     }
     class External_APIs {
         +Google OAuth
@@ -129,7 +155,9 @@ classDiagram
     }
     Frontend --> Backend_Controllers : REST API calls
     Backend_Controllers --> Backend_Services : Logic delegation
+    Backend_Services --> Background_Workers : Enqueue Jobs
     Backend_Services --> External_APIs : Fetches / Pushes data
+    Background_Workers --> External_APIs : LLM Generation
     External_APIs --> Backend_Controllers : Webhooks (Push)
 ```
 
@@ -145,9 +173,12 @@ flowchart LR
     API -->|Upload to Bucket| S3[(AWS S3)]
     API -->|Enqueue Processing Job| JobDB[(ProcessingJob Queue)]
     JobDB -->|Polls Queue| Worker[Embedding Worker]
+    JobDB -->|Polls Queue| DescWorker[Description Worker]
     Worker -->|Local CPU Chunking| LocalAI([Transformers.js bge-small])
     LocalAI -->|Save Vectors| DB
-    API -->|Send Prompt Context| LLM([Groq AI])
+    DescWorker -->|Generate Description| LLM([Groq AI])
+    LLM -->|Save Metadata| DB
+    API -->|Send Prompt Context| LLM
     LLM -->|Return Draft| API
     API -->|Atomic Event Fire| AnalyticsDB[(Analytics DB Models)]
 ```
@@ -172,12 +203,48 @@ flowchart TD
     Compile[1. Compile Conversation History] --> Combine
     ExtractTone --> Combine[2. Inject Contact Tone/Relationship]
     
-    Combine --> FetchKB[3. pgvector Knowledge Base Search]
-    FetchKB --> FinalPrompt[Generate Final System Prompt]
+    Combine --> Clean[3. Clean Search Query]
+    Clean --> MetadataSearch[4. PostgreSQL Metadata Search]
+    
+    MetadataSearch --> CheckScore{Metadata Score >= Threshold?}
+    CheckScore -->|Yes, High Confidence| FetchKB[5. pgvector Knowledge Base Search]
+    CheckScore -->|No, Low Confidence| AIClassifier[6. AI Retrieval Classifier]
+    
+    AIClassifier -->|Decision: True| FetchKB
+    AIClassifier -->|Decision: False| FinalPrompt[7. Generate Final System Prompt]
+    
+    FetchKB --> FinalPrompt
     
     FinalPrompt --> Groq[Groq LLM Generation]
     Groq --> Save[Save Auto-Draft to DB]
 ```
+
+### 5. Knowledge Retrieval Architecture
+```mermaid
+flowchart TD
+    Prepare[1. Prepare Search Query] --> MetaSearch[2. PostgreSQL Metadata Search]
+    MetaSearch --> Threshold{3. Confidence Threshold}
+    Threshold -->|High Confidence Bypass| FetchKB[4. Global pgvector Search]
+    Threshold -->|Low Confidence| Classifier[5. AI Retrieval Classifier]
+    Classifier -->|Retrieval Required| FetchKB
+    Classifier -->|Skip Retrieval| Assembly[6. Context Assembly]
+    FetchKB --> Assembly
+    Assembly --> Draft[7. Draft Generation]
+```
+
+---
+
+## AI Knowledge Pipeline
+
+The MailBot AI Knowledge Pipeline orchestrates the ingestion, enrichment, and retrieval of documents. It actively optimizes both speed and API cost by eliminating redundant AI processing.
+
+1. **Upload Processing Pipeline:** 
+   `Upload` → `Text Extraction` → `Chunking` → `Embedding` → `Store Chunks` → `Document Searchable` → `Queue DOCUMENT_DESCRIPTION` → `Description Worker` → `Representative Chunk Sampling` → `Groq Summary Generation` → `Save AI Description`.
+   
+2. **Hybrid Retrieval Pipeline:**
+   `PrepareSearchQuery` → `Metadata Search` → `Confidence Threshold` → `High Confidence Bypass` → `AI Retrieval Classifier (fallback only)` → `Global pgvector Search` → `Context Assembly` → `Draft Generation`.
+
+**How it works:** When an email arrives, MailBot performs a lightning-fast PostgreSQL Metadata Search (Full-Text Search + pg_trgm) against document titles and AI-generated descriptions. This metadata search is used **only** to decide whether retrieval is necessary. If metadata confidence is high, it entirely bypasses the expensive LLM classifier. If confidence is low, it falls back to the AI Retrieval Classifier. Semantic vector search via pgvector remains the sole mechanism for selecting actual document chunks.
 
 ---
 
@@ -193,10 +260,16 @@ mailman/
 │   │   ├── modules/
 │   │   │   ├── ai/                  # AI drafting and pipeline services
 │   │   │   ├── gmail/               # Gmail synchronization and webhooks
+│   │   │   ├── jobs/                # Background Processing
+│   │   │   │   ├── workers/
+│   │   │   │   │   ├── description.worker.ts
+│   │   │   │   │   └── embedding.worker.ts
 │   │   │   └── knowledge/           # Knowledge Base: Parsing, Chunking, S3 Storage, pgvector Search, bge-small-en-v1.5 Embeddings
 │   │   │       ├── knowledge.controller.ts
 │   │   │       ├── knowledge.route.ts
 │   │   │       └── services/
+│   │   │           ├── metadata-search.service.ts
+│   │   │           └── retrieval.service.ts
 │   │   ├── routes/
 │   │   │   └── v1/                  # Main router entrypoint
 │   │   └── server.ts                # Starts the HTTP server and Prisma client

@@ -102,6 +102,17 @@ export function KnowledgeBase() {
   const [detailsDoc, setDetailsDoc] = useState<KnowledgeDocument | null>(null);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [isPageProcessing, setIsPageProcessing] = useState(false);
+  const [prevAllDocuments, setPrevAllDocuments] = useState<KnowledgeDocument[]>([]);
+
+  if (allDocuments !== prevAllDocuments) {
+    setPrevAllDocuments(allDocuments);
+    if (detailsDoc) {
+      const updatedDoc = allDocuments.find((d) => d.id === detailsDoc.id);
+      if (updatedDoc && JSON.stringify(updatedDoc) !== JSON.stringify(detailsDoc)) {
+        setDetailsDoc(updatedDoc);
+      }
+    }
+  }
 
   const { socket } = useSocket();
 
@@ -153,6 +164,7 @@ export function KnowledgeBase() {
     const refresh = () => fetchAll();
 
     socket.on("knowledge:ready", refresh);
+    socket.on("knowledge:updated", refresh);
     socket.on("knowledge:failed", refresh);
     socket.on("knowledge:deleted", refresh);
     socket.on("knowledge:archived", refresh);
@@ -161,6 +173,7 @@ export function KnowledgeBase() {
 
     return () => {
       socket.off("knowledge:ready", refresh);
+      socket.off("knowledge:updated", refresh);
       socket.off("knowledge:failed", refresh);
       socket.off("knowledge:deleted", refresh);
       socket.off("knowledge:archived", refresh);
@@ -169,22 +182,17 @@ export function KnowledgeBase() {
     };
   }, [socket, fetchAll]);
 
-  // ─── CLIENT-SIDE FILTERING, SORTING & SEARCH ─────────────
-
   const { documents, folderCounts } = React.useMemo(() => {
-    // 1. Compute folder counts from ALL docs (before filtering)
     const counts: Record<string, number> = { All: allDocuments.length };
     for (const doc of allDocuments) {
       const folderKey = doc.folder || "Uncategorized";
       counts[folderKey] = (counts[folderKey] || 0) + 1;
     }
 
-    // 2. Filter by folder
     let filtered = activeFolder === "All"
       ? allDocuments
       : allDocuments.filter((d) => d.folder === activeFolder);
 
-    // 3. Filter by status
     switch (activeFilter) {
       case "active":
         filtered = filtered.filter((d) => !d.isArchived && d.processingStatus === "COMPLETED");
@@ -200,7 +208,6 @@ export function KnowledgeBase() {
         break;
     }
 
-    // 4. Search
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       filtered = filtered.filter((d) =>
@@ -210,7 +217,6 @@ export function KnowledgeBase() {
       );
     }
 
-    // 5. Sort
     const sorted = [...filtered].sort((a, b) => {
       switch (activeSort) {
         case "newest":
@@ -233,7 +239,6 @@ export function KnowledgeBase() {
     return { documents: sorted, folderCounts: counts };
   }, [allDocuments, activeFolder, activeFilter, searchQuery, activeSort]);
 
-  // ─── SELECTION ────────────────────────────────────────────
 
   const toggleSelect = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -252,7 +257,6 @@ export function KnowledgeBase() {
     }
   }, [documents, selectedIds.size]);
 
-  // ─── BULK ACTIONS ─────────────────────────────────────────
 
   const handleBulkArchive = useCallback(async () => {
     setIsProcessingBulk(true);
@@ -313,7 +317,6 @@ export function KnowledgeBase() {
           </div>
         </div>
       )}
-      {/* ─── HEADER ────────────────────────────────────────── */}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
@@ -335,7 +338,6 @@ export function KnowledgeBase() {
         </div>
 
         <div className="flex items-center gap-4">
-          {/* Storage bar */}
           {stats && (
             <div className="flex items-center gap-3">
               <div className="w-28">

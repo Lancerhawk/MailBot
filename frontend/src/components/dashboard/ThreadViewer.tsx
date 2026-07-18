@@ -448,7 +448,7 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
     return <ThreadSkeleton />;
   }
 
-  if (!thread) return null;
+  if (!thread || !thread.emails) return null;
 
   return (
     <div className="flex h-full w-full flex-col overflow-hidden animate-thread-viewer">

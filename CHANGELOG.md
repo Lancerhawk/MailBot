@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.2.0] - AI Document Description & Metadata Retrieval Pipeline
+
+### Added
+- **Automatic AI Document Description Generation:** Every uploaded document automatically gets a concise AI-generated description after embedding completes.
+- **Background Description Worker:** Description generation runs asynchronously after processing, so it never blocks uploads or retrieval.
+- **Intelligent Large Document Sampling:** Huge documents are sampled across beginning, middle, end, and major sections instead of sending the entire document to the LLM.
+- **Hybrid Metadata Search Service:** Added PostgreSQL metadata search using Full-Text Search (tsvector), fuzzy matching (pg_trgm), and filename/title/description matching.
+- **Detailed Metadata Debug Logging:** Logs now show metadata scores, full-text scores, similarity scores, and retrieval decisions, making the pipeline much easier to debug and tune.
+- **Configurable Retrieval Threshold:** Metadata confidence threshold is configurable through environment variables for future tuning.
+
+### Changed
+- **Idempotent Description Generation:** Existing valid descriptions are not regenerated unless the document content changes or a refresh is requested.
+- **User Description Protection:** If the user manually edits a description, the AI never overwrites it.
+- **Fault-Tolerant Processing:** Even if description generation fails after retries, the document remains fully searchable via vector search.
+- **Metadata-Aware Retrieval Decision:** Before expensive AI reasoning, the system checks whether the email matches uploaded document metadata.
+- **High-Confidence Metadata Bypass:** Strong metadata matches immediately trigger retrieval without calling the AI retrieval classifier.
+- **AI Classifier Fallback:** If metadata confidence is low, the AI classifier makes the final decision on whether retrieval is needed.
+- **Global Vector Search Preserved:** Vector search remains unchanged and continues searching across all embedded chunks without metadata reranking.
+- **Cleaner Search Query Extraction:** Email content is cleaned by removing greetings, signatures, quoted replies, and boilerplate before metadata search.
+- **Document-Aware Retrieval Pipeline:** Retrieval decisions are now informed by uploaded document metadata instead of relying solely on AI classification.
+- **Improved Hallucination Prevention:** The AI is instructed to answer only from retrieved knowledge and ask for clarification instead of inventing missing information.
+- **Concurrent Webhook Execution:** Implemented a pending webhook queue to seamlessly sync back-to-back emails without rejecting concurrent Pub/Sub triggers.
+
 ## [Backend v1.1.0] - Local Embedding Model Migration
 
 ### Changed

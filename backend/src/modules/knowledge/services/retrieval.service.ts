@@ -1,8 +1,10 @@
 import { GroqService } from '../../ai/groq.service';
 import { SearchService, SearchResult } from './search.service';
+import { MetadataSearchService } from './metadata-search.service';
 import { KnowledgeDbService } from '../knowledge.db.service';
 import { logger } from '../../../config/logger';
 import { AnalyticsEventService, AnalyticsEventType } from '../../analytics/services/analytics-event.service';
+import { prisma } from '../../../lib/prisma';
 
 interface RetrievalDecision {
   shouldRetrieve: boolean;
@@ -36,8 +38,10 @@ function estimateTokens(text: string): number {
 }
 
 function extractLatestEmailBody(contextText: string): string {
-  const messages = contextText.split(/---\s*Message from/);
-  if (messages.length <= 1) return contextText;
+  const cleanContext = contextText.replace(/---\s*Contact Context\s*---[\s\S]*?-----------------------[\r\n]*/gi, '').trim();
+
+  const messages = cleanContext.split(/---\s*Message from/);
+  if (messages.length <= 1) return cleanContext;
 
   const lastMessage = messages[messages.length - 1];
   const lines = lastMessage.split('\n');
@@ -57,14 +61,31 @@ function extractLatestEmailBody(contextText: string): string {
   return lastMessage.trim();
 }
 
+function prepareSearchQuery(contextText: string): string {
+  const latestBody = extractLatestEmailBody(contextText);
+  const query = latestBody
+    .replace(/^(hi|hello|hey|dear|greetings).*?[\r\n]+/i, '')
+    .replace(/(thanks|thank you|best|regards|cheers|sincerely).*?$/is, '')
+    .replace(/<[^>]*>?/gm, '')
+    .replace(/([A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,})/gi, '')
+    .replace(/\b(i wanted to ask|can you tell me|do you know|please|kindly|let me know|just wondering|could you|what is|which|tell me|are you|do you have|had a quick question|i was reviewing|looking through)\b/gi, ' ')
+    .replace(/[^\w\s-?]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return query || latestBody;
+}
+
 export class RetrievalService {
   private groqService: GroqService;
   private searchService: SearchService;
+  private metadataService: MetadataSearchService;
   private dbService: KnowledgeDbService;
 
   constructor() {
     this.groqService = new GroqService();
     this.searchService = new SearchService();
+    this.metadataService = new MetadataSearchService();
     this.dbService = new KnowledgeDbService();
   }
 
@@ -77,16 +98,42 @@ export class RetrievalService {
         return null;
       }
 
-      const decision = await this.makeRetrievalDecision(userId, contextText);
+      const searchQuery = prepareSearchQuery(contextText);
 
-      if (!decision.shouldRetrieve || decision.confidence < 0.5) {
-        logger.debug(
-          { userId, confidence: decision.confidence, shouldRetrieve: decision.shouldRetrieve },
-          'Knowledge retrieval skipped: AI decision'
-        );
-        return null;
+      const metadataResults = await this.metadataService.searchDocuments(userId, searchQuery);
+      const bestMetadataMatch = metadataResults.length > 0 ? metadataResults[0] : null;
+
+      const threshold = parseFloat(process.env.METADATA_CONFIDENCE_THRESHOLD || '0.3');
+
+      let decision: RetrievalDecision;
+
+      if (bestMetadataMatch && bestMetadataMatch.score >= threshold) {
+        decision = {
+          shouldRetrieve: true,
+          searchQuery: searchQuery,
+          confidence: 1.0,
+        };
+      } else {
+        let candidateDocsInfo = '';
+        if (metadataResults.length > 0) {
+          const docIds = metadataResults.map(r => r.id);
+          const docs = await prisma.knowledgeBaseDocument.findMany({
+            where: { id: { in: docIds } },
+            select: { id: true, title: true, description: true, originalFileName: true }
+          });
+
+          const docsMap = new Map(docs.map(d => [d.id, d]));
+          const orderedDocs = docIds.map(id => docsMap.get(id)).filter(Boolean);
+
+          candidateDocsInfo = orderedDocs.map(d => `- Title/Filename: ${d!.title || d!.originalFileName}\n  Description: ${d!.description || 'No description available'}`).join('\n\n');
+        }
+
+        decision = await this.makeRetrievalDecision(userId, contextText, candidateDocsInfo);
       }
 
+      if (!decision.shouldRetrieve || decision.confidence < 0.5) {
+        return null;
+      }
 
       const chunks = await this.searchService.search(userId, decision.searchQuery, 20);
 
@@ -155,12 +202,17 @@ export class RetrievalService {
     return false;
   }
 
-  private async makeRetrievalDecision(userId: string, contextText: string): Promise<RetrievalDecision> {
+  private async makeRetrievalDecision(userId: string, contextText: string, candidateDocsInfo: string): Promise<RetrievalDecision> {
+    const docsContext = candidateDocsInfo
+      ? `The user's knowledge base contains the following candidate documents:\n${candidateDocsInfo}\n\nCRITICAL: The metadata search has already identified these documents as semantically relevant to the user's question. You should STRONGLY favor retrieval. Only return shouldRetrieve=false if you are absolutely confident the matched documents are completely unrelated.`
+      : `The user has uploaded documents to their knowledge base. If the email asks a factual question, set shouldRetrieve to true.`;
+
     const prompt = `You are classifying whether an email requires external knowledge to answer.
 
-External knowledge means: resume, portfolio, pricing, company info, policies, product details, documentation, contracts, services, project details, or any factual information the user may have uploaded.
+Simple conversational emails (greetings, thanks, small talk, scheduling confirmations, meeting logistics) do NOT need external knowledge. 
+HOWEVER, if the sender asks ANY question about the user's background, education, grades, experience, or skills (e.g. "what is your CGPA?", "are you in final sem?"), you MUST retrieve external knowledge.
 
-Simple conversational emails (greetings, thanks, small talk, scheduling confirmations, meeting logistics) do NOT need external knowledge.
+${docsContext}
 
 Return EXACTLY this JSON and absolutely nothing else:
 {

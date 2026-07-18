@@ -10,6 +10,7 @@ const prisma_1 = require("./lib/prisma");
 const socket_1 = require("./socket");
 const local_embedding_service_1 = require("./modules/knowledge/services/local-embedding.service");
 const embedding_worker_1 = require("./modules/jobs/workers/embedding.worker");
+const description_worker_1 = require("./modules/jobs/workers/description.worker");
 const job_service_1 = require("./modules/jobs/job.service");
 let server;
 const startServer = async () => {
@@ -32,10 +33,14 @@ const startServer = async () => {
         await local_embedding_service_1.localEmbeddingService.init();
         const workerCount = env_1.env.EMBEDDING_WORKERS;
         const workers = [];
+        const descWorkers = [];
         for (let i = 1; i <= workerCount; i++) {
             const worker = new embedding_worker_1.EmbeddingWorker(i);
             worker.start();
             workers.push(worker);
+            const descWorker = new description_worker_1.DescriptionWorker(i);
+            descWorker.start();
+            descWorkers.push(descWorker);
         }
         setInterval(() => {
             job_service_1.jobService.recoverStaleJobs().catch((e) => logger_1.logger.error({ err: e }, 'Failed to recover stale jobs'));
