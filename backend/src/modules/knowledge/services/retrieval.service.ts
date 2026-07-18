@@ -207,10 +207,12 @@ export class RetrievalService {
       ? `The user's knowledge base contains the following candidate documents:\n${candidateDocsInfo}\n\nCRITICAL: The metadata search has already identified these documents as semantically relevant to the user's question. You should STRONGLY favor retrieval. Only return shouldRetrieve=false if you are absolutely confident the matched documents are completely unrelated.`
       : `The user has uploaded documents to their knowledge base. If the email asks a factual question, set shouldRetrieve to true.`;
 
-    const prompt = `You are classifying whether an email requires external knowledge to answer.
+    const prompt = `You are classifying whether an incoming email requires external knowledge (documents, resume, notes) to draft a response.
 
-Simple conversational emails (greetings, thanks, small talk, scheduling confirmations, meeting logistics) do NOT need external knowledge. 
-HOWEVER, if the sender asks ANY question about the user's background, education, grades, experience, or skills (e.g. "what is your CGPA?", "are you in final sem?"), you MUST retrieve external knowledge.
+RULES:
+1. If the email is purely casual (simple greetings, "thanks", scheduling a meeting, small talk), set shouldRetrieve to false.
+2. If the email sounds professional, asks about the user's background, requests specific data, asks for past experience/clients, or requires any factual information to answer properly, you MUST set shouldRetrieve to true.
+3. When shouldRetrieve is true, provide a highly optimized searchQuery containing the core keywords needed to find the answer in a vector database.
 
 ${docsContext}
 
