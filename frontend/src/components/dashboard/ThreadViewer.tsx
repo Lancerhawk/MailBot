@@ -224,11 +224,11 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
                   <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">AI Analysis in progress...</span>
                 </div>
               )}
-              <div className="px-5 py-4 text-sm">
+              <div className="px-5 py-4 text-sm overflow-hidden">
                 {cleanHtml ? (
                   <div
-                    className="email-body-content overflow-x-auto break-words rounded-lg bg-white p-4 text-zinc-900 prose prose-sm max-w-none prose-a:text-orange-500 hover:prose-a:text-orange-600 prose-img:max-w-full prose-img:h-auto prose-img:rounded-lg"
-                    style={{ colorScheme: "light" }}
+                    className="email-body-content overflow-x-auto overflow-y-hidden break-words rounded-lg bg-white p-4 text-zinc-900 prose prose-sm max-w-none prose-a:text-orange-500 hover:prose-a:text-orange-600 prose-img:max-w-full prose-img:h-auto prose-img:rounded-lg"
+                    style={{ colorScheme: "light", wordBreak: "break-word", overflowWrap: "anywhere" }}
                     dangerouslySetInnerHTML={{ __html: cleanHtml }}
                   />
                 ) : (
@@ -387,7 +387,6 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
     socket.on('email:spam', handleUpdate);
     socket.on('email:unspam', handleUpdate);
     socket.on('draft:generated', handleUpdate);
-    socket.on('draft:regenerated', handleUpdate);
 
     return () => {
       socket.off('analysis:started', handleUpdate);
@@ -402,7 +401,6 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
       socket.off('email:spam', handleUpdate);
       socket.off('email:unspam', handleUpdate);
       socket.off('draft:generated', handleUpdate);
-      socket.off('draft:regenerated', handleUpdate);
     };
   }, [socket, threadId, updateThreadInCache]);
 
@@ -462,8 +460,8 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
               <ChevronLeft className="h-5 w-5" />
             </Button>
           )}
-          <div className="min-w-0">
-            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 break-words whitespace-normal">
+          <div className="min-w-0 overflow-hidden">
+            <h2 className="text-lg font-bold tracking-tight text-zinc-900 dark:text-zinc-50 line-clamp-2" title={thread.subject || "(No Subject)"}>
               {thread.subject || "(No Subject)"}
             </h2>
             <p className="mt-1 text-xs text-zinc-400 dark:text-zinc-500">

@@ -128,10 +128,10 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
       if (err.response?.status === 409) {
         toast.error("Draft is already regenerating.");
       } else if (err.response?.status === 429) {
-        const retryAfterStr = err.response?.headers?.['retry-after'];
+        const resetStr = err.response?.headers?.['ratelimit-reset'] || err.response?.headers?.['retry-after'];
         let retrySeconds = 5 * 60;
-        if (retryAfterStr) {
-          const parsed = parseInt(retryAfterStr, 10);
+        if (resetStr) {
+          const parsed = parseInt(resetStr, 10);
           if (!isNaN(parsed)) retrySeconds = parsed;
         }
         setBlockedUntil(Date.now() + retrySeconds * 1000);

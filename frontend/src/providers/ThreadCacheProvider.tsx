@@ -46,14 +46,16 @@ export function ThreadCacheProvider({ children }: { children: React.ReactNode })
     const idsToFetch = threadIds.filter(id => !cacheRef.current[id] && !promisesRef.current[id]);
     if (idsToFetch.length === 0) return;
 
-    const promise = api.post('/gmail/threads/bulk', { threadIds: idsToFetch }).then(res => {
+    const bulkPromise = api.post('/gmail/threads/bulk', { threadIds: idsToFetch }).then(res => {
       const threads = res.data.data;
       
       const newCache = { ...cacheRef.current };
+      const threadMap: Record<string, unknown> = {};
       for (const thread of threads) {
         if (thread && thread.id) {
           newCache[thread.id] = thread;
           cacheRef.current[thread.id] = thread;
+          threadMap[thread.id] = thread;
         }
       }
       setCache(newCache);
@@ -61,16 +63,26 @@ export function ThreadCacheProvider({ children }: { children: React.ReactNode })
       for (const id of idsToFetch) {
         delete promisesRef.current[id];
       }
-      return threads;
+      return threadMap;
     }).catch(e => {
       for (const id of idsToFetch) {
         delete promisesRef.current[id];
       }
       console.error(`Failed to prefetch threads bulk`, e);
+      throw e;
     });
 
     for (const id of idsToFetch) {
-      promisesRef.current[id] = promise;
+      promisesRef.current[id] = bulkPromise.then(threadMap => {
+        if (threadMap && threadMap[id]) return threadMap[id];
+        // Fallback: fetch individually if not found in bulk response
+        return api.get(`/gmail/threads/${id}`).then(res => {
+          const data = res.data.data;
+          cacheRef.current[id] = data;
+          setCache(prev => ({ ...prev, [id]: data }));
+          return data;
+        });
+      });
     }
   }, []);
 

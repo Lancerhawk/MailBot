@@ -51,7 +51,11 @@ app.use(
   })
 );
 app.use(compression());
-app.use(cors({ origin: env.FRONTEND_URL, credentials: true }));
+app.use(cors({ 
+  origin: env.FRONTEND_URL, 
+  credentials: true,
+  exposedHeaders: ['RateLimit-Reset', 'RateLimit-Limit', 'RateLimit-Remaining', 'Retry-After']
+}));
 app.use(apiLimiter);
 app.use('/api/v1', routes);
 

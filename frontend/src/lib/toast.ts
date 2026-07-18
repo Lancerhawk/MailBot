@@ -60,15 +60,12 @@ const createToast = (message: string, type: 'success' | 'error' | 'info') => {
 
 export const toast = {
   success: (message: string) => {
-    console.log("Success:", message);
     createToast(message, 'success');
   },
   error: (message: string) => {
-    console.error("Error:", message);
     createToast(message, 'error');
   },
   info: (message: string) => {
-    console.log("Info:", message);
     createToast(message, 'info');
   }
 };

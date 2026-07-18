@@ -50,7 +50,11 @@ app.use((0, express_session_1.default)({
     },
 }));
 app.use((0, compression_1.default)());
-app.use((0, cors_1.default)({ origin: env_1.env.FRONTEND_URL, credentials: true }));
+app.use((0, cors_1.default)({
+    origin: env_1.env.FRONTEND_URL,
+    credentials: true,
+    exposedHeaders: ['RateLimit-Reset', 'RateLimit-Limit', 'RateLimit-Remaining', 'Retry-After']
+}));
 app.use(rateLimiter_1.apiLimiter);
 app.use('/api/v1', v1_1.default);
 app.use((req, res, next) => {
