@@ -9,18 +9,22 @@ export default function VyzoraProvider() {
         async function initVyzora() {
             let shouldEnable = process.env.NEXT_PUBLIC_VYZORA_ENABLED === 'true';
 
-            const ignoredIp = process.env.NEXT_PUBLIC_IGNORED_IP;
-            if (shouldEnable && ignoredIp) {
-                try {
-                    const res = await fetch('https://api.ipify.org?format=json');
-                    const data = await res.json();
-                    if (data.ip === ignoredIp) {
-                        shouldEnable = false;
-                        console.log('Vyzora tracking disabled for this IP');
-                    }
-                } catch (error) {
-                    console.error('Failed to fetch IP for Vyzora tracking check', error);
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                if (urlParams.get('admin_no_track') === 'true') {
+                    localStorage.setItem('admin_no_track', 'true');
+                    console.log('Vyzora tracking disabled via URL flag');
+                } else if (urlParams.get('admin_no_track') === 'false') {
+                    localStorage.removeItem('admin_no_track');
+                    console.log('Vyzora tracking enabled via URL flag');
                 }
+                
+                if (localStorage.getItem('admin_no_track') === 'true') {
+                    shouldEnable = false;
+                    console.log('Vyzora tracking disabled for this browser');
+                }
+            } catch (error) {
+                console.error('Failed to parse admin_no_track flag', error);
             }
 
             if (isMounted) {
