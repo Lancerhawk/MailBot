@@ -20,8 +20,8 @@ interface ExportData {
 
 export async function exportToPDF(filename: string, filterParams: Record<string, string | undefined>) {
   try {
-    const { data } = await api.get<{ data: ExportData }>('/analytics/export-json', { params: filterParams });
-    const exportData = data.data;
+    const { data } = await api.get<ExportData>('/analytics/export-json', { params: filterParams });
+    const exportData = data;
 
     const pdf = new jsPDF({
       orientation: 'portrait',
