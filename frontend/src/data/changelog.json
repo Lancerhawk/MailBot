@@ -1,12 +1,90 @@
 {
   "versions": [
     {
+      "id": "be-v1.2.0",
+      "version": "v1.2.0",
+      "date": "2026-07-18",
+      "title": "AI Document Description & Metadata Retrieval Pipeline",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Automatic AI Document Description Generation",
+          "description": "Every uploaded document automatically gets a concise AI-generated description after embedding completes."
+        },
+        {
+          "title": "Background Description Worker",
+          "description": "Description generation runs asynchronously after processing, so it never blocks uploads or retrieval."
+        },
+        {
+          "title": "Intelligent Large Document Sampling",
+          "description": "Huge documents are sampled across beginning, middle, end, and major sections instead of sending the entire document to the LLM."
+        },
+        {
+          "title": "Hybrid Metadata Search Service",
+          "description": "Added PostgreSQL metadata search using Full-Text Search (tsvector), fuzzy matching (pg_trgm), and filename/title/description matching."
+        },
+        {
+          "title": "Detailed Metadata Debug Logging",
+          "description": "Logs now show metadata scores, full-text scores, similarity scores, and retrieval decisions, making the pipeline much easier to debug and tune."
+        },
+        {
+          "title": "Configurable Retrieval Threshold",
+          "description": "Metadata confidence threshold is configurable through environment variables for future tuning."
+        },
+        {
+          "title": "Idempotent Description Generation",
+          "description": "Existing valid descriptions are not regenerated unless the document content changes or a refresh is requested."
+        },
+        {
+          "title": "User Description Protection",
+          "description": "If the user manually edits a description, the AI never overwrites it."
+        },
+        {
+          "title": "Fault-Tolerant Processing",
+          "description": "Even if description generation fails after retries, the document remains fully searchable via vector search."
+        },
+        {
+          "title": "Metadata-Aware Retrieval Decision",
+          "description": "Before expensive AI reasoning, the system checks whether the email matches uploaded document metadata."
+        },
+        {
+          "title": "High-Confidence Metadata Bypass",
+          "description": "Strong metadata matches immediately trigger retrieval without calling the AI retrieval classifier."
+        },
+        {
+          "title": "AI Classifier Fallback",
+          "description": "If metadata confidence is low, the AI classifier makes the final decision on whether retrieval is needed."
+        },
+        {
+          "title": "Global Vector Search Preserved",
+          "description": "Vector search remains unchanged and continues searching across all embedded chunks without metadata reranking."
+        },
+        {
+          "title": "Cleaner Search Query Extraction",
+          "description": "Email content is cleaned by removing greetings, signatures, quoted replies, and boilerplate before metadata search."
+        },
+        {
+          "title": "Document-Aware Retrieval Pipeline",
+          "description": "Retrieval decisions are now informed by uploaded document metadata instead of relying solely on AI classification."
+        },
+        {
+          "title": "Improved Hallucination Prevention",
+          "description": "The AI is instructed to answer only from retrieved knowledge and ask for clarification instead of inventing missing information."
+        },
+        {
+          "title": "Concurrent Webhook Execution",
+          "description": "Implemented a pending webhook queue to seamlessly sync back-to-back emails without rejecting concurrent Pub/Sub triggers."
+        }
+      ]
+    },
+    {
       "id": "be-v1.1.0",
       "version": "v1.1.0",
       "date": "2026-07-17",
       "title": "Local Embedding Model Migration",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Local AI Worker",

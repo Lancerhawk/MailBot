@@ -76,12 +76,22 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
   const [editingFolder, setEditingFolder] = useState(false);
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (isOpen) {
+      const interval = setInterval(() => setCurrentTime(Date.now()), 5000);
+      return () => clearInterval(interval);
+    }
+  }, [isOpen]);
 
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
+      // If the target is no longer in the document (unmounted by the click itself), ignore
+      if (!document.contains(e.target as Node)) return;
       // Don't close if clicking on a toast notification
       if ((e.target as Element).closest(".go3958317564, .go4109123758, ol[data-sonner-toaster]")) return;
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
@@ -194,6 +204,11 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
 
   if (!doc) return null;
 
+  const isGenerating =
+    doc.processingStatus === "PROCESSING" ||
+    doc.processingStatus === "PENDING" ||
+    (!doc.description && !!doc.createdAt && (currentTime - new Date(doc.createdAt).getTime() < 30000));
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -246,8 +261,17 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                     </div>
                   ) : (
                     <p
-                      className="cursor-pointer text-sm font-medium text-zinc-900 transition-colors hover:text-orange-600 dark:text-zinc-100 dark:hover:text-orange-400"
-                      onClick={() => setEditingTitle(true)}
+                      className={cn(
+                        "text-sm font-medium text-zinc-900 dark:text-zinc-100",
+                        isGenerating
+                          ? "opacity-70 cursor-not-allowed"
+                          : "cursor-pointer transition-colors hover:text-orange-600 dark:hover:text-orange-400"
+                      )}
+                      onClick={() => {
+                        if (!isGenerating) {
+                          setEditingTitle(true);
+                        }
+                      }}
                     >
                       {doc.title}
                     </p>
@@ -273,10 +297,23 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                     </div>
                   ) : (
                     <p
-                      className="cursor-pointer text-sm text-zinc-600 transition-colors hover:text-orange-600 dark:text-zinc-400 dark:hover:text-orange-400"
-                      onClick={() => setEditingDescription(true)}
+                      className={cn(
+                        "text-sm text-zinc-600 dark:text-zinc-400",
+                        isGenerating
+                          ? "opacity-70 cursor-not-allowed"
+                          : "cursor-pointer transition-colors hover:text-orange-600 dark:hover:text-orange-400"
+                      )}
+                      onClick={() => {
+                        if (!isGenerating) {
+                          setEditingDescription(true);
+                        }
+                      }}
                     >
-                      {doc.description || "Click to add description"}
+                      {doc.description ? doc.description : (
+                        isGenerating
+                          ? "Generating description..."
+                          : "Click to add description"
+                      )}
                     </p>
                   )}
                 </div>

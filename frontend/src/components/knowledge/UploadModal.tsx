@@ -173,6 +173,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
     if (pending.length === 0) return;
 
     setIsUploading(true);
+    let hasErrors = false;
 
     for (const item of pending) {
       // Mark as uploading
@@ -197,6 +198,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
           )
         );
       } catch (err: unknown) {
+        hasErrors = true;
         const error = err as { response?: { data?: { message?: string } } };
         const message = error.response?.data?.message || "Upload failed";
         setQueue((prev) =>
@@ -207,8 +209,14 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
       }
     }
 
-    setIsUploading(false);
-    onUploadComplete();
+    if (hasErrors) {
+      setIsUploading(false);
+    } else {
+      // Intentionally leave isUploading = true if successful to prevent UI flash during fade-out
+      setTimeout(() => {
+        onUploadComplete();
+      }, 600);
+    }
   }, [queue, folder, onUploadComplete]);
 
   const removeFromQueue = useCallback((id: string) => {

@@ -202,13 +202,40 @@ ${contextText}`;
     });
   }
 
+  async generateDocumentDescription(userId: string, sampledText: string): Promise<string> {
+    const prompt = `You are an AI tasked with generating a concise, purely factual summary of a document.
+Read the provided document text excerpts and generate a 2-4 sentence summary including important topics, entities, and the purpose of the document.
+DO NOT invent information. DO NOT hallucinate.
+Output MUST be exactly this JSON structure:
+{
+  "summary": "Your 2-4 sentence summary here"
+}
+
+Document Text:
+${sampledText}`;
+
+    return enqueueTask(userId, async () => {
+      const completion = await groq.chat.completions.create({
+        messages: [{ role: 'user', content: prompt }],
+        model: 'llama-3.1-8b-instant',
+        temperature: 0.1,
+        response_format: { type: 'json_object' },
+      });
+
+      const responseText = completion.choices[0]?.message?.content || '{}';
+      const parsed = JSON.parse(responseText);
+      return parsed.summary || '';
+    });
+  }
+
   async generateDraftReply(userId: string, contextText: string): Promise<DraftReplyResult> {
     const prompt = `You are an AI assistant writing a reply to an email conversation.
 Read the conversation history and the latest email carefully. Write a polite, appropriate reply that directly answers the latest email.
 
 CRITICAL ZERO-TOLERANCE ANTI-HALLUCINATION & MEETING RULES:
 - YOU ARE STRICTLY FORBIDDEN FROM HALLUCINATING, INVENTING, OR MAKING UP ANY FACTS, NUMBERS, NAMES, OR DETAILS WHATSOEVER.
-- If you do not know the answer based explicitly on the provided context, DO NOT GUESS. Leave it out or use a placeholder.
+- Answer only using available retrieved knowledge. If personal information is missing, politely ask for clarification. Never guess education, employment, addresses, dates, names, phone numbers, experience, or other personal facts.
+- If you do not know the answer based explicitly on the provided context, DO NOT GUESS. Leave it out or politely ask for clarification.
 - If the sender asks a personal question (e.g., "How are you?"), provide a very brief, polite, generic response (e.g., "I'm doing well, thank you.") without making up a backstory.
 - ONLY include information that is explicitly stated in the Conversation Context or the Knowledge Documents.
 - NEVER mention, offer, or try to schedule meetings or calls on behalf of the user. If the sender requests a meeting, provide a polite response leaving a placeholder for the user to fill in their details (e.g., "[Insert meeting link or availability here]").

@@ -15,6 +15,7 @@ interface SyncProgress {
 }
 
 const syncMemoryMap = new Map<string, SyncProgress>();
+const pendingWebhooksMap = new Map<string, bigint>();
 
 const MAX_INITIAL_THREADS = 100;
 const MAX_INITIAL_MESSAGES = 1000;
@@ -316,7 +317,6 @@ export class GmailSyncService {
   async processWebhook(emailAddress: string, newHistoryId: bigint) {
     const connection = await this.dbService.getConnectionByEmail(emailAddress);
     if (!connection) {
-      // console.error(`No connection found for webhook email ${emailAddress}`);
       return;
     }
 
@@ -327,7 +327,11 @@ export class GmailSyncService {
 
     const userId = connection.userId;
     if (this.isSyncRunning(userId)) {
-      console.log(`Sync already running for ${userId}, skipping concurrent webhook execution.`);
+      console.log(`Sync already running for ${userId}, queuing concurrent webhook execution.`);
+      const currentPending = pendingWebhooksMap.get(userId) || BigInt(0);
+      if (newHistoryId > currentPending) {
+        pendingWebhooksMap.set(userId, newHistoryId);
+      }
       return;
     }
 
@@ -377,6 +381,17 @@ export class GmailSyncService {
       emitToUser(userId, 'sync:error', { error: error.message });
     } finally {
       syncMemoryMap.delete(userId);
+
+      const pendingHistoryId = pendingWebhooksMap.get(userId);
+      if (pendingHistoryId) {
+        pendingWebhooksMap.delete(userId);
+        console.log(`Executing queued webhook for ${userId} with historyId ${pendingHistoryId}`);
+        setTimeout(() => {
+          this.processWebhook(emailAddress, pendingHistoryId).catch(err => {
+            console.error(`Queued webhook failed for ${emailAddress}:`, err);
+          });
+        }, 1000);
+      }
     }
   }
 }

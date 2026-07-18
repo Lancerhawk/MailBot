@@ -111,6 +111,13 @@ export class EmbeddingWorker {
         }
       });
 
+      await jobService.createJob(
+        userId,
+        JobType.DOCUMENT_DESCRIPTION,
+        job.entityType,
+        documentId
+      );
+
       await jobService.completeJob(job.id);
       retrievalService.clearCacheForUser(userId);
       logger.info({ jobId: job.id, documentId }, `${this.workerId} completed job`);

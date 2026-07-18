@@ -6,6 +6,7 @@ import { Server } from 'http';
 import { initSocket } from './socket';
 import { localEmbeddingService } from './modules/knowledge/services/local-embedding.service';
 import { EmbeddingWorker } from './modules/jobs/workers/embedding.worker';
+import { DescriptionWorker } from './modules/jobs/workers/description.worker';
 import { jobService } from './modules/jobs/job.service';
 
 let server: Server;
@@ -36,10 +37,15 @@ const startServer = async () => {
 
     const workerCount = env.EMBEDDING_WORKERS;
     const workers: EmbeddingWorker[] = [];
+    const descWorkers: DescriptionWorker[] = [];
     for (let i = 1; i <= workerCount; i++) {
       const worker = new EmbeddingWorker(i);
       worker.start();
       workers.push(worker);
+
+      const descWorker = new DescriptionWorker(i);
+      descWorker.start();
+      descWorkers.push(descWorker);
     }
 
     setInterval(() => {
