@@ -1,0 +1,16 @@
+[
+  {
+    "id": "advanced-settings",
+    "title": "Advanced Settings",
+    "subtitle": "Custom configurations & embeds",
+    "description": "Gain full control over your Mailman experience. We will be opening up all the core settings, allowing you to embed your own custom configurations and tweak the AI's behavior to perfectly match your personal or organizational needs.",
+    "icon": "Settings"
+  },
+  {
+    "id": "ocr-image-chunking",
+    "title": "OCR Image Chunking",
+    "subtitle": "Smart image text extraction",
+    "description": "Never miss important context trapped inside screenshots again. We are adding advanced Optical Character Recognition (OCR) designed specifically for image chunking, allowing Mailman's AI to effortlessly read, search, and understand text embedded directly within your email attachments.",
+    "icon": "Zap"
+  }
+]

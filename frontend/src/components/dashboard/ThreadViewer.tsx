@@ -311,11 +311,12 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
 
     const fetchThread = async () => {
       try {
-        if (!cacheRef.current[threadId]) setIsLoading(true);
+        const wasInCache = !!cacheRef.current[threadId];
+        if (!wasInCache) setIsLoading(true);
         const data = await getThread(threadId);
         setThread(data as Thread);
 
-        if (cacheRef.current[threadId]) {
+        if (wasInCache) {
           api.get(`/gmail/threads/${threadId}`).then(res => {
             setThread(res.data.data);
             updateThreadInCache(threadId, res.data.data);
@@ -430,15 +431,39 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
 
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const hasScrolledRef = useRef(false);
+  const previousEmailCount = useRef(0);
+
+  // Reset scroll state when changing threads
+  useEffect(() => {
+    hasScrolledRef.current = false;
+    previousEmailCount.current = 0;
+  }, [threadId]);
 
   useEffect(() => {
     if (thread && scrollContainerRef.current) {
-      setTimeout(() => {
-        const lastEmailElement = document.getElementById('last-email-card');
-        if (lastEmailElement && scrollContainerRef.current) {
-          scrollContainerRef.current.scrollTop = lastEmailElement.offsetTop - 20;
-        }
-      }, 100);
+      const isInitialLoad = !hasScrolledRef.current;
+      const isNewEmail = thread.emails.length > previousEmailCount.current;
+      
+      if (isInitialLoad || isNewEmail) {
+        hasScrolledRef.current = true;
+        previousEmailCount.current = thread.emails.length;
+        
+        setTimeout(() => {
+          const lastEmailElement = document.getElementById('last-email-card');
+          if (lastEmailElement && scrollContainerRef.current) {
+            const container = scrollContainerRef.current;
+            const containerRect = container.getBoundingClientRect();
+            const elementRect = lastEmailElement.getBoundingClientRect();
+            
+            // Calculate exact position to scroll to the top of the element
+            container.scrollTo({
+              top: container.scrollTop + (elementRect.top - containerRect.top) - 20,
+              behavior: isInitialLoad ? 'auto' : 'smooth'
+            });
+          }
+        }, 100);
+      }
     }
   }, [thread]);
 
