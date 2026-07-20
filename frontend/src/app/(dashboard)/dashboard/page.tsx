@@ -15,6 +15,8 @@ import {
   Zap,
   Users,
   BarChart3,
+  Server,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -36,7 +38,10 @@ const IconMap: Record<string, React.ElementType> = {
   Zap,
   Users,
   BarChart3,
-  Settings
+  Settings,
+  Activity,
+  Server,
+  ShieldCheck
 };
 
 interface ComingSoonFeature {
@@ -338,12 +343,12 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="min-w-0 flex flex-col gap-4">
-          <div className="animate-fade-in rounded-xl border border-zinc-300 bg-white p-4 sm:p-5 shadow-md dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
-            <h2 className="text-sm font-semibold text-zinc-900 dark:text-zinc-50">
+        <div className="min-w-0 relative lg:h-full">
+          <div className="lg:absolute lg:inset-0 flex flex-col animate-fade-in rounded-xl border border-zinc-300 bg-white p-4 sm:p-5 shadow-md dark:border-zinc-800/80 dark:bg-zinc-900/80 dark:shadow-xl">
+            <h2 className="shrink-0 text-sm font-semibold text-zinc-900 dark:text-zinc-50">
               Coming Soon
             </h2>
-            <div className="mt-4 space-y-3">
+            <div className="mt-4 space-y-3 flex-1 overflow-y-auto min-h-0 pr-1 sm:pr-2">
               {comingSoonData.map((feature: ComingSoonFeature) => {
                 const FeatureIcon = IconMap[feature.icon] || Settings;
                 return (

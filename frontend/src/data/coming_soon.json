@@ -12,5 +12,26 @@
     "subtitle": "Smart image text extraction",
     "description": "Never miss important context trapped inside screenshots again. We are adding advanced Optical Character Recognition (OCR) designed specifically for image chunking, allowing Mailman's AI to effortlessly read, search, and understand text embedded directly within your email attachments.",
     "icon": "Zap"
+  },
+  {
+    "id": "pipeline-checks",
+    "title": "Advanced Pipeline Checks",
+    "subtitle": "Robust verification layers",
+    "description": "We are overhauling the AI pipeline with strictly enforced verification layers. This includes enhanced validation for file inputs, ensuring data integrity and preventing processing errors before they hit the core embedding models.",
+    "icon": "ShieldCheck"
+  },
+  {
+    "id": "scalability-testing",
+    "title": "Scalability & Load Testing",
+    "subtitle": "Enterprise-grade performance",
+    "description": "As Mailman scales, we are implementing rigorous automated load testing across all core API endpoints. This guarantees zero downtime and lightning-fast response times even during massive email influxes.",
+    "icon": "Activity"
+  },
+  {
+    "id": "horizontal-scaling",
+    "title": "Horizontal Worker Scaling",
+    "subtitle": "Independent background queues",
+    "description": "To maximize throughput, we are decoupling our background workers and task queues from the monolithic instance. They will soon be deployed across fully independent, horizontally scalable node clusters.",
+    "icon": "Server"
   }
 ]
