@@ -12,7 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { toast } from "@/lib/toast";
+import { useInfiniteQuery, useQueryClient } from "@tanstack/react-query";
+import { useSocket } from "@/providers/SocketProvider";
+import { useThreadCache } from "@/providers/ThreadCacheProvider";
 
 interface Participant {
   emailAddress: string;
@@ -67,9 +69,6 @@ function ThreadSkeleton() {
   );
 }
 
-import { useSocket } from "@/providers/SocketProvider";
-import { useThreadCache } from "@/providers/ThreadCacheProvider";
-
 function decodeHtmlEntities(text: string | null | undefined): string {
   if (!text) return "";
   return text
@@ -86,11 +85,7 @@ function decodeHtmlEntities(text: string | null | undefined): string {
 export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | "drafts" }) {
   const { socket } = useSocket();
   const { prefetchThreads } = useThreadCache();
-  const [threads, setThreads] = useState<EmailThread[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isFetchingMore, setIsFetchingMore] = useState(false);
-  const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const queryClient = useQueryClient();
 
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -105,12 +100,18 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  const fetchThreads = useCallback(async (silent = false, pageNum = 1, append = false, isRefresh = false) => {
-    try {
-      if (!silent && !append) setIsLoading(true);
-      if (append) setIsFetchingMore(true);
+  const queryKey = React.useMemo(() => ['threads', mode, filter, debouncedSearch], [mode, filter, debouncedSearch]);
 
-      let queryUrl = `/gmail/threads?limit=100&page=${pageNum}`;
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey,
+    queryFn: async ({ pageParam = 1 }) => {
+      let queryUrl = `/gmail/threads?limit=100&page=${pageParam}`;
 
       let actualFilter = filter;
       if (mode === "spam") actualFilter = "spam";
@@ -123,67 +124,37 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       if (debouncedSearch) {
         queryUrl += `&search=${encodeURIComponent(debouncedSearch)}`;
       }
-      if (isRefresh) {
-        queryUrl += `&refresh=true`;
-      }
 
       const res = await api.get(queryUrl);
       const newThreads = res.data.data.threads;
 
-      if (append) {
-        setThreads(prev => [...prev, ...newThreads]);
-      } else {
-        setThreads(newThreads);
-        setSelectedThreadId(prev => {
-          if (prev && !newThreads.some((t: { id: string }) => t.id === prev)) return null;
-          return prev;
-        });
-      }
-
-      setHasMore(pageNum < res.data.data.pagination.totalPages);
-
       prefetchThreads(newThreads.map((t: { id: string }) => t.id));
-    } catch (error: unknown) {
-      const err = error as { response?: { status: number } };
-      if (err?.response?.status === 429) {
-        toast.error("Please wait 1 minute before refreshing again.");
-      } else {
-        console.error(error);
-      }
-    } finally {
-      setIsLoading(false);
-      setIsFetchingMore(false);
-    }
-  }, [mode, filter, debouncedSearch, prefetchThreads]);
 
-  const [prevDeps, setPrevDeps] = useState({ mode, filter, debouncedSearch });
-  if (prevDeps.mode !== mode || prevDeps.filter !== filter || prevDeps.debouncedSearch !== debouncedSearch) {
-    setPrevDeps({ mode, filter, debouncedSearch });
-    setPage(1);
-  }
+      return res.data.data;
+    },
+    getNextPageParam: (lastPage: { pagination: { totalPages: number }, threads: EmailThread[] }, allPages: unknown[]) => {
+      const nextPage = allPages.length + 1;
+      return nextPage <= lastPage.pagination.totalPages ? nextPage : undefined;
+    },
+    initialPageParam: 1,
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchThreads(false, 1, false);
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchThreads]);
+  const threads = React.useMemo(() => data?.pages.flatMap((page: { threads: EmailThread[] }) => page.threads) || [], [data]);
+  const isFetchingMore = isFetchingNextPage;
+  const hasMore = !!hasNextPage;
 
   useEffect(() => {
     const handleRefresh = () => {
-      setPage(1);
-      fetchThreads(false, 1, false, true);
+      queryClient.invalidateQueries({ queryKey });
     };
     window.addEventListener('refresh-data', handleRefresh);
     return () => window.removeEventListener('refresh-data', handleRefresh);
-  }, [fetchThreads]);
+  }, [queryClient, queryKey]);
 
   const loadMore = useCallback(() => {
     if (isLoading || isFetchingMore || !hasMore) return;
-    const nextPage = page + 1;
-    setPage(nextPage);
-    fetchThreads(false, nextPage, true);
-  }, [isLoading, isFetchingMore, hasMore, page, fetchThreads]);
+    fetchNextPage();
+  }, [isLoading, isFetchingMore, hasMore, fetchNextPage]);
 
   const observer = useRef<IntersectionObserver | null>(null);
   const lastElementRef = useCallback((node: HTMLDivElement) => {
@@ -205,17 +176,34 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     const handleSyncStarted = () => setIsSyncing(true);
     const handleSyncCompleted = () => {
       setIsSyncing(false);
-      fetchThreads(true);
+      queryClient.invalidateQueries({ queryKey });
     };
 
     const updateThread = (threadId: string, updater: (t: EmailThread) => EmailThread) => {
-      setThreads(prev => {
-        const idx = prev.findIndex(t => t.id === threadId);
-        if (idx === -1) return prev;
-        const newThreads = [...prev];
-        newThreads[idx] = updater(newThreads[idx]);
-        return newThreads;
+      queryClient.setQueryData(queryKey, (oldData: { pages: { threads: EmailThread[] }[] } | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map(page => ({
+            ...page,
+            threads: page.threads.map(t => t.id === threadId ? updater(t) : t)
+          }))
+        };
       });
+    };
+
+    const removeThread = (threadId: string) => {
+      queryClient.setQueryData(queryKey, (oldData: { pages: { threads: EmailThread[] }[] } | undefined) => {
+        if (!oldData) return oldData;
+        return {
+          ...oldData,
+          pages: oldData.pages.map(page => ({
+            ...page,
+            threads: page.threads.filter(t => t.id !== threadId)
+          }))
+        };
+      });
+      setSelectedThreadId(prev => prev === threadId ? null : prev);
     };
 
     const handleRead = (data: { threadId: string; value: boolean }) => updateThread(data.threadId, t => ({
@@ -224,31 +212,26 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
 
     const handleDeleted = (data: { threadId: string; value: boolean }) => {
       if (mode === "inbox" && data.value === true) {
-        setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
+        removeThread(data.threadId);
       } else if (mode === "trash" && data.value === false) {
-        setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
+        removeThread(data.threadId);
       } else {
-        fetchThreads(true);
+        queryClient.invalidateQueries({ queryKey });
       }
     };
 
     const handleSpam = (data: { threadId: string; value: boolean }) => {
       if (mode === "inbox" && data.value === true) {
-        setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
+        removeThread(data.threadId);
       } else if (mode === "spam" && data.value === false) {
-        setThreads(prev => prev.filter(t => t.id !== data.threadId));
-        setSelectedThreadId(prev => prev === data.threadId ? null : prev);
+        removeThread(data.threadId);
       } else {
-        fetchThreads(true);
+        queryClient.invalidateQueries({ queryKey });
       }
     };
 
     const handlePermDelete = (data: { threadId: string }) => {
-      setThreads(prev => prev.filter(t => t.id !== data.threadId));
-      setSelectedThreadId(prev => prev === data.threadId ? null : prev);
+      removeThread(data.threadId);
     };
 
     const handleThreadUpdated = (data: { threadId: string; field: string; value: boolean }) => {
@@ -259,39 +242,29 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
         }));
       } else if (field === 'isDeleted') {
         if (mode === 'inbox' && value === true) {
-          setThreads(prev => prev.filter(t => t.id !== threadId));
-          setSelectedThreadId(prev => prev === threadId ? null : prev);
+          removeThread(threadId);
         } else if (mode === 'trash' && value === false) {
-          setThreads(prev => prev.filter(t => t.id !== threadId));
-          setSelectedThreadId(prev => prev === threadId ? null : prev);
+          removeThread(threadId);
         } else {
-          fetchThreads(true);
+          queryClient.invalidateQueries({ queryKey });
         }
       } else if (field === 'isSpam') {
         if (mode === 'inbox' && value === true) {
-          setThreads(prev => prev.filter(t => t.id !== threadId));
-          setSelectedThreadId(prev => prev === threadId ? null : prev);
+          removeThread(threadId);
         } else if (mode === 'spam' && value === false) {
-          setThreads(prev => prev.filter(t => t.id !== threadId));
-          setSelectedThreadId(prev => prev === threadId ? null : prev);
+          removeThread(threadId);
         } else {
-          fetchThreads(true);
+          queryClient.invalidateQueries({ queryKey });
         }
       } else if (field === 'isArchived') {
         if (mode === 'inbox' && value === true) {
-          setThreads(prev => prev.filter(t => t.id !== threadId));
-          setSelectedThreadId(prev => prev === threadId ? null : prev);
+          removeThread(threadId);
         } else {
-          fetchThreads(true);
+          queryClient.invalidateQueries({ queryKey });
         }
       } else {
-        fetchThreads(true);
+        queryClient.invalidateQueries({ queryKey });
       }
-    };
-
-    const handleThreadPermDelete = (data: { threadId: string }) => {
-      setThreads(prev => prev.filter(t => t.id !== data.threadId));
-      setSelectedThreadId(prev => prev === data.threadId ? null : prev);
     };
 
     socket.on('sync:started', handleSyncStarted);
@@ -304,7 +277,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
     socket.on('email:unspam', handleSpam);
     socket.on('email:permanently_deleted', handlePermDelete);
     socket.on('thread:updated', handleThreadUpdated);
-    socket.on('thread:permanently_deleted', handleThreadPermDelete);
+    socket.on('thread:permanently_deleted', handlePermDelete);
 
     return () => {
       socket.off('sync:started', handleSyncStarted);
@@ -317,13 +290,13 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       socket.off('email:unspam', handleSpam);
       socket.off('email:permanently_deleted', handlePermDelete);
       socket.off('thread:updated', handleThreadUpdated);
-      socket.off('thread:permanently_deleted', handleThreadPermDelete);
+      socket.off('thread:permanently_deleted', handlePermDelete);
     };
-  }, [socket, mode, fetchThreads]);
+  }, [socket, mode, queryClient, queryKey]);
 
   useEffect(() => {
     if (!socket) return;
-    const handleRefresh = () => fetchThreads(true);
+    const handleRefresh = () => queryClient.invalidateQueries({ queryKey });
     socket.on('analysis:completed', handleRefresh);
     socket.on('draft:generated', handleRefresh);
     socket.on('draft:regenerated', handleRefresh);
@@ -334,7 +307,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
       socket.off('draft:regenerated', handleRefresh);
       socket.off('email:sent', handleRefresh);
     };
-  }, [socket, fetchThreads]);
+  }, [socket, queryClient, queryKey]);
 
   const getSenderInfo = (thread: EmailThread) => {
     const sender = thread.emails[0]?.participants.find(p => p.role === "SENDER");
@@ -404,7 +377,7 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
             </div>
           ) : (
             <div className="stagger-children divide-y divide-zinc-100 dark:divide-zinc-800/50">
-              {filteredThreads.map((thread, index) => {
+              {filteredThreads.map((thread: EmailThread, index: number) => {
                 const isUnread = !thread.emails[0]?.isRead;
                 const isSelected = selectedThreadId === thread.id;
                 const sender = getSenderInfo(thread);

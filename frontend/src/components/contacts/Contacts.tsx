@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Users,
@@ -103,23 +104,14 @@ export interface Organization {
 
 export function Contacts() {
   const [activeView, setActiveView] = useState<"contacts" | "organizations">("contacts");
+  const queryClient = useQueryClient();
 
-  const [contacts, setContacts] = useState<Contact[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-
-  const [organizations, setOrganizations] = useState<Organization[]>([]);
-  const [orgLoading, setOrgLoading] = useState(false);
-  const [orgPage, setOrgPage] = useState(1);
-  const [orgTotalPages, setOrgTotalPages] = useState(1);
-
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("");
   const [sort, setSort] = useState("recentlyContacted");
   const [relationship, setRelationship] = useState("");
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [orgPage, setOrgPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
 
   const [editContact, setEditContact] = useState<Contact | null>(null);
@@ -140,9 +132,9 @@ export function Contacts() {
     };
   }, [search]);
 
-  const fetchContacts = useCallback(async () => {
-    try {
-      setTimeout(() => setLoading(true), 0);
+  const { data: contactsData, isLoading: contactsLoading } = useQuery({
+    queryKey: ['contacts', page, debouncedSearch, filter, sort, relationship],
+    queryFn: async () => {
       const params = new URLSearchParams();
       params.set("page", String(page));
       params.set("limit", "50");
@@ -152,59 +144,42 @@ export function Contacts() {
       if (relationship) params.set("relationship", relationship);
 
       const res = await api.get(`/contacts?${params.toString()}`);
-      setContacts(res.data.data);
-      if (res.data.pagination) {
-        setTotalPages(res.data.pagination.totalPages);
-        setTotal(res.data.pagination.total);
-      }
-    } catch {
-      toast.error("Failed to load contacts");
-    } finally {
-      setLoading(false);
+      return res.data;
     }
-  }, [page, debouncedSearch, filter, sort, relationship]);
+  });
 
-  const fetchStats = useCallback(() => {
-    api.get("/contacts/stats")
-      .then(res => {
-        setStats(res.data.data);
-      })
-      .catch(() => {});
-  }, []);
+  const contacts = contactsData?.data || [];
+  const totalPages = contactsData?.pagination?.totalPages || 1;
+  const total = contactsData?.pagination?.total || 0;
 
-  const fetchOrganizations = useCallback(async () => {
-    try {
-      setTimeout(() => setOrgLoading(true), 0);
-      const res = await api.get(`/contacts/organizations?page=${orgPage}&limit=30${debouncedSearch ? `&search=${debouncedSearch}` : ''}`);
-      setOrganizations(res.data.data);
-      if (res.data.pagination) {
-        setOrgTotalPages(res.data.pagination.totalPages);
-      }
-    } catch {
-      toast.error("Failed to load organizations");
-    } finally {
-      setOrgLoading(false);
+  const { data: stats = null } = useQuery<Stats | null>({
+    queryKey: ['contacts-stats'],
+    queryFn: async () => {
+      const res = await api.get("/contacts/stats");
+      return res.data.data as Stats;
     }
-  }, [orgPage, debouncedSearch]);
+  });
 
-  useEffect(() => {
-    if (activeView === "contacts") {
-      void Promise.resolve().then(() => fetchContacts());
-    } else {
-      void Promise.resolve().then(() => fetchOrganizations());
+  const { data: orgData, isLoading: orgLoading } = useQuery({
+    queryKey: ['contacts-organizations', orgPage, debouncedSearch],
+    queryFn: async () => {
+      const res = await api.get(`/contacts/organizations?page=${orgPage}&limit=30${debouncedSearch ? '&search=' + debouncedSearch : ''}`);
+      return res.data;
     }
-  }, [activeView, fetchContacts, fetchOrganizations]);
+  });
 
-  useEffect(() => {
-    void Promise.resolve().then(() => fetchStats());
-  }, [fetchStats]);
+  const organizations = orgData?.data || [];
+  const orgTotalPages = orgData?.pagination?.totalPages || 1;
+
+  const loading = activeView === "contacts" ? contactsLoading : orgLoading;
 
   useEffect(() => {
     if (!socket) return;
 
     const handleUpdated = () => {
-      fetchContacts();
-      fetchStats();
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts-stats'] });
+      queryClient.invalidateQueries({ queryKey: ['contacts-organizations'] });
     };
 
     socket.on("contact.updated", handleUpdated);
@@ -215,9 +190,7 @@ export function Contacts() {
     socket.on("sync:completed", handleUpdated);
 
     const handleWindowRefresh = () => {
-      if (activeView === "contacts") fetchContacts();
-      else fetchOrganizations();
-      fetchStats();
+      handleUpdated();
     };
     window.addEventListener("refresh-data", handleWindowRefresh);
 
@@ -230,38 +203,49 @@ export function Contacts() {
       socket.off("sync:completed", handleUpdated);
       window.removeEventListener("refresh-data", handleWindowRefresh);
     };
-  }, [socket, fetchContacts, fetchStats, activeView, fetchOrganizations]);
+  }, [socket, queryClient]);
 
   const toggleFavorite = async (contact: Contact) => {
     const newVal = !contact.favorite;
-    setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, favorite: newVal } : c));
+    queryClient.setQueryData(['contacts', page, debouncedSearch, filter, sort, relationship], (old: { data: Contact[] } | undefined) => {
+      if (!old) return old;
+      return { ...old, data: old.data.map((c: Contact) => c.id === contact.id ? { ...c, favorite: newVal } : c) };
+    });
     try {
       await api.patch(`/contacts/${contact.id}`, { favorite: newVal });
+      queryClient.invalidateQueries({ queryKey: ['contacts-stats'] });
     } catch {
-      setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, favorite: !newVal } : c));
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.error("Failed to update favorite");
     }
   };
 
   const togglePin = async (contact: Contact) => {
     const newVal = !contact.pinned;
-    setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, pinned: newVal } : c));
+    queryClient.setQueryData(['contacts', page, debouncedSearch, filter, sort, relationship], (old: { data: Contact[] } | undefined) => {
+      if (!old) return old;
+      return { ...old, data: old.data.map((c: Contact) => c.id === contact.id ? { ...c, pinned: newVal } : c) };
+    });
     try {
       await api.patch(`/contacts/${contact.id}`, { pinned: newVal });
+      queryClient.invalidateQueries({ queryKey: ['contacts-stats'] });
     } catch {
-      setContacts(prev => prev.map(c => c.id === contact.id ? { ...c, pinned: !newVal } : c));
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.error("Failed to update pin");
     }
   };
 
   const handleArchive = async (contact: Contact) => {
-    setContacts(prev => prev.filter(c => c.id !== contact.id));
+    queryClient.setQueryData(['contacts', page, debouncedSearch, filter, sort, relationship], (old: { data: Contact[] } | undefined) => {
+      if (!old) return old;
+      return { ...old, data: old.data.filter((c: Contact) => c.id !== contact.id) };
+    });
     try {
       await api.post(`/contacts/${contact.id}/archive`);
       toast.success("Contact archived");
-      fetchStats();
+      queryClient.invalidateQueries({ queryKey: ['contacts-stats'] });
     } catch {
-      fetchContacts();
+      queryClient.invalidateQueries({ queryKey: ['contacts'] });
       toast.error("Failed to archive contact");
     }
   };
@@ -477,7 +461,7 @@ export function Contacts() {
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 <AnimatePresence>
-                  {contacts.map((contact) => (
+                  {contacts.map((contact: Contact) => (
                     <ContactCard
                       key={contact.id}
                       contact={contact}
@@ -546,7 +530,7 @@ export function Contacts() {
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 <AnimatePresence>
-                  {organizations.map((org) => (
+                  {organizations.map((org: Organization) => (
                     <motion.div
                       key={org.id}
                       initial={{ opacity: 0, y: 10 }}
@@ -600,14 +584,22 @@ export function Contacts() {
         <ContactEditModal
           contact={editContact}
           onClose={() => setEditContact(null)}
-          onSaved={() => { fetchContacts(); fetchStats(); setEditContact(null); }}
+          onSaved={() => {
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
+            queryClient.invalidateQueries({ queryKey: ['contacts-stats'] });
+            setEditContact(null);
+          }}
         />
       )}
       {mergeContact && (
         <MergeContactsModal
           contact={mergeContact}
           onClose={() => setMergeContact(null)}
-          onMerged={() => { fetchContacts(); fetchStats(); setMergeContact(null); }}
+          onMerged={() => {
+            queryClient.invalidateQueries({ queryKey: ['contacts'] });
+            queryClient.invalidateQueries({ queryKey: ['contacts-stats'] });
+            setMergeContact(null);
+          }}
         />
       )}
     </div>

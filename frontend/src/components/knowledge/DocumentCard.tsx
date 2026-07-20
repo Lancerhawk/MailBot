@@ -146,9 +146,9 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
   }, [renameValue, doc.id, doc.title, optimisticDoc.title, onUpdate]);
 
   const handleArchive = useCallback(async () => {
+    setIsProcessing(true);
     onProcessingChange?.(true);
-    const wasArchived = optimisticDoc.isArchived;
-    setOptimisticDoc((prev: KnowledgeDocument) => ({ ...prev, isArchived: !wasArchived }));
+    const wasArchived = doc.isArchived;
 
     try {
       if (wasArchived) {
@@ -160,16 +160,17 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
       }
       onUpdate();
     } catch {
-      setOptimisticDoc((prev: KnowledgeDocument) => ({ ...prev, isArchived: wasArchived }));
       toast.error(wasArchived ? "Failed to restore" : "Failed to archive");
     } finally {
+      setIsProcessing(false);
       onProcessingChange?.(false);
     }
-  }, [doc.id, optimisticDoc.isArchived, onUpdate, onProcessingChange]);
+  }, [doc.id, doc.isArchived, onUpdate, onProcessingChange]);
 
   const handleDelete = useCallback(async () => {
     setIsProcessing(true);
     onProcessingChange?.(true);
+
     try {
       await api.delete(`/knowledge/${doc.id}`);
       toast.success("Document deleted");
@@ -211,7 +212,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -8 }}
       className={cn(
-        "group relative flex flex-col h-full rounded-xl border p-4 shadow-md transition-all duration-200",
+        "group relative flex flex-col h-full rounded-xl border p-4 shadow-md transition-colors transition-shadow duration-200",
         "bg-white dark:bg-zinc-900/80 dark:shadow-xl",
         isSelected
           ? "border-orange-300 ring-2 ring-orange-200 dark:border-orange-600 dark:ring-orange-500/20"
@@ -349,10 +350,10 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
           {(doc.retrievalCount || 0) > 0
             ? `Used ${doc.retrievalCount}×`
             : doc.processingStatus === "PROCESSING"
-            ? "Processing..."
-            : doc.processingStatus === "PENDING"
-            ? "Queued..."
-            : "Never used"}
+              ? "Processing..."
+              : doc.processingStatus === "PENDING"
+                ? "Queued..."
+                : "Never used"}
         </span>
         {doc.lastRetrievedAt && (
           <>

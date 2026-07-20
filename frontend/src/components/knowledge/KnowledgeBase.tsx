@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Upload,
@@ -15,6 +16,7 @@ import {
   ArchiveRestore,
   Trash2,
   X,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -90,9 +92,26 @@ interface KnowledgeDocument {
 }
 
 export function KnowledgeBase() {
-  const [allDocuments, setAllDocuments] = useState<KnowledgeDocument[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+
+  const { data: allDocuments = [] as KnowledgeDocument[], isLoading: docsLoading } = useQuery({
+    queryKey: ['knowledge-documents'],
+    queryFn: async () => {
+      const res = await api.get("/knowledge", { params: { limit: 500 } });
+      return res.data.data.documents as KnowledgeDocument[];
+    }
+  });
+
+  const { data: stats = null, isLoading: statsLoading } = useQuery<Stats | null>({
+    queryKey: ['knowledge-stats'],
+    queryFn: async () => {
+      const res = await api.get("/knowledge/stats");
+      return res.data.data as Stats;
+    }
+  });
+
+  const loading = docsLoading || statsLoading;
+
   const [activeFolder, setActiveFolder] = useState("All");
   const [activeFilter, setActiveFilter] = useState("all");
   const [activeSort, setActiveSort] = useState("newest");
@@ -102,66 +121,36 @@ export function KnowledgeBase() {
   const [detailsDoc, setDetailsDoc] = useState<KnowledgeDocument | null>(null);
   const [isProcessingBulk, setIsProcessingBulk] = useState(false);
   const [isPageProcessing, setIsPageProcessing] = useState(false);
-  const [prevAllDocuments, setPrevAllDocuments] = useState<KnowledgeDocument[]>([]);
 
-  if (allDocuments !== prevAllDocuments) {
-    setPrevAllDocuments(allDocuments);
+  useEffect(() => {
     if (detailsDoc) {
-      const updatedDoc = allDocuments.find((d) => d.id === detailsDoc.id);
+      const updatedDoc = allDocuments.find((d: KnowledgeDocument) => d.id === detailsDoc.id);
       if (updatedDoc && JSON.stringify(updatedDoc) !== JSON.stringify(detailsDoc)) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setDetailsDoc(updatedDoc);
       }
     }
-  }
+  }, [allDocuments, detailsDoc]);
 
   const { socket } = useSocket();
 
-  // ─── DATA FETCHING (one-shot, all docs) ────────────────────
-
-  const fetchAll = useCallback(async () => {
-    try {
-      const [docsRes, statsRes] = await Promise.all([
-        api.get("/knowledge", { params: { limit: 500 } }),
-        api.get("/knowledge/stats"),
-      ]);
-      setAllDocuments(docsRes.data.data.documents);
-      setStats(statsRes.data.data);
-    } catch {
-      toast.error("Failed to load documents");
-    }
-  }, []);
-
-  const refreshAll = useCallback(async () => {
-    await fetchAll();
-  }, [fetchAll]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(true);
-      fetchAll().finally(() => setLoading(false));
-    }, 0);
-    return () => clearTimeout(timer);
-  }, [fetchAll]);
-
-  // ─── NAVBAR REFRESH LISTENER ─────────────────────────────
+  const refreshAll = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['knowledge-documents'] });
+    queryClient.invalidateQueries({ queryKey: ['knowledge-stats'] });
+  }, [queryClient]);
 
   useEffect(() => {
     const handleRefresh = () => {
-      setTimeout(() => {
-        setLoading(true);
-        fetchAll().finally(() => setLoading(false));
-      }, 0);
+      refreshAll();
     };
     window.addEventListener("refresh-data", handleRefresh);
     return () => window.removeEventListener("refresh-data", handleRefresh);
-  }, [fetchAll]);
-
-  // ─── SOCKET LISTENERS ─────────────────────────────────────
+  }, [refreshAll]);
 
   useEffect(() => {
     if (!socket) return;
 
-    const refresh = () => fetchAll();
+    const refresh = () => refreshAll();
 
     socket.on("knowledge:ready", refresh);
     socket.on("knowledge:updated", refresh);
@@ -180,7 +169,7 @@ export function KnowledgeBase() {
       socket.off("knowledge:restored", refresh);
       socket.off("knowledge:replaced", refresh);
     };
-  }, [socket, fetchAll]);
+  }, [socket, refreshAll]);
 
   const { documents, folderCounts } = React.useMemo(() => {
     const counts: Record<string, number> = { All: allDocuments.length };
@@ -319,22 +308,23 @@ export function KnowledgeBase() {
       )}
       <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50">
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
             Knowledge Base
+            <div className="relative group flex items-center">
+              <Info className="h-5 w-5 text-orange-500 hover:text-orange-600 dark:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors" />
+              <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-80 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none text-left font-normal leading-relaxed">
+                <p className="mb-2">
+                  <span className="font-semibold text-orange-600 dark:text-red-500">Note:</span> There is a strict safety limit of 2000 chunks (~200 dense pages) and 50MB per document. Larger files will fail.
+                </p>
+                <p>
+                  <span className="font-semibold text-orange-600 dark:text-red-500">Hardware Constraint:</span> This entire project is deployed on a single 1GB RAM instance. Uploading large files will take several minutes and may temporarily slow down the app.
+                </p>
+              </div>
+            </div>
           </h1>
           <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
             Manage documents the AI uses to draft smarter email replies.
           </p>
-          <div className="mt-2 space-y-1 text-xs font-medium text-orange-600 dark:text-orange-400 max-w-3xl">
-            <p>
-              <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
-              Note: There is a strict safety limit of 2000 chunks (~200 dense pages) and 50MB per document. Larger files will fail.
-            </p>
-            <p>
-              <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
-              Hardware Constraint: This entire project is deployed on a single 1GB RAM instance. Uploading large files will take several minutes and may temporarily slow down the app.
-            </p>
-          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -364,8 +354,9 @@ export function KnowledgeBase() {
           )}
 
           <Button
+            variant="outline"
             onClick={() => setShowUpload(true)}
-            className="bg-orange-600 text-white hover:bg-orange-700 dark:bg-orange-500 dark:hover:bg-orange-600"
+            className="border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white hover:bg-zinc-50 dark:hover:bg-zinc-800"
           >
             <Upload className="mr-2 h-4 w-4" />
             Upload
@@ -547,7 +538,7 @@ export function KnowledgeBase() {
           ) : (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                <AnimatePresence>
+                <AnimatePresence mode="popLayout">
                   {documents.map((doc) => (
                     <DocumentCard
                       key={doc.id}

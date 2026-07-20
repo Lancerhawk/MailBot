@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Inbox,
   Mail,
@@ -29,7 +30,6 @@ import { formatDistanceToNow } from "date-fns";
 import Link from "next/link";
 import api from "@/lib/api";
 import { useSocket } from "@/providers/SocketProvider";
-import { toast } from "@/lib/toast";
 import comingSoonData from "@/data/coming_soon.json";
 
 const IconMap: Record<string, React.ElementType> = {
@@ -135,73 +135,58 @@ function StatCard({
 export default function DashboardPage() {
   const { user } = useAuth();
   const { socket, isConnected } = useSocket();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [selectedFeature, setSelectedFeature] = useState<ComingSoonFeature | null>(null);
 
-  const fetchDashboardData = async (isRefresh = false) => {
-    try {
-      const threadsUrl = isRefresh ? "/gmail/threads?limit=5&refresh=true" : "/gmail/threads?limit=5";
+  const { data: stats, isLoading } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
       const [threadsRes, statusRes] = await Promise.all([
-        api.get(threadsUrl),
-        api.get("/gmail/status"),
+        api.get('/gmail/threads?limit=5'),
+        api.get('/gmail/status')
       ]);
 
       const threadsData = threadsRes.data.data;
       const statusData = statusRes.data.data;
 
-      setStats({
+      return {
         totalThreads: threadsData.pagination.total,
         totalEmails: threadsData.pagination.totalEmails || 0,
         lastSyncAt: statusData.lastSuccessfulSyncAt,
         syncStatus: statusData.activeSync ? "SYNCING" : statusData.connectionStatus,
         recentThreads: threadsData.threads,
-      });
-    } catch (e: unknown) {
-      const err = e as { response?: { status: number } };
-      if (err?.response?.status === 429) {
-        toast.error("Please wait 1 minute before refreshing again.");
-      }
-    } finally {
-      setIsLoading(false);
+      } as DashboardStats;
     }
-  };
+  });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      fetchDashboardData();
-    }, 0);
-
     const handleRefresh = () => {
-      fetchDashboardData();
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     };
     window.addEventListener('refresh-data', handleRefresh);
 
     if (!socket) return () => window.removeEventListener('refresh-data', handleRefresh);
 
     const handleSyncStarted = () => {
-      setStats(prev => prev ? { ...prev, syncStatus: "SYNCING" } : null);
+      queryClient.setQueryData(['dashboard-stats'], (old: DashboardStats | undefined) => {
+        if (!old) return old;
+        return { ...old, syncStatus: "SYNCING" };
+      });
     };
 
     const handleSyncCompleted = () => {
-      fetchDashboardData();
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
     };
 
     socket.on('sync:started', handleSyncStarted);
     socket.on('sync:completed', handleSyncCompleted);
 
-    const ticker = setInterval(() => {
-      setStats(prev => prev ? { ...prev } : null); // Force re-render for formatDistanceToNow
-    }, 60000);
-
     return () => {
       window.removeEventListener('refresh-data', handleRefresh);
       socket.off('sync:started', handleSyncStarted);
       socket.off('sync:completed', handleSyncCompleted);
-      clearInterval(ticker);
-      clearTimeout(timer);
     };
-  }, [socket]);
+  }, [socket, queryClient]);
 
   const greeting = getGreeting();
   const firstName = user?.name?.split(" ")[0] || user?.email?.split("@")[0] || "there";

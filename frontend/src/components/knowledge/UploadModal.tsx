@@ -45,6 +45,7 @@ type UploadStage =
 interface QueuedFile {
   id: string;
   file: File;
+  title: string;
   stage: UploadStage;
   error?: string;
   documentId?: string;
@@ -151,6 +152,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
       newItems.push({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
         file,
+        title: file.name.replace(/\.[^/.]+$/, ""),
         stage: "queued",
       });
     }
@@ -185,6 +187,7 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
         const formData = new FormData();
         formData.append("file", item.file);
         formData.append("folder", folder);
+        if (item.title) formData.append("title", item.title);
 
         const res = await api.post("/knowledge/upload", formData, {
           headers: { "Content-Type": "multipart/form-data" },
@@ -218,6 +221,10 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
       }, 600);
     }
   }, [queue, folder, onUploadComplete]);
+
+  const updateItemTitle = useCallback((id: string, title: string) => {
+    setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, title } : q)));
+  }, []);
 
   const removeFromQueue = useCallback((id: string) => {
     setQueue((prev) => prev.filter((q) => q.id !== id));
@@ -337,9 +344,14 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
                   >
                     <FileText className="h-4 w-4 shrink-0 text-zinc-400" />
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-zinc-700 dark:text-zinc-300">
-                        {item.file.name}
-                      </p>
+                      <input
+                        type="text"
+                        value={item.title}
+                        onChange={(e) => updateItemTitle(item.id, e.target.value)}
+                        disabled={item.stage !== "queued"}
+                        className="w-full bg-transparent text-sm font-medium text-zinc-900 outline-none transition-colors border-b border-transparent focus:border-orange-400 dark:text-zinc-100 disabled:opacity-80"
+                        placeholder="Document title"
+                      />
                       <p className={cn(
                         "text-xs",
                         item.stage === "ready" ? "text-emerald-600 dark:text-emerald-400" :

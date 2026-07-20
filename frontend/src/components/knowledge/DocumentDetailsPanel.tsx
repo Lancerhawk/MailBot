@@ -75,7 +75,10 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
   const [editingDescription, setEditingDescription] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
+  const [folderValue, setFolderValue] = useState("");
+  const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [editingFolder, setEditingFolder] = useState(false);
+  const [isSavingFolder, setIsSavingFolder] = useState(false);
   const [currentTime, setCurrentTime] = useState(() => Date.now());
 
   useEffect(() => {
@@ -108,6 +111,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
     if (doc) {
       setTitleValue(doc.title || "");
       setDescValue(doc.description || "");
+      setFolderValue(doc.folder || "");
     }
   }
 
@@ -124,23 +128,30 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
 
   const handleSaveDescription = useCallback(async () => {
     if (!doc) return;
+    setIsSavingDescription(true);
     try {
       await api.patch(`/knowledge/${doc.id}`, { description: descValue });
       setEditingDescription(false);
       onUpdate();
     } catch {
       toast.error("Failed to update description");
+    } finally {
+      setIsSavingDescription(false);
     }
   }, [doc, descValue, onUpdate]);
 
   const handleFolderChange = useCallback(async (folder: string) => {
     if (!doc) return;
+    setIsSavingFolder(true);
     try {
       await api.patch(`/knowledge/${doc.id}`, { folder });
+      setFolderValue(folder);
       setEditingFolder(false);
       onUpdate();
     } catch {
       toast.error("Failed to move document");
+    } finally {
+      setIsSavingFolder(false);
     }
   }, [doc, onUpdate]);
 
@@ -273,7 +284,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                         }
                       }}
                     >
-                      {doc.title}
+                      {titleValue}
                     </p>
                   )}
                 </div>
@@ -282,17 +293,39 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                 <div>
                   <label className="mb-1 block text-xs font-medium text-zinc-400 dark:text-zinc-500">Description</label>
                   {editingDescription ? (
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 mt-1">
                       <textarea
                         autoFocus
                         value={descValue}
                         onChange={(e) => setDescValue(e.target.value)}
-                        rows={3}
-                        className="w-full rounded-lg border border-zinc-300 bg-transparent px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-orange-400 dark:border-zinc-700 dark:text-zinc-100"
+                        rows={4}
+                        className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700/50 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:ring-zinc-600 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-700"
                       />
-                      <div className="flex justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => setEditingDescription(false)}>Cancel</Button>
-                        <Button size="sm" onClick={handleSaveDescription}>Save</Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          onClick={() => setEditingDescription(false)}
+                          disabled={isSavingDescription}
+                          className="h-8 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                        >
+                          Cancel
+                        </Button>
+                        <Button 
+                          size="sm" 
+                          onClick={handleSaveDescription}
+                          disabled={isSavingDescription}
+                          className="h-8 px-4 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 shadow-sm transition-all"
+                        >
+                          {isSavingDescription ? (
+                            <>
+                              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
+                        </Button>
                       </div>
                     </div>
                   ) : (
@@ -309,7 +342,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                         }
                       }}
                     >
-                      {doc.description ? doc.description : (
+                      {descValue ? descValue : (
                         isGenerating
                           ? "Generating description..."
                           : "Click to add description"
@@ -322,24 +355,36 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                 <div>
                   <label className="mb-1 block text-xs font-medium text-zinc-400 dark:text-zinc-500">Folder</label>
                   {editingFolder ? (
-                    <select
-                      autoFocus
-                      value={doc.folder}
-                      onChange={(e) => handleFolderChange(e.target.value)}
-                      onBlur={() => setEditingFolder(false)}
-                      className="w-full rounded-lg border border-zinc-300 bg-white px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-orange-400 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
-                    >
-                      {FOLDERS.map((f) => (
-                        <option key={f} value={f}>{f}</option>
-                      ))}
-                    </select>
+                    <div className="relative">
+                      <select
+                        autoFocus
+                        value={folderValue}
+                        onChange={(e) => handleFolderChange(e.target.value)}
+                        onBlur={() => setEditingFolder(false)}
+                        disabled={isSavingFolder}
+                        className="w-full appearance-none rounded-lg border border-zinc-200 bg-white pl-3 pr-10 py-1.5 text-sm text-zinc-900 shadow-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700/50 dark:bg-zinc-900 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:ring-zinc-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {FOLDERS.map((f) => (
+                          <option key={f} value={f}>{f}</option>
+                        ))}
+                      </select>
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3">
+                        {isSavingFolder ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-zinc-400" />
+                        ) : (
+                          <svg className="h-4 w-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                          </svg>
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <Badge
                       variant="outline"
                       className="cursor-pointer hover:border-orange-400"
                       onClick={() => setEditingFolder(true)}
                     >
-                      {doc.folder}
+                      {folderValue || "Uncategorized"}
                     </Badge>
                   )}
                 </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { useQuery, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Calendar, Download, AlertCircle, Loader2, ChevronDown } from 'lucide-react';
+import { Calendar, Download, AlertCircle, Loader2, ChevronDown, Info } from 'lucide-react';
 import { useSocket } from '@/providers/SocketProvider';
 import { Button } from '@/components/ui/button';
 import { AnalyticsOverview } from '@/components/analytics/AnalyticsOverview';
@@ -138,14 +138,18 @@ function AnalyticsContent() {
             animate={{ opacity: 1, y: 0 }}
             className="flex flex-col space-y-1"
           >
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50 flex items-center space-x-2">
+            <h1 className="text-3xl font-bold tracking-tight text-zinc-950 dark:text-zinc-50 flex items-center gap-2">
               Analytics & Insights
+              <div className="relative group flex items-center">
+                <Info className="h-5 w-5 text-orange-500 hover:text-orange-600 dark:text-red-500 dark:hover:text-red-400 cursor-pointer transition-colors" />
+                <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-64 p-4 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-300 text-xs rounded-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 pointer-events-none text-left font-normal leading-relaxed">
+                  <p>
+                    <span className="font-semibold text-orange-600 dark:text-red-500">Note:</span> All analytics data is recorded and grouped according to standard UTC time.
+                  </p>
+                </div>
+              </div>
             </h1>
             <p className="text-zinc-500 dark:text-zinc-400 text-sm">Real-time metrics and AI usage trends.</p>
-            <p className="mt-2 text-xs font-medium text-orange-600 dark:text-orange-400">
-              <AlertCircle className="inline-block mr-1 h-3 w-3 -mt-0.5" />
-              Note: All analytics data is recorded and grouped according to standard UTC time.
-            </p>
           </motion.div>
 
           <div className="flex flex-col xl:flex-row items-start xl:items-center gap-4 w-full md:w-auto mt-4 md:mt-0">

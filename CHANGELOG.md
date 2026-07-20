@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v1.1.0] - React Query Caching & UI Performance Polish
+
+### Added
+- **Global Caching Engine:** Migrated the entire application state to React Query with a strict 60-second `staleTime` and background re-fetching for hyper-optimized network performance.
+- **Optimistic UI Updates:** Edit actions on the Knowledge Base (Renaming, Description updates, Folder changes) and Document Card deletions now execute instantly on the client via `queryClient.setQueryData`, eliminating perceived network latency.
+- **Upload Queue Editing:** Added the ability to inline-edit document titles directly within the Upload Modal queue before triggering the upload.
+
+### Changed
+- **Framer Motion Layout Optimization:** Fixed severe grid jumping bugs in Knowledge Base and Contacts by implementing `<AnimatePresence mode="popLayout">`, allowing deleted cards to fade seamlessly while the surrounding grid glides naturally into place.
+- **CSS Transition Conflicts:** Removed generic `transition-all` classes across all interactive cards in favor of explicit `transition-colors` and `transition-shadow` to prevent layout calculations from clashing with Framer Motion.
+- **UI & Tooltip Polish:** Cleaned up heavy inline warning text across Knowledge Base and Analytics pages by migrating them into sleek, properly-themed hover tooltips. Upgraded UI consistency across buttons and icons.
+- **Strict TypeScript Typing:** Resolved legacy `any` types in `Contacts.tsx` and mapping functions to enforce strict `Contact` and `Organization` interfaces.
+
 ## [Backend v1.2.0] - AI Document Description & Metadata Retrieval Pipeline
 
 ### Added
