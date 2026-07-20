@@ -137,6 +137,12 @@ export default function DashboardPage() {
   const { socket, isConnected } = useSocket();
   const queryClient = useQueryClient();
   const [selectedFeature, setSelectedFeature] = useState<ComingSoonFeature | null>(null);
+  const [, forceRender] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => forceRender(x => x + 1), 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ['dashboard-stats'],
