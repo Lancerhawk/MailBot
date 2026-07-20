@@ -8,10 +8,7 @@ export const apiLimiter = rateLimit({
   message: 'Too many requests from this IP, please try again after 1 minute',
   keyGenerator: (req) => {
     if (!req.ip) return 'unknown';
-    if (req.ip.includes('.') && req.ip.includes(':')) {
-      return req.ip.split(':')[0];
-    }
-    return req.ip;
+    return req.ip.replace(/^::ffff:/, '');
   },
   skip: (req) => req.path.includes('/status'),
 });
