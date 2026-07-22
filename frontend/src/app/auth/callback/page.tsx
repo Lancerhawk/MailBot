@@ -16,7 +16,9 @@ function AuthCallbackContent() {
       
       if (success === "true") {
         await refreshAuth();
-        router.push("/dashboard");
+        const redirectTo = sessionStorage.getItem("mailbot_redirect") || "/dashboard";
+        sessionStorage.removeItem("mailbot_redirect");
+        router.push(redirectTo);
       } else {
         router.push("/?error=auth_failed");
       }

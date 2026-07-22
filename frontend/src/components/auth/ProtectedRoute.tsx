@@ -11,6 +11,7 @@ export function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!isLoading && !user && pathname !== "/") {
+      sessionStorage.setItem("mailbot_redirect", pathname);
       router.push("/");
     }
   }, [user, isLoading, router, pathname]);

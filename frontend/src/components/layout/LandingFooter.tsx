@@ -21,25 +21,23 @@ export default function LandingFooter() {
 
         <div className="flex flex-col gap-4">
           <h4 className="font-semibold text-zinc-900 dark:text-white">Product</h4>
-          <Link href="/#features" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Features</Link>
-          <Link href="/pricing" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Pricing</Link>
-          <Link href="/changelog" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Changelog</Link>
-          <Link href="/reviews" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Reviews</Link>
+          <Link href="/dashboard" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Dashboard</Link>
+          <Link href="/inbox" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Inbox</Link>
+          <Link href="/knowledge" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Knowledge Base</Link>
+          <Link href="/analytics" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Analytics</Link>
         </div>
 
         <div className="flex flex-col gap-4">
           <h4 className="font-semibold text-zinc-900 dark:text-white">Resources</h4>
-          <Link href="/docs" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Documentation</Link>
           <Link href="/faq" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">FAQ</Link>
-          <Link href="/blog" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Blog</Link>
-          <Link href="/support" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Support</Link>
+          <Link href="/contacts" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Contacts</Link>
+          <Link href="/settings" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Settings</Link>
         </div>
 
         <div className="flex flex-col gap-4">
           <h4 className="font-semibold text-zinc-900 dark:text-white">Legal</h4>
           <Link href="/privacy" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Privacy Policy</Link>
           <Link href="/terms" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Terms of Service</Link>
-          <Link href="/cookies" className="text-sm text-zinc-500 dark:text-zinc-400 hover:text-orange-500 transition-colors">Cookie Policy</Link>
         </div>
       </div>
 
