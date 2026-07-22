@@ -167,7 +167,9 @@ export default function DashboardPage() {
         syncStatus: statusData.activeSync ? "SYNCING" : statusData.connectionStatus,
         recentThreads: threadsData.threads,
       } as DashboardStats;
-    }
+    },
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: 'always',
   });
 
   useEffect(() => {
