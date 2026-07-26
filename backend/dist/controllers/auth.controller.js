@@ -48,7 +48,7 @@ exports.googleCallback = (0, catchAsync_1.catchAsync)(async (req, res) => {
             });
         });
         const watchService = new watch_renewal_service_1.WatchRenewalService();
-        watchService.registerWatch(user.id).catch((err) => console.error("Watch registration error:", err));
+        watchService.registerWatch(user.id, true).catch((err) => console.error("Watch registration error:", err));
         res.redirect(`${env_1.env.FRONTEND_URL}/auth/callback?success=true`);
     }
     catch (err) {

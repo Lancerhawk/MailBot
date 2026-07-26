@@ -59,7 +59,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
     });
 
     const watchService = new WatchRenewalService();
-    watchService.registerWatch(user.id).catch((err: unknown) => console.error("Watch registration error:", err));
+    watchService.registerWatch(user.id, true).catch((err: unknown) => console.error("Watch registration error:", err));
 
     res.redirect(`${env.FRONTEND_URL}/auth/callback?success=true`);
   } catch (err) {
