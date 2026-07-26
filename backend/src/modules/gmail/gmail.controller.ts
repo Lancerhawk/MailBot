@@ -288,7 +288,7 @@ export class GmailController {
     }
   }
 
-  async debugHistory(req: Request, res: Response) {
+  async debugState(req: Request, res: Response) {
     const userId = req.session.userId;
     if (!userId) throw new ApiError(401, 'Unauthorized');
     try {
@@ -297,16 +297,24 @@ export class GmailController {
       const startHistoryId = conn.lastHistoryId ? conn.lastHistoryId.toString() : '0';
 
       const client = await this.clientService.getAuthenticatedClient(userId);
+      
+      const profileRes = await client.users.getProfile({ userId: 'me' });
+      
       const historyRes = await client.users.history.list({
         userId: 'me',
         startHistoryId
       });
 
-      console.log(`[Debug History] Full Gmail Response for user ${userId} (startHistoryId: ${startHistoryId}):`, JSON.stringify(historyRes.data, null, 2));
-      res.json({ status: 'success', data: historyRes.data, storedStartHistoryId: startHistoryId });
+      console.log(`[Debug State] Profile historyId: ${profileRes.data.historyId} | startHistoryId: ${startHistoryId}`);
+      res.json({ 
+        status: 'success', 
+        profileHistoryId: profileRes.data.historyId,
+        storedStartHistoryId: startHistoryId,
+        historyData: historyRes.data 
+      });
     } catch (err: unknown) {
       const error = err as Error & { statusCode?: number };
-      console.error(`[Debug History Error]:`, error);
+      console.error(`[Debug State Error]:`, error);
       res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
     }
   }
