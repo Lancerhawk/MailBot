@@ -266,5 +266,28 @@ class GmailController {
             res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
         }
     }
+    async debugHistory(req, res) {
+        const userId = req.session.userId;
+        if (!userId)
+            throw new ApiError_1.ApiError(401, 'Unauthorized');
+        try {
+            const conn = await this.clientService.getConnection(userId);
+            if (!conn)
+                throw new ApiError_1.ApiError(404, 'Connection not found');
+            const startHistoryId = conn.lastHistoryId ? conn.lastHistoryId.toString() : '0';
+            const client = await this.clientService.getAuthenticatedClient(userId);
+            const historyRes = await client.users.history.list({
+                userId: 'me',
+                startHistoryId
+            });
+            console.log(`[Debug History] Full Gmail Response for user ${userId} (startHistoryId: ${startHistoryId}):`, JSON.stringify(historyRes.data, null, 2));
+            res.json({ status: 'success', data: historyRes.data, storedStartHistoryId: startHistoryId });
+        }
+        catch (err) {
+            const error = err;
+            console.error(`[Debug History Error]:`, error);
+            res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
+        }
+    }
 }
 exports.GmailController = GmailController;
