@@ -39,11 +39,10 @@ class WatchRenewalService {
             const res = await client.users.watch({
                 userId: 'me',
                 requestBody: {
-                    topicName: this.pubSubTopic,
-                    labelIds: ['INBOX', 'SENT'],
-                    labelFilterAction: 'include'
+                    topicName: this.pubSubTopic
                 }
             });
+            logger_1.logger.info(`[Watch Evidence] User: ${userId} | Response: ${JSON.stringify(res.data)}`);
             const expirationStr = res.data.expiration;
             const watchExpiration = expirationStr ? new Date(parseInt(expirationStr, 10)) : new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
             const historyIdStr = res.data.historyId;

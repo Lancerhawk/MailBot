@@ -164,12 +164,6 @@ class GmailController {
         try {
             const threads = await this.dbService.listThreads(userId, page, limit, filter, search);
             res.json({ status: "success", data: threads });
-            this.clientService.getConnection(userId).then(conn => {
-                if (conn && conn.emailAddress && (!conn.lastSuccessfulSyncAt || Date.now() - new Date(conn.lastSuccessfulSyncAt).getTime() > 45000)) {
-                    const nextHistoryId = conn.lastHistoryId ? BigInt(conn.lastHistoryId) + BigInt(1) : BigInt(0);
-                    this.syncService.processWebhook(conn.emailAddress, nextHistoryId).catch(() => { });
-                }
-            }).catch(() => { });
         }
         catch {
             res.status(500).json({ status: "error", message: "Failed to list threads" });
