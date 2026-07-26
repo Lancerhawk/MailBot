@@ -62,12 +62,17 @@ const getStore = (prefix: string) => {
         if (redisClient && redisClient.isOpen) {
           return redisClient.sendCommand(args);
         }
-        console.warn(`⚠️ [RATE LIMITER FALLBACK] Redis is disconnected! Passing request through for limiter '${prefix}' without Redis check.`);
+        console.warn(`[RATE LIMITER FALLBACK] Redis is disconnected! Passing request through for limiter '${prefix}' without Redis check.`);
         return Promise.reject(new Error("Redis client is not connected"));
       },
     });
   }
   return undefined;
+};
+
+const getClientIp = (req: any): string => {
+  if (!req.ip) return 'unknown';
+  return req.ip.replace(/^::ffff:/, '');
 };
 
 export const apiLimiter = rateLimit({
@@ -77,10 +82,7 @@ export const apiLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Too many requests from this IP, please try again after 1 minute',
   passOnStoreError: true,
-  keyGenerator: (req) => {
-    if (!req.ip) return 'unknown';
-    return req.ip.replace(/^::ffff:/, '');
-  },
+  keyGenerator: getClientIp,
   skip: (req) => req.path.includes('/status'),
   ...(isRedisStore && { store: getStore('api') }),
 });
@@ -92,10 +94,7 @@ export const authLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Too many login attempts from this IP, please try again after 15 minutes',
   passOnStoreError: true,
-  keyGenerator: (req) => {
-    if (!req.ip) return 'unknown';
-    return req.ip.replace(/^::ffff:/, '');
-  },
+  keyGenerator: getClientIp,
   ...(isRedisStore && { store: getStore('auth') }),
 });
 
@@ -106,10 +105,7 @@ export const refreshRateLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Please wait 1 minute before refreshing again.',
   passOnStoreError: true,
-  keyGenerator: (req) => {
-    if (!req.ip) return 'unknown';
-    return req.ip.replace(/^::ffff:/, '');
-  },
+  keyGenerator: getClientIp,
   skip: (req) => req.query.refresh !== 'true',
   ...(isRedisStore && { store: getStore('refresh') }),
 });
@@ -121,9 +117,6 @@ export const regenerateLimiter = rateLimit({
   legacyHeaders: false,
   message: 'Rate limit exceeded for regeneration. Please wait 5 minutes.',
   passOnStoreError: true,
-  keyGenerator: (req) => {
-    if (!req.ip) return 'unknown';
-    return req.ip.replace(/^::ffff:/, '');
-  },
+  keyGenerator: getClientIp,
   ...(isRedisStore && { store: getStore('regenerate') }),
 });

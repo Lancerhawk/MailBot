@@ -65,6 +65,11 @@ const getStore = (prefix) => {
     }
     return undefined;
 };
+const getClientIp = (req) => {
+    if (!req.ip)
+        return 'unknown';
+    return req.ip.replace(/^::ffff:/, '');
+};
 exports.apiLimiter = (0, express_rate_limit_1.default)({
     windowMs: 1 * 60 * 1000,
     limit: 300,
@@ -72,11 +77,7 @@ exports.apiLimiter = (0, express_rate_limit_1.default)({
     legacyHeaders: false,
     message: 'Too many requests from this IP, please try again after 1 minute',
     passOnStoreError: true,
-    keyGenerator: (req) => {
-        if (!req.ip)
-            return 'unknown';
-        return req.ip.replace(/^::ffff:/, '');
-    },
+    keyGenerator: getClientIp,
     skip: (req) => req.path.includes('/status'),
     ...(isRedisStore && { store: getStore('api') }),
 });
@@ -87,11 +88,7 @@ exports.authLimiter = (0, express_rate_limit_1.default)({
     legacyHeaders: false,
     message: 'Too many login attempts from this IP, please try again after 15 minutes',
     passOnStoreError: true,
-    keyGenerator: (req) => {
-        if (!req.ip)
-            return 'unknown';
-        return req.ip.replace(/^::ffff:/, '');
-    },
+    keyGenerator: getClientIp,
     ...(isRedisStore && { store: getStore('auth') }),
 });
 exports.refreshRateLimiter = (0, express_rate_limit_1.default)({
@@ -101,11 +98,7 @@ exports.refreshRateLimiter = (0, express_rate_limit_1.default)({
     legacyHeaders: false,
     message: 'Please wait 1 minute before refreshing again.',
     passOnStoreError: true,
-    keyGenerator: (req) => {
-        if (!req.ip)
-            return 'unknown';
-        return req.ip.replace(/^::ffff:/, '');
-    },
+    keyGenerator: getClientIp,
     skip: (req) => req.query.refresh !== 'true',
     ...(isRedisStore && { store: getStore('refresh') }),
 });
@@ -116,10 +109,6 @@ exports.regenerateLimiter = (0, express_rate_limit_1.default)({
     legacyHeaders: false,
     message: 'Rate limit exceeded for regeneration. Please wait 5 minutes.',
     passOnStoreError: true,
-    keyGenerator: (req) => {
-        if (!req.ip)
-            return 'unknown';
-        return req.ip.replace(/^::ffff:/, '');
-    },
+    keyGenerator: getClientIp,
     ...(isRedisStore && { store: getStore('regenerate') }),
 });
