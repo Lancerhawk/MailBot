@@ -1,6 +1,6 @@
 import { google, gmail_v1 } from "googleapis";
 import { prisma } from "../../../lib/prisma";
-import { decryptToken } from "../../../utils/encryption";
+import { decryptToken, encryptToken } from "../../../utils/encryption";
 import { env } from "../../../config/env";
 
 export class GmailClientService {
@@ -30,6 +30,31 @@ export class GmailClientService {
 
     oauth2Client.on('tokens', async (tokens) => {
       if (tokens.access_token) {
+        try {
+          const dataToUpdate: {
+            encryptedAccessToken: string;
+            accessTokenExpiresAt: Date;
+            encryptedRefreshToken?: string;
+          } = {
+            encryptedAccessToken: encryptToken(tokens.access_token),
+            accessTokenExpiresAt: tokens.expiry_date
+              ? new Date(tokens.expiry_date)
+              : new Date(Date.now() + 3600 * 1000),
+          };
+
+          if (tokens.refresh_token) {
+            dataToUpdate.encryptedRefreshToken = encryptToken(tokens.refresh_token);
+          }
+
+          await prisma.emailAccountConnection.update({
+            where: { id: connection.id },
+            data: dataToUpdate,
+          });
+
+          console.log(`[OAuth Refresh] Updated refreshed access token in DB for connection ${connection.id}`);
+        } catch (error) {
+          console.error(`[OAuth Refresh Error] Failed to update token in DB for connection ${connection.id}:`, error);
+        }
       }
     });
 
