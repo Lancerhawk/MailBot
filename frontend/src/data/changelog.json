@@ -1,6 +1,36 @@
 {
   "versions": [
     {
+      "id": "be-v1.3.0",
+      "version": "v1.3.0",
+      "date": "2026-07-26",
+      "title": "Shared Redis Rate Limiting & Outage Resiliency",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Shared Redis Rate-Limit Store",
+          "description": "Added support for storing rate limits in a central Redis instance (RATE_LIMIT_STORE=\"redis\") so multiple backend servers can share request counts."
+        },
+        {
+          "title": "Outage Fallback (Fail-Open)",
+          "description": "Added fail-open protection (passOnStoreError: true) and connection state checks so requests pass through without hanging if Redis is offline."
+        },
+        {
+          "title": "Redis Connection Logging",
+          "description": "Added event listeners (error, reconnecting, ready) to log connection state changes and fallback mode warnings."
+        },
+        {
+          "title": "Rate Limiter Prefix Isolation",
+          "description": "Created separate RedisStore instances with unique prefixes for each limiter to avoid store reuse validation errors."
+        },
+        {
+          "title": "Default IPv4 Connection",
+          "description": "Changed default REDIS_URL in .env to 127.0.0.1 instead of localhost to prevent IPv6 resolution timeouts on Windows Docker setups."
+        }
+      ]
+    },
+    {
       "id": "fe-v1.1.0",
       "version": "v1.1.0",
       "date": "2026-07-20",
@@ -44,7 +74,7 @@
       "date": "2026-07-18",
       "title": "AI Document Description & Metadata Retrieval Pipeline",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Automatic AI Document Description Generation",

@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.3.0] - Shared Redis Rate Limiting & Outage Resiliency
+
+### Added
+- **Shared Redis Rate-Limit Store:** Added support for storing rate limits in a central Redis instance (`RATE_LIMIT_STORE="redis"`) so multiple backend servers can share request counts.
+- **Outage Fallback (Fail-Open):** Added fail-open protection (`passOnStoreError: true`) and connection state checks so requests pass through without hanging if Redis is offline.
+- **Redis Connection Logging:** Added event listeners (`error`, `reconnecting`, `ready`) to log connection state changes and fallback mode warnings.
+
+### Changed
+- **Rate Limiter Prefix Isolation:** Created separate `RedisStore` instances with unique prefixes (`rate-limit:api:`, `rate-limit:auth:`, etc.) for each limiter to avoid store reuse validation errors.
+- **IP Parsing Normalization:** Standardized `req.ip.replace(/^::ffff:/, '')` across all rate limiters for consistent client IP handling.
+- **Default IPv4 Connection:** Changed default `REDIS_URL` in `.env` to `127.0.0.1` instead of `localhost` to prevent IPv6 resolution timeouts on Windows Docker setups.
+
 ## [Frontend v1.1.0] - React Query Caching & UI Performance Polish
 
 ### Added
