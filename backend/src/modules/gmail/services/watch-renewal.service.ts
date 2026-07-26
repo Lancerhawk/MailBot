@@ -48,8 +48,6 @@ export class WatchRenewalService {
         }
       });
 
-      logger.info(`[Watch Evidence] User: ${userId} | Response: ${JSON.stringify(res.data)}`);
-
       const expirationStr = res.data.expiration;
       const watchExpiration = expirationStr ? new Date(parseInt(expirationStr, 10)) : new Date(Date.now() + 6 * 24 * 60 * 60 * 1000);
 
