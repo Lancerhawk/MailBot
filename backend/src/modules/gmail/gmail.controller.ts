@@ -284,6 +284,7 @@ export class GmailController {
       res.json({ status: 'success' });
     } catch (err: unknown) {
       const error = err as Error & { statusCode?: number };
+      res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
     }
   }
 }

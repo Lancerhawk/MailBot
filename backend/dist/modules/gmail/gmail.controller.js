@@ -263,6 +263,7 @@ class GmailController {
         }
         catch (err) {
             const error = err;
+            res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
         }
     }
 }
