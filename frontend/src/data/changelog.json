@@ -1,12 +1,42 @@
 {
   "versions": [
     {
+      "id": "be-v1.4.0",
+      "version": "v1.4.0",
+      "date": "2026-07-27",
+      "title": "Security Hardening & Authentication Verification",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Gmail Webhook OIDC Verification",
+          "description": "Implemented strict Google OIDC ID token verification (OAuth2Client.verifyIdToken) for incoming Pub/Sub push notifications to prevent unauthenticated webhook requests."
+        },
+        {
+          "title": "Socket.IO Session Authentication",
+          "description": "Added middleware to verify Express sessions on Socket.IO handshakes and automatically join sockets to user-scoped rooms, eliminating client-side userId spoofing."
+        },
+        {
+          "title": "Active CSRF Protection",
+          "description": "Enforced custom header / double-submit cookie CSRF validation across state-changing API routes."
+        },
+        {
+          "title": "OAuth Access Token Persistence",
+          "description": "Added automatic database updates for refreshed OAuth access tokens during Gmail API token renewals."
+        },
+        {
+          "title": "Unified Rate Limiter Key Generator",
+          "description": "Refactored rate limiter key generation into a shared helper (getClientIp) that cleanly strips IPv4-mapped IPv6 prefixes (::ffff:), preventing bucket collisions across limiters."
+        }
+      ]
+    },
+    {
       "id": "be-v1.3.0",
       "version": "v1.3.0",
       "date": "2026-07-26",
       "title": "Shared Redis Rate Limiting & Outage Resiliency",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Shared Redis Rate-Limit Store",

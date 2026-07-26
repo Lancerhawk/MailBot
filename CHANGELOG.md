@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.4.0] - Security Hardening & Authentication Verification
+
+### Added
+- **Gmail Webhook OIDC Verification:** Implemented strict Google OIDC ID token verification (`OAuth2Client.verifyIdToken`) for incoming Pub/Sub push notifications to prevent unauthenticated webhook requests.
+- **Socket.IO Session Authentication:** Added middleware to verify Express sessions on Socket.IO handshakes and automatically join sockets to user-scoped rooms, eliminating client-side `userId` spoofing.
+- **Active CSRF Protection:** Enforced custom header / double-submit cookie CSRF validation across state-changing API routes.
+- **OAuth Access Token Persistence:** Added automatic database updates for refreshed OAuth access tokens during Gmail API token renewals.
+
+### Changed
+- **Unified Rate Limiter Key Generator:** Refactored rate limiter key generation into a shared helper (`getClientIp`) that cleanly strips IPv4-mapped IPv6 prefixes (`::ffff:`), preventing bucket collisions across limiters.
+
 ## [Backend v1.3.0] - Shared Redis Rate Limiting & Outage Resiliency
 
 ### Added
