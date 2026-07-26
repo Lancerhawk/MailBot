@@ -22,11 +22,20 @@ class WatchRenewalService {
                 return;
             }
         }
-        await this.performWatchRegistration(userId);
+        await this.performWatchRegistration(userId, 1, force);
     }
-    async performWatchRegistration(userId, attempt = 1) {
+    async performWatchRegistration(userId, attempt = 1, force = false) {
         try {
             const client = await gmailClient.getAuthenticatedClient(userId);
+            if (force) {
+                try {
+                    await client.users.stop({ userId: 'me' });
+                    logger_1.logger.info(`[WatchRenewal] Cleared old Gmail watch state for user ${userId}`);
+                }
+                catch (stopErr) {
+                    logger_1.logger.warn(`[WatchRenewal] Could not stop existing watch (benign if none existed): ${stopErr?.message}`);
+                }
+            }
             const res = await client.users.watch({
                 userId: 'me',
                 requestBody: {
