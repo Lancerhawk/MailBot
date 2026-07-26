@@ -5,12 +5,14 @@ import { GmailSyncService } from "./services/gmail.sync.service";
 import { GmailDbService } from "./services/gmail.db.service";
 import { GmailActionsService } from "./services/gmail.actions.service";
 import { GmailSendService } from "./services/gmail.send.service";
+import { GmailClientService } from "./services/gmail.client.service";
 import { ApiError } from "../../utils/ApiError";
 import { WatchRenewalService } from "./services/watch-renewal.service";
 
 export class GmailController {
   private syncService = new GmailSyncService();
   private dbService = new GmailDbService();
+  private clientService = new GmailClientService();
   private actionsService = new GmailActionsService();
   private sendService = new GmailSendService();
   private oauth2Client = new OAuth2Client();
@@ -77,7 +79,7 @@ export class GmailController {
         return res.status(400).send('Invalid payload');
       }
 
-      console.log(`[Gmail Webhook] 🔔 Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
+      console.log(`[Gmail Webhook] Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
 
       res.status(200).send('OK');
 
@@ -182,6 +184,13 @@ export class GmailController {
     try {
       const threads = await this.dbService.listThreads(userId, page, limit, filter, search);
       res.json({ status: "success", data: threads });
+
+      this.clientService.getConnection(userId).then(conn => {
+        if (conn && conn.emailAddress && (!conn.lastSuccessfulSyncAt || Date.now() - new Date(conn.lastSuccessfulSyncAt).getTime() > 45000)) {
+          const nextHistoryId = conn.lastHistoryId ? BigInt(conn.lastHistoryId) + BigInt(1) : BigInt(0);
+          this.syncService.processWebhook(conn.emailAddress, nextHistoryId).catch(() => { });
+        }
+      }).catch(() => { });
     } catch {
       res.status(500).json({ status: "error", message: "Failed to list threads" });
     }

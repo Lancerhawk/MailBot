@@ -39,7 +39,9 @@ class WatchRenewalService {
             const res = await client.users.watch({
                 userId: 'me',
                 requestBody: {
-                    topicName: this.pubSubTopic
+                    topicName: this.pubSubTopic,
+                    labelIds: ['INBOX', 'SENT'],
+                    labelFilterAction: 'include'
                 }
             });
             const expirationStr = res.data.expiration;

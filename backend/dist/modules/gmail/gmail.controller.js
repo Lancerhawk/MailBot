@@ -7,11 +7,13 @@ const gmail_sync_service_1 = require("./services/gmail.sync.service");
 const gmail_db_service_1 = require("./services/gmail.db.service");
 const gmail_actions_service_1 = require("./services/gmail.actions.service");
 const gmail_send_service_1 = require("./services/gmail.send.service");
+const gmail_client_service_1 = require("./services/gmail.client.service");
 const ApiError_1 = require("../../utils/ApiError");
 const watch_renewal_service_1 = require("./services/watch-renewal.service");
 class GmailController {
     syncService = new gmail_sync_service_1.GmailSyncService();
     dbService = new gmail_db_service_1.GmailDbService();
+    clientService = new gmail_client_service_1.GmailClientService();
     actionsService = new gmail_actions_service_1.GmailActionsService();
     sendService = new gmail_send_service_1.GmailSendService();
     oauth2Client = new google_auth_library_1.OAuth2Client();
@@ -69,7 +71,7 @@ class GmailController {
                 console.warn('[Gmail Webhook] Missing emailAddress or historyId in decoded payload:', payload);
                 return res.status(400).send('Invalid payload');
             }
-            console.log(`[Gmail Webhook] 🔔 Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
+            console.log(`[Gmail Webhook] Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
             res.status(200).send('OK');
             this.syncService.processWebhook(emailAddress, BigInt(historyId)).catch(err => {
                 console.error(`Webhook processing failed for ${emailAddress}:`, err);
@@ -162,6 +164,12 @@ class GmailController {
         try {
             const threads = await this.dbService.listThreads(userId, page, limit, filter, search);
             res.json({ status: "success", data: threads });
+            this.clientService.getConnection(userId).then(conn => {
+                if (conn && conn.emailAddress && (!conn.lastSuccessfulSyncAt || Date.now() - new Date(conn.lastSuccessfulSyncAt).getTime() > 45000)) {
+                    const nextHistoryId = conn.lastHistoryId ? BigInt(conn.lastHistoryId) + BigInt(1) : BigInt(0);
+                    this.syncService.processWebhook(conn.emailAddress, nextHistoryId).catch(() => { });
+                }
+            }).catch(() => { });
         }
         catch {
             res.status(500).json({ status: "error", message: "Failed to list threads" });

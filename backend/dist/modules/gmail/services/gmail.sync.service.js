@@ -279,7 +279,7 @@ class GmailSyncService {
             return;
         }
         const userId = connection.userId;
-        console.log(`[Gmail Webhook] ⚡ Triggering incremental sync for ${emailAddress} (userId: ${userId}, newHistoryId: ${newHistoryId})`);
+        console.log(`[Gmail Webhook] Triggering incremental sync for ${emailAddress} (userId: ${userId}, newHistoryId: ${newHistoryId})`);
         if (this.isSyncRunning(userId)) {
             console.log(`Sync already running for ${userId}, queuing concurrent webhook execution.`);
             const currentPending = pendingWebhooksMap.get(userId) || BigInt(0);
