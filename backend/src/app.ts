@@ -33,23 +33,23 @@ app.use(helmet());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(
-  session({
-    store: new PgStore({
-      pool: pgPool,
-      tableName: 'session',
-    }),
-    secret: env.SESSION_SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      secure: env.NODE_ENV === 'production',
-      httpOnly: true,
-      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
-    },
-  })
-);
+export const sessionMiddleware = session({
+  store: new PgStore({
+    pool: pgPool,
+    tableName: 'session',
+  }),
+  secret: env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    secure: env.NODE_ENV === 'production',
+    httpOnly: true,
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+  },
+});
+
+app.use(sessionMiddleware);
 app.use(compression());
 app.use(cors({ 
   origin: env.FRONTEND_URL, 

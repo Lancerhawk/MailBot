@@ -3,6 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.sessionMiddleware = void 0;
 const express_1 = __importDefault(require("express"));
 const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
@@ -34,7 +35,7 @@ app.use((0, helmet_1.default)());
 app.use(express_1.default.json());
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
-app.use((0, express_session_1.default)({
+exports.sessionMiddleware = (0, express_session_1.default)({
     store: new PgStore({
         pool: pgPool,
         tableName: 'session',
@@ -48,7 +49,8 @@ app.use((0, express_session_1.default)({
         httpOnly: true,
         sameSite: env_1.env.NODE_ENV === 'production' ? 'none' : 'lax',
     },
-}));
+});
+app.use(exports.sessionMiddleware);
 app.use((0, compression_1.default)());
 app.use((0, cors_1.default)({
     origin: env_1.env.FRONTEND_URL,
