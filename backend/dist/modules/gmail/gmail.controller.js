@@ -8,6 +8,7 @@ const gmail_db_service_1 = require("./services/gmail.db.service");
 const gmail_actions_service_1 = require("./services/gmail.actions.service");
 const gmail_send_service_1 = require("./services/gmail.send.service");
 const ApiError_1 = require("../../utils/ApiError");
+const watch_renewal_service_1 = require("./services/watch-renewal.service");
 class GmailController {
     syncService = new gmail_sync_service_1.GmailSyncService();
     dbService = new gmail_db_service_1.GmailDbService();
@@ -49,6 +50,7 @@ class GmailController {
     }
     async webhook(req, res) {
         try {
+            console.log(`[Gmail Webhook] Received POST request from IP: ${req.ip}`);
             const isAuthorized = await this.verifyWebhookAuth(req);
             if (!isAuthorized) {
                 console.warn(`[Webhook Security] Rejected unauthorized webhook POST from IP: ${req.ip}`);
@@ -56,6 +58,7 @@ class GmailController {
             }
             const message = req.body?.message;
             if (!message || !message.data) {
+                console.warn('[Gmail Webhook] Missing message or message.data in request body');
                 return res.status(400).send('Bad Request');
             }
             const decodedData = Buffer.from(message.data, 'base64').toString('utf8');
@@ -63,8 +66,10 @@ class GmailController {
             const emailAddress = payload.emailAddress;
             const historyId = payload.historyId;
             if (!emailAddress || !historyId) {
+                console.warn('[Gmail Webhook] Missing emailAddress or historyId in decoded payload:', payload);
                 return res.status(400).send('Invalid payload');
             }
+            console.log(`[Gmail Webhook] 🔔 Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
             res.status(200).send('OK');
             this.syncService.processWebhook(emailAddress, BigInt(historyId)).catch(err => {
                 console.error(`Webhook processing failed for ${emailAddress}:`, err);
@@ -108,6 +113,18 @@ class GmailController {
         catch (error) {
             console.error(error);
             res.status(500).json({ status: "error", message: "Failed to stop synchronization" });
+        }
+    }
+    async registerWatch(req, res) {
+        const userId = req.session.userId;
+        try {
+            const watchService = new watch_renewal_service_1.WatchRenewalService();
+            await watchService.registerWatch(userId);
+            res.json({ status: "success", message: "Gmail watch registered successfully" });
+        }
+        catch (error) {
+            console.error('Watch registration failed:', error);
+            res.status(500).json({ status: "error", message: error?.message || "Failed to register Gmail watch" });
         }
     }
     async getStatus(req, res) {

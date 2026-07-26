@@ -10,6 +10,7 @@ router.post("/webhook", gmailController.webhook.bind(gmailController));
 router.use(auth_middleware_1.requireAuth);
 router.post("/sync", gmailController.sync.bind(gmailController));
 router.post("/sync/stop", gmailController.stopSync.bind(gmailController));
+router.post("/watch/register", gmailController.registerWatch.bind(gmailController));
 router.get("/status", gmailController.getStatus.bind(gmailController));
 router.get("/profile", gmailController.getProfile.bind(gmailController));
 router.get("/threads", rateLimiter_1.refreshRateLimiter, gmailController.listThreads.bind(gmailController));

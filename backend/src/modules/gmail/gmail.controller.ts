@@ -6,6 +6,7 @@ import { GmailDbService } from "./services/gmail.db.service";
 import { GmailActionsService } from "./services/gmail.actions.service";
 import { GmailSendService } from "./services/gmail.send.service";
 import { ApiError } from "../../utils/ApiError";
+import { WatchRenewalService } from "./services/watch-renewal.service";
 
 export class GmailController {
   private syncService = new GmailSyncService();
@@ -52,6 +53,7 @@ export class GmailController {
 
   async webhook(req: Request, res: Response) {
     try {
+      console.log(`[Gmail Webhook] Received POST request from IP: ${req.ip}`);
       const isAuthorized = await this.verifyWebhookAuth(req);
       if (!isAuthorized) {
         console.warn(`[Webhook Security] Rejected unauthorized webhook POST from IP: ${req.ip}`);
@@ -60,6 +62,7 @@ export class GmailController {
 
       const message = req.body?.message;
       if (!message || !message.data) {
+        console.warn('[Gmail Webhook] Missing message or message.data in request body');
         return res.status(400).send('Bad Request');
       }
 
@@ -70,8 +73,11 @@ export class GmailController {
       const historyId = payload.historyId;
 
       if (!emailAddress || !historyId) {
+        console.warn('[Gmail Webhook] Missing emailAddress or historyId in decoded payload:', payload);
         return res.status(400).send('Invalid payload');
       }
+
+      console.log(`[Gmail Webhook] 🔔 Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
 
       res.status(200).send('OK');
 
@@ -120,6 +126,18 @@ export class GmailController {
     } catch (error) {
       console.error(error);
       res.status(500).json({ status: "error", message: "Failed to stop synchronization" });
+    }
+  }
+
+  async registerWatch(req: Request, res: Response) {
+    const userId = req.session.userId!;
+    try {
+      const watchService = new WatchRenewalService();
+      await watchService.registerWatch(userId);
+      res.json({ status: "success", message: "Gmail watch registered successfully" });
+    } catch (error: any) {
+      console.error('Watch registration failed:', error);
+      res.status(500).json({ status: "error", message: error?.message || "Failed to register Gmail watch" });
     }
   }
 

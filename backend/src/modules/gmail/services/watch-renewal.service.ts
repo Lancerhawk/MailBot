@@ -53,7 +53,19 @@ export class WatchRenewalService {
       });
 
       logger.info(`Successfully registered Gmail Watch for user ${userId}. Expires at ${watchExpiration}`);
-    } catch (error) {
+    } catch (error: any) {
+      const errorMsg = error?.message || JSON.stringify(error || {});
+      const isScopeError = errorMsg.includes('insufficientPermissions') || errorMsg.includes('ACCESS_TOKEN_SCOPE_INSUFFICIENT') || error?.code === 403 || error?.code === 401;
+
+      if (isScopeError) {
+        logger.warn(`[WatchRenewal] User ${userId} has insufficient Gmail OAuth scopes or expired token. Skipping retries until re-authentication.`);
+        await prisma.emailAccountConnection.updateMany({
+          where: { userId, provider: 'GMAIL' },
+          data: { syncStatus: SyncStatus.ERROR }
+        });
+        return;
+      }
+
       const isTransient = attempt <= 3;
       if (isTransient) {
         const backoff = Math.pow(2, attempt) * 1000;

@@ -17,7 +17,10 @@ export class GmailDbService {
 
   async getConnectionByEmail(emailAddress: string) {
     return prisma.emailAccountConnection.findFirst({
-      where: { emailAddress, provider: 'GMAIL' }
+      where: {
+        emailAddress: { equals: emailAddress, mode: 'insensitive' },
+        provider: 'GMAIL'
+      }
     });
   }
 

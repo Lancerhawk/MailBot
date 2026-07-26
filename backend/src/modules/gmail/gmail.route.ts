@@ -12,6 +12,7 @@ router.use(requireAuth);
 
 router.post("/sync", gmailController.sync.bind(gmailController));
 router.post("/sync/stop", gmailController.stopSync.bind(gmailController));
+router.post("/watch/register", gmailController.registerWatch.bind(gmailController));
 router.get("/status", gmailController.getStatus.bind(gmailController));
 router.get("/profile", gmailController.getProfile.bind(gmailController));
 router.get("/threads", refreshRateLimiter, gmailController.listThreads.bind(gmailController));

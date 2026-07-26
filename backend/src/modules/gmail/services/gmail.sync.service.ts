@@ -317,15 +317,17 @@ export class GmailSyncService {
   async processWebhook(emailAddress: string, newHistoryId: bigint) {
     const connection = await this.dbService.getConnectionByEmail(emailAddress);
     if (!connection) {
+      console.warn(`[Gmail Webhook] No active database connection found for email: ${emailAddress}`);
       return;
     }
 
     if (connection.lastHistoryId && newHistoryId <= connection.lastHistoryId) {
-      console.log(`Ignoring duplicate webhook for ${emailAddress} (historyId: ${newHistoryId} <= ${connection.lastHistoryId})`);
+      console.log(`[Gmail Webhook] Ignoring duplicate webhook for ${emailAddress} (historyId: ${newHistoryId} <= ${connection.lastHistoryId})`);
       return;
     }
 
     const userId = connection.userId;
+    console.log(`[Gmail Webhook] ⚡ Triggering incremental sync for ${emailAddress} (userId: ${userId}, newHistoryId: ${newHistoryId})`);
     if (this.isSyncRunning(userId)) {
       console.log(`Sync already running for ${userId}, queuing concurrent webhook execution.`);
       const currentPending = pendingWebhooksMap.get(userId) || BigInt(0);
