@@ -13,7 +13,7 @@ export class WatchRenewalService {
   async registerWatch(userId: string): Promise<void> {
     const connection = await gmailClient.getConnection(userId);
     if (!connection) {
-      logger.error(`Cannot register watch: no connection for user ${userId}`);
+      logger.warn(`No active Gmail connection found for user ${userId}. Skipping watch registration.`);
       return;
     }
 

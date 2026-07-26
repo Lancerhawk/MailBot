@@ -1,4 +1,6 @@
 import { Request, Response } from "express";
+import { OAuth2Client } from "google-auth-library";
+import { env } from "../../config/env";
 import { GmailSyncService } from "./services/gmail.sync.service";
 import { GmailDbService } from "./services/gmail.db.service";
 import { GmailActionsService } from "./services/gmail.actions.service";
@@ -10,9 +12,52 @@ export class GmailController {
   private dbService = new GmailDbService();
   private actionsService = new GmailActionsService();
   private sendService = new GmailSendService();
+  private oauth2Client = new OAuth2Client();
+
+  private async verifyWebhookAuth(req: Request): Promise<boolean> {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const idToken = authHeader.split(' ')[1];
+      try {
+        const ticket = await this.oauth2Client.verifyIdToken({
+          idToken,
+          audience: env.GMAIL_WEBHOOK_AUDIENCE || `${env.API_URL}/api/v1/gmail/webhook`,
+        });
+        const payload = ticket.getPayload();
+        if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.warn('[Webhook Security] OIDC verification failed:', (error as Error).message);
+        return false;
+      }
+    }
+
+    if (env.GMAIL_WEBHOOK_SECRET) {
+      const channelToken = req.headers['x-goog-channel-token'] || req.headers['x-webhook-secret'];
+      if (channelToken) {
+        return channelToken === env.GMAIL_WEBHOOK_SECRET;
+      }
+    }
+
+    if (env.GMAIL_WEBHOOK_REQUIRE_OIDC) {
+      console.warn('[Webhook Security] Rejected webhook request: GMAIL_WEBHOOK_REQUIRE_OIDC=true and no valid OIDC token/secret was provided.');
+      return false;
+    }
+
+    console.warn('[Webhook Security] Webhook received without OIDC token. Ensure Pub/Sub OIDC auth is enabled in Google Cloud Console.');
+    return true;
+  }
 
   async webhook(req: Request, res: Response) {
     try {
+      const isAuthorized = await this.verifyWebhookAuth(req);
+      if (!isAuthorized) {
+        console.warn(`[Webhook Security] Rejected unauthorized webhook POST from IP: ${req.ip}`);
+        return res.status(403).send('Forbidden: Invalid webhook authentication');
+      }
+
       const message = req.body?.message;
       if (!message || !message.data) {
         return res.status(400).send('Bad Request');

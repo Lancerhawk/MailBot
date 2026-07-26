@@ -1,6 +1,8 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.GmailController = void 0;
+const google_auth_library_1 = require("google-auth-library");
+const env_1 = require("../../config/env");
 const gmail_sync_service_1 = require("./services/gmail.sync.service");
 const gmail_db_service_1 = require("./services/gmail.db.service");
 const gmail_actions_service_1 = require("./services/gmail.actions.service");
@@ -11,8 +13,47 @@ class GmailController {
     dbService = new gmail_db_service_1.GmailDbService();
     actionsService = new gmail_actions_service_1.GmailActionsService();
     sendService = new gmail_send_service_1.GmailSendService();
+    oauth2Client = new google_auth_library_1.OAuth2Client();
+    async verifyWebhookAuth(req) {
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+            const idToken = authHeader.split(' ')[1];
+            try {
+                const ticket = await this.oauth2Client.verifyIdToken({
+                    idToken,
+                    audience: env_1.env.GMAIL_WEBHOOK_AUDIENCE || `${env_1.env.API_URL}/api/v1/gmail/webhook`,
+                });
+                const payload = ticket.getPayload();
+                if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
+                    return true;
+                }
+                return false;
+            }
+            catch (error) {
+                console.warn('[Webhook Security] OIDC verification failed:', error.message);
+                return false;
+            }
+        }
+        if (env_1.env.GMAIL_WEBHOOK_SECRET) {
+            const channelToken = req.headers['x-goog-channel-token'] || req.headers['x-webhook-secret'];
+            if (channelToken) {
+                return channelToken === env_1.env.GMAIL_WEBHOOK_SECRET;
+            }
+        }
+        if (env_1.env.GMAIL_WEBHOOK_REQUIRE_OIDC) {
+            console.warn('[Webhook Security] Rejected webhook request: GMAIL_WEBHOOK_REQUIRE_OIDC=true and no valid OIDC token/secret was provided.');
+            return false;
+        }
+        console.warn('[Webhook Security] Webhook received without OIDC token. Ensure Pub/Sub OIDC auth is enabled in Google Cloud Console.');
+        return true;
+    }
     async webhook(req, res) {
         try {
+            const isAuthorized = await this.verifyWebhookAuth(req);
+            if (!isAuthorized) {
+                console.warn(`[Webhook Security] Rejected unauthorized webhook POST from IP: ${req.ip}`);
+                return res.status(403).send('Forbidden: Invalid webhook authentication');
+            }
             const message = req.body?.message;
             if (!message || !message.data) {
                 return res.status(400).send('Bad Request');
