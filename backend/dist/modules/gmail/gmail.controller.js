@@ -119,7 +119,7 @@ class GmailController {
         const userId = req.session.userId;
         try {
             const watchService = new watch_renewal_service_1.WatchRenewalService();
-            await watchService.registerWatch(userId);
+            await watchService.registerWatch(userId, true);
             res.json({ status: "success", message: "Gmail watch registered successfully" });
         }
         catch (error) {

@@ -9,14 +9,14 @@ const gmailClient = new gmail_client_service_1.GmailClientService();
 class WatchRenewalService {
     isRenewing = false;
     pubSubTopic = process.env.GMAIL_PUBSUB_TOPIC || 'projects/your-project-id/topics/gmail-webhooks';
-    async registerWatch(userId) {
+    async registerWatch(userId, force = false) {
         const connection = await gmailClient.getConnection(userId);
         if (!connection) {
             logger_1.logger.warn(`No active Gmail connection found for user ${userId}. Skipping watch registration.`);
             return;
         }
         const now = new Date();
-        if (connection.watchExpiration && connection.watchExpiration > new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
+        if (!force && connection.watchExpiration && connection.watchExpiration > new Date(now.getTime() + 24 * 60 * 60 * 1000)) {
             if (connection.syncStatus !== client_1.SyncStatus.ERROR) {
                 logger_1.logger.info(`Watch for user ${userId} is still valid until ${connection.watchExpiration}. Skipping registration.`);
                 return;

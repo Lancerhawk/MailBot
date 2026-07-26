@@ -133,7 +133,7 @@ export class GmailController {
     const userId = req.session.userId!;
     try {
       const watchService = new WatchRenewalService();
-      await watchService.registerWatch(userId);
+      await watchService.registerWatch(userId, true);
       res.json({ status: "success", message: "Gmail watch registered successfully" });
     } catch (error: any) {
       console.error('Watch registration failed:', error);
