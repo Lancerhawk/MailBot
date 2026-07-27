@@ -9,11 +9,12 @@ import { DraftDbService } from '../draft/draft.db.service';
 import { ContactDbService } from '../contact/contact.db.service';
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
 import { cacheService } from '../../lib/cache.service';
+import { UserSerialQueue } from '../../utils/user-queue';
 
 const groqService = new GroqService();
 const contactDbService = new ContactDbService();
 
-const userProcessingQueue: Record<string, Promise<void>> = {};
+const aiPipelineQueue = new UserSerialQueue();
 
 export class AiPipelineService {
   scheduleAnalysis(userId: string, emailId: string): Promise<void> {
@@ -38,14 +39,7 @@ export class AiPipelineService {
       }
     };
 
-    if (!userProcessingQueue[userId]) {
-      userProcessingQueue[userId] = Promise.resolve();
-    }
-
-    const nextPromise = userProcessingQueue[userId].then(run);
-    userProcessingQueue[userId] = nextPromise.catch(() => { });
-
-    return nextPromise;
+    return aiPipelineQueue.enqueue(userId, run);
   }
 
   private async processEmail(userId: string, emailId: string) {

@@ -6,115 +6,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.GroqService = void 0;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const env_1 = require("../../config/env");
-const logger_1 = require("../../config/logger");
+const user_queue_1 = require("../../utils/user-queue");
 const groq = new groq_sdk_1.default({
     apiKey: env_1.env.GROQ_API_KEY || 'dummy-key-will-fail',
 });
 const MAX_GLOBAL_CONCURRENCY = parseInt(process.env.GROQ_CONCURRENCY_LIMIT || '2', 10);
 const MAX_PENDING_PER_USER = 100;
 const REQUEST_TIMEOUT_MS = 60000;
-const userQueues = new Map();
-const readyUsers = [];
-const activeUsers = new Set();
-let currentGlobalConcurrency = 0;
+const groqQueue = new user_queue_1.FairConcurrencyQueue(MAX_GLOBAL_CONCURRENCY, MAX_PENDING_PER_USER, REQUEST_TIMEOUT_MS);
 function enqueueTask(userId, taskFn) {
-    return new Promise((resolve, reject) => {
-        let queue = userQueues.get(userId);
-        if (!queue) {
-            queue = [];
-            userQueues.set(userId, queue);
-        }
-        if (queue.length >= MAX_PENDING_PER_USER) {
-            return reject(new Error(`Max queue size (${MAX_PENDING_PER_USER}) exceeded for user ${userId}`));
-        }
-        queue.push({ taskFn, resolve, reject, retryCount: 0 });
-        if (!activeUsers.has(userId) && !readyUsers.includes(userId)) {
-            readyUsers.push(userId);
-        }
-        processScheduler();
-    });
-}
-function processScheduler() {
-    while (currentGlobalConcurrency < MAX_GLOBAL_CONCURRENCY && readyUsers.length > 0) {
-        const userId = readyUsers.shift();
-        const queue = userQueues.get(userId);
-        if (!queue || queue.length === 0) {
-            userQueues.delete(userId);
-            continue;
-        }
-        if (activeUsers.has(userId)) {
-            continue;
-        }
-        const task = queue.shift();
-        activeUsers.add(userId);
-        currentGlobalConcurrency++;
-        executeTaskWorker(userId, task);
-    }
-}
-async function executeTaskWorker(userId, task) {
-    let isTransientRetry = false;
-    let delayMs = 0;
-    try {
-        const result = await Promise.race([
-            task.taskFn(),
-            new Promise((_, reject) => setTimeout(() => reject(new Error('Groq request timed out')), REQUEST_TIMEOUT_MS))
-        ]);
-        task.resolve(result);
-    }
-    catch (error) {
-        const isTransient = error.status === 429 || error.status >= 500 || error.name === 'TimeoutError' || error.message === 'Groq request timed out' || error instanceof SyntaxError;
-        if (isTransient && task.retryCount < 5) {
-            isTransientRetry = true;
-            task.retryCount++;
-            const retryAfter = error.headers?.['retry-after'] || error.response?.headers?.['retry-after'];
-            if (retryAfter && !isNaN(parseInt(retryAfter, 10))) {
-                delayMs = parseInt(retryAfter, 10) * 1000;
-            }
-            else {
-                const baseDelay = Math.pow(2, task.retryCount) * 1000;
-                const jitter = Math.random() * 2000;
-                delayMs = baseDelay + jitter;
-            }
-            logger_1.logger.warn(`Groq transient error. User ${userId} retrying in ${Math.round(delayMs)}ms (Attempt ${task.retryCount}/5)`);
-            const queue = userQueues.get(userId) || [];
-            queue.unshift(task);
-            userQueues.set(userId, queue);
-        }
-        else {
-            if (task.retryCount >= 5) {
-                logger_1.logger.error({ error }, `Groq task for user ${userId} discarded after 5 failed retries.`);
-            }
-            else {
-                logger_1.logger.error({ error }, `Groq task for user ${userId} failed due to a non-transient error.`);
-            }
-            task.reject(error);
-        }
-    }
-    finally {
-        currentGlobalConcurrency--;
-        if (isTransientRetry) {
-            setTimeout(() => {
-                activeUsers.delete(userId);
-                if (!readyUsers.includes(userId)) {
-                    readyUsers.push(userId);
-                }
-                processScheduler();
-            }, delayMs);
-        }
-        else {
-            activeUsers.delete(userId);
-            const remainingQueue = userQueues.get(userId);
-            if (remainingQueue && remainingQueue.length > 0) {
-                if (!readyUsers.includes(userId)) {
-                    readyUsers.push(userId);
-                }
-            }
-            else {
-                userQueues.delete(userId);
-            }
-        }
-        processScheduler();
-    }
+    return groqQueue.enqueueTask(userId, taskFn);
 }
 class GroqService {
     async analyzeConversation(userId, contextText) {

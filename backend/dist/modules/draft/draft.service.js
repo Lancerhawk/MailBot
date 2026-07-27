@@ -20,7 +20,8 @@ const analytics_event_service_1 = require("../analytics/services/analytics-event
 const pricing_config_1 = require("../analytics/services/pricing.config");
 const client_1 = require("@prisma/client");
 const cache_service_1 = require("../../lib/cache.service");
-const userProcessingQueue = new Map();
+const user_queue_1 = require("../../utils/user-queue");
+const draftUserQueue = new user_queue_1.UserSerialQueue();
 class DraftService {
     async generateDraft(userId, emailId, isRegeneration = false) {
         if (await this.isGenerating(emailId)) {
@@ -30,19 +31,7 @@ class DraftService {
         if (!locked) {
             throw new Error('CONFLICT: Draft generation already in progress for this email');
         }
-        const previousPromise = userProcessingQueue.get(userId) || Promise.resolve();
-        const nextPromise = previousPromise
-            .then(() => this.processDraft(userId, emailId, isRegeneration))
-            .catch((error) => {
-            logger_1.logger.error({ error, userId, emailId }, 'Error in user draft processing queue');
-        });
-        userProcessingQueue.set(userId, nextPromise);
-        nextPromise.finally(() => {
-            if (userProcessingQueue.get(userId) === nextPromise) {
-                userProcessingQueue.delete(userId);
-            }
-        });
-        return nextPromise;
+        return draftUserQueue.enqueue(userId, () => this.processDraft(userId, emailId, isRegeneration));
     }
     async processDraft(userId, emailId, isRegeneration) {
         await cache_service_1.cacheService.set(`draft:active:${emailId}`, 'GENERATING', 120);

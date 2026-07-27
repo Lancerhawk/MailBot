@@ -12,9 +12,10 @@ const draft_db_service_1 = require("../draft/draft.db.service");
 const contact_db_service_1 = require("../contact/contact.db.service");
 const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
 const cache_service_1 = require("../../lib/cache.service");
+const user_queue_1 = require("../../utils/user-queue");
 const groqService = new groq_service_1.GroqService();
 const contactDbService = new contact_db_service_1.ContactDbService();
-const userProcessingQueue = {};
+const aiPipelineQueue = new user_queue_1.UserSerialQueue();
 class AiPipelineService {
     scheduleAnalysis(userId, emailId) {
         const run = async () => {
@@ -39,12 +40,7 @@ class AiPipelineService {
                 }
             }
         };
-        if (!userProcessingQueue[userId]) {
-            userProcessingQueue[userId] = Promise.resolve();
-        }
-        const nextPromise = userProcessingQueue[userId].then(run);
-        userProcessingQueue[userId] = nextPromise.catch(() => { });
-        return nextPromise;
+        return aiPipelineQueue.enqueue(userId, run);
     }
     async processEmail(userId, emailId) {
         const email = await prisma_1.prisma.email.findUnique({

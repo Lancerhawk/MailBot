@@ -18,8 +18,9 @@ import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services
 import { PricingConfig } from '../analytics/services/pricing.config';
 import { AiProvider } from '@prisma/client';
 import { cacheService } from '../../lib/cache.service';
+import { UserSerialQueue } from '../../utils/user-queue';
 
-const userProcessingQueue = new Map<string, Promise<void>>();
+const draftUserQueue = new UserSerialQueue();
 
 export class DraftService {
   async generateDraft(userId: string, emailId: string, isRegeneration = false) {
@@ -32,22 +33,7 @@ export class DraftService {
       throw new Error('CONFLICT: Draft generation already in progress for this email');
     }
 
-    const previousPromise = userProcessingQueue.get(userId) || Promise.resolve();
-    const nextPromise = previousPromise
-      .then(() => this.processDraft(userId, emailId, isRegeneration))
-      .catch((error) => {
-        logger.error({ error, userId, emailId }, 'Error in user draft processing queue');
-      });
-
-    userProcessingQueue.set(userId, nextPromise);
-
-    nextPromise.finally(() => {
-      if (userProcessingQueue.get(userId) === nextPromise) {
-        userProcessingQueue.delete(userId);
-      }
-    });
-
-    return nextPromise;
+    return draftUserQueue.enqueue(userId, () => this.processDraft(userId, emailId, isRegeneration));
   }
 
   private async processDraft(userId: string, emailId: string, isRegeneration: boolean) {
