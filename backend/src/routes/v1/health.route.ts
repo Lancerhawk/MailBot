@@ -16,15 +16,19 @@ router.get(
       isDbConnected = false;
     }
 
+    const isHealthy = isDbConnected;
+    const statusCode = isHealthy ? 200 : 503;
+    const statusMessage = isHealthy ? 'Health check passed' : 'Service Degraded: Database disconnected';
+
     const healthData = {
-      status: 'ok',
+      status: isHealthy ? 'ok' : 'degraded',
       uptime: process.uptime(),
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV,
       database: isDbConnected ? 'connected' : 'disconnected',
     };
 
-    res.status(200).json(new ApiResponse(healthData, 'Health check passed'));
+    res.status(statusCode).json(new ApiResponse(healthData, statusMessage));
   })
 );
 
