@@ -9,6 +9,7 @@ import pg from 'pg';
 import morgan from 'morgan';
 
 import { env } from './config/env';
+import { logger } from './config/logger';
 import { apiLimiter } from './middlewares/rateLimiter';
 import { errorHandler } from './middlewares/error.middleware';
 import { ApiError } from './utils/ApiError';
@@ -26,7 +27,13 @@ app.set('trust proxy', 1);
 if (env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 } else {
-  app.use(morgan('dev'));
+  app.use(
+    morgan('combined', {
+      stream: {
+        write: (message: string) => logger.info(message.trim()),
+      },
+    })
+  );
 }
 
 app.use(helmet());

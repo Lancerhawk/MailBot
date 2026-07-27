@@ -14,6 +14,7 @@ const connect_pg_simple_1 = __importDefault(require("connect-pg-simple"));
 const pg_1 = __importDefault(require("pg"));
 const morgan_1 = __importDefault(require("morgan"));
 const env_1 = require("./config/env");
+const logger_1 = require("./config/logger");
 const rateLimiter_1 = require("./middlewares/rateLimiter");
 const error_middleware_1 = require("./middlewares/error.middleware");
 const ApiError_1 = require("./utils/ApiError");
@@ -29,7 +30,11 @@ if (env_1.env.NODE_ENV === 'development') {
     app.use((0, morgan_1.default)('dev'));
 }
 else {
-    app.use((0, morgan_1.default)('dev'));
+    app.use((0, morgan_1.default)('combined', {
+        stream: {
+            write: (message) => logger_1.logger.info(message.trim()),
+        },
+    }));
 }
 app.use((0, helmet_1.default)());
 app.use(express_1.default.json());
