@@ -8,6 +8,7 @@ import { DraftService } from '../draft/draft.service';
 import { DraftDbService } from '../draft/draft.db.service';
 import { ContactDbService } from '../contact/contact.db.service';
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
+import { cacheService } from '../../lib/cache.service';
 
 const groqService = new GroqService();
 const contactDbService = new ContactDbService();
@@ -17,11 +18,23 @@ const userProcessingQueue: Record<string, Promise<void>> = {};
 export class AiPipelineService {
   scheduleAnalysis(userId: string, emailId: string): Promise<void> {
     const run = async () => {
+      const lockKey = `ai:lock:${userId}`;
+      let acquired = await cacheService.acquireLock(lockKey, 120);
+      let attempts = 0;
+      while (!acquired && attempts < 5) {
+        attempts++;
+        await new Promise(r => setTimeout(r, 1000));
+        acquired = await cacheService.acquireLock(lockKey, 120);
+      }
       try {
         await this.processEmail(userId, emailId);
       } catch (err: unknown) {
         const error = err as Error;
         logger.error({ error: error.message || error, stack: error.stack, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
+      } finally {
+        if (acquired) {
+          await cacheService.releaseLock(lockKey);
+        }
       }
     };
 

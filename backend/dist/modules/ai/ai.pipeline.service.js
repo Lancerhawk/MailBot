@@ -11,18 +11,32 @@ const draft_service_1 = require("../draft/draft.service");
 const draft_db_service_1 = require("../draft/draft.db.service");
 const contact_db_service_1 = require("../contact/contact.db.service");
 const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
+const cache_service_1 = require("../../lib/cache.service");
 const groqService = new groq_service_1.GroqService();
 const contactDbService = new contact_db_service_1.ContactDbService();
 const userProcessingQueue = {};
 class AiPipelineService {
     scheduleAnalysis(userId, emailId) {
         const run = async () => {
+            const lockKey = `ai:lock:${userId}`;
+            let acquired = await cache_service_1.cacheService.acquireLock(lockKey, 120);
+            let attempts = 0;
+            while (!acquired && attempts < 5) {
+                attempts++;
+                await new Promise(r => setTimeout(r, 1000));
+                acquired = await cache_service_1.cacheService.acquireLock(lockKey, 120);
+            }
             try {
                 await this.processEmail(userId, emailId);
             }
             catch (err) {
                 const error = err;
                 logger_1.logger.error({ error: error.message || error, stack: error.stack, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
+            }
+            finally {
+                if (acquired) {
+                    await cache_service_1.cacheService.releaseLock(lockKey);
+                }
             }
         };
         if (!userProcessingQueue[userId]) {

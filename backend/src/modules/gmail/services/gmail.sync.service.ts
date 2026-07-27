@@ -3,6 +3,7 @@ import { GmailParserService } from "./gmail.parser.service";
 import { GmailDbService } from "./gmail.db.service";
 import { gmail_v1 } from "googleapis";
 import { logger } from "../../../config/logger";
+import { cacheService } from "../../../lib/cache.service";
 
 interface SyncProgress {
   status: "SYNCING" | "IDLE" | "ERROR";
@@ -15,9 +16,6 @@ interface SyncProgress {
   stopRequested?: boolean;
 }
 
-const syncMemoryMap = new Map<string, SyncProgress>();
-const pendingWebhooksMap = new Map<string, bigint>();
-
 const MAX_INITIAL_THREADS = 100;
 const MAX_INITIAL_MESSAGES = 1000;
 const BATCH_SIZE = 5;
@@ -27,31 +25,43 @@ export class GmailSyncService {
   private parserService = new GmailParserService();
   private dbService = new GmailDbService();
 
-  isSyncRunning(userId: string): boolean {
-    const state = syncMemoryMap.get(userId);
+  async isSyncRunning(userId: string): Promise<boolean> {
+    const state = await this.getSyncStatus(userId);
     return state?.status === "SYNCING";
   }
 
-  getSyncStatus(userId: string): SyncProgress | null {
-    return syncMemoryMap.get(userId) || null;
+  async getSyncStatus(userId: string): Promise<SyncProgress | null> {
+    return await cacheService.get<SyncProgress>(`sync:progress:${userId}`);
+  }
+
+  private async saveProgress(userId: string, state: SyncProgress): Promise<void> {
+    await cacheService.set(`sync:progress:${userId}`, state, 1800);
   }
 
   async stopSync(userId: string) {
-    const state = syncMemoryMap.get(userId);
+    const state = await this.getSyncStatus(userId);
     if (state) {
       state.stopRequested = true;
       state.status = "IDLE";
       state.currentStage = "Stopped";
+      await this.saveProgress(userId, state);
     }
     await this.dbService.updateSyncStatus(userId, "IDLE");
   }
 
   async startSync(userId: string) {
-    if (this.isSyncRunning(userId)) return;
+    if (await this.isSyncRunning(userId)) return;
+
+    const locked = await cacheService.acquireLock(`sync:lock:${userId}`, 600);
+    if (!locked) {
+      console.log(`Sync already running for ${userId} (lock busy)`);
+      return;
+    }
 
     const connection = await this.clientService.getConnection(userId);
     if (!connection) {
       console.error(`No connection found for user ${userId}`);
+      await cacheService.releaseLock(`sync:lock:${userId}`);
       return;
     }
 
@@ -64,7 +74,7 @@ export class GmailSyncService {
       startedAt: new Date(),
       lastError: null
     };
-    syncMemoryMap.set(userId, state);
+    await this.saveProgress(userId, state);
     await this.dbService.updateSyncStatus(userId, "SYNCING");
 
     try {
@@ -80,16 +90,19 @@ export class GmailSyncService {
       if (state.currentStage !== "Up to date") {
         state.currentStage = "Sync complete";
       }
+      await this.saveProgress(userId, state);
       await this.dbService.updateSyncStatus(userId, "IDLE");
 
     } catch (error: any) {
       logger.error({ err: error, userId }, `Sync failed for user ${userId}`);
       state.status = "ERROR";
       state.lastError = error.message;
+      await this.saveProgress(userId, state);
       await this.dbService.updateSyncStatus(userId, "ERROR", error.message);
     } finally {
+      await cacheService.releaseLock(`sync:lock:${userId}`);
       setTimeout(() => {
-        syncMemoryMap.delete(userId);
+        cacheService.delete(`sync:progress:${userId}`);
       }, 10000);
     }
   }
@@ -155,6 +168,7 @@ export class GmailSyncService {
           logger.error({ err: e, threadId: threadData.id, userId }, `Failed to process thread in DB`);
         }
       }
+      await this.saveProgress(userId, state);
     }
 
     if (!state.stopRequested) {
@@ -285,6 +299,7 @@ export class GmailSyncService {
               processedEmailIds.push(...savedEmails.map((e: any) => e.id));
             }
             state.emailsProcessed += parsedEmails.length;
+            await this.saveProgress(userId, state);
           }
 
         } catch (e: any) {
@@ -319,11 +334,23 @@ export class GmailSyncService {
 
     const userId = connection.userId;
     console.log(`[Gmail Webhook] Triggering incremental sync for ${emailAddress} (userId: ${userId}, newHistoryId: ${newHistoryId})`);
-    if (this.isSyncRunning(userId)) {
+    if (await this.isSyncRunning(userId)) {
       console.log(`Sync already running for ${userId}, queuing concurrent webhook execution.`);
-      const currentPending = pendingWebhooksMap.get(userId) || BigInt(0);
+      const currentPendingStr = await cacheService.get<string>(`sync:webhook:${userId}`);
+      const currentPending = currentPendingStr ? BigInt(currentPendingStr) : BigInt(0);
       if (newHistoryId > currentPending) {
-        pendingWebhooksMap.set(userId, newHistoryId);
+        await cacheService.set(`sync:webhook:${userId}`, newHistoryId.toString(), 1800);
+      }
+      return;
+    }
+
+    const locked = await cacheService.acquireLock(`sync:lock:${userId}`, 600);
+    if (!locked) {
+      console.log(`Sync already running for ${userId} (lock busy), queuing webhook.`);
+      const currentPendingStr = await cacheService.get<string>(`sync:webhook:${userId}`);
+      const currentPending = currentPendingStr ? BigInt(currentPendingStr) : BigInt(0);
+      if (newHistoryId > currentPending) {
+        await cacheService.set(`sync:webhook:${userId}`, newHistoryId.toString(), 1800);
       }
       return;
     }
@@ -337,7 +364,7 @@ export class GmailSyncService {
       startedAt: new Date(),
       lastError: null
     };
-    syncMemoryMap.set(userId, state);
+    await this.saveProgress(userId, state);
 
     const { emitToUser } = require('../../../socket');
     emitToUser(userId, 'sync:started', { source: 'webhook' });
@@ -352,6 +379,7 @@ export class GmailSyncService {
 
       if (processedEmailIds && processedEmailIds.length > 0) {
         state.currentStage = "Generating AI drafts...";
+        await this.saveProgress(userId, state);
         const { AiPipelineService } = require('../../ai/ai.pipeline.service');
         const aiPipeline = new AiPipelineService();
 
@@ -361,6 +389,7 @@ export class GmailSyncService {
 
       state.status = "IDLE";
       state.currentStage = "Sync complete";
+      await this.saveProgress(userId, state);
       await this.dbService.updateSyncStatus(userId, "IDLE");
 
       emitToUser(userId, 'sync:completed', {
@@ -371,13 +400,16 @@ export class GmailSyncService {
       logger.error({ err: error, userId }, `Webhook Sync failed for user ${userId}`);
       state.status = "ERROR";
       state.lastError = error.message;
+      await this.saveProgress(userId, state);
       emitToUser(userId, 'sync:error', { error: error.message });
     } finally {
-      syncMemoryMap.delete(userId);
+      await cacheService.releaseLock(`sync:lock:${userId}`);
+      await cacheService.delete(`sync:progress:${userId}`);
 
-      const pendingHistoryId = pendingWebhooksMap.get(userId);
-      if (pendingHistoryId) {
-        pendingWebhooksMap.delete(userId);
+      const pendingHistoryIdStr = await cacheService.get<string>(`sync:webhook:${userId}`);
+      if (pendingHistoryIdStr) {
+        await cacheService.delete(`sync:webhook:${userId}`);
+        const pendingHistoryId = BigInt(pendingHistoryIdStr);
         console.log(`Executing queued webhook for ${userId} with historyId ${pendingHistoryId}`);
         setTimeout(() => {
           this.processWebhook(emailAddress, pendingHistoryId).catch(err => {

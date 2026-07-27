@@ -5,53 +5,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.regenerateLimiter = exports.refreshRateLimiter = exports.authLimiter = exports.apiLimiter = void 0;
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
-const redis_1 = require("redis");
 const rate_limit_redis_1 = require("rate-limit-redis");
-const dotenv_1 = __importDefault(require("dotenv"));
-dotenv_1.default.config();
-const isRedisStore = process.env.RATE_LIMIT_STORE === 'redis';
-let redisClient;
+const env_1 = require("../config/env");
+const cache_service_1 = require("../lib/cache.service");
+const isRedisStore = env_1.env.RATE_LIMIT_STORE === 'redis';
 if (isRedisStore) {
-    if (!process.env.REDIS_URL) {
-        throw new Error("RATE_LIMIT_STORE is set to 'redis', but REDIS_URL is missing in .env");
-    }
-    redisClient = (0, redis_1.createClient)({
-        url: process.env.REDIS_URL,
-        socket: {
-            connectTimeout: 10000,
-            reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
-        },
-    });
-    let wasConnected = false;
-    redisClient.on('error', (err) => {
-        if (wasConnected) {
-            console.error('[REDIS ERROR] Rate Limiter client error:', err.message || err);
-        }
-    });
-    redisClient.on('reconnecting', () => {
-        if (wasConnected) {
-            console.warn('[REDIS WARNING] Lost connection to Redis. Attempting to reconnect... (Fail-open mode active: requests passing through without hanging)');
-        }
-    });
-    redisClient.on('ready', () => {
-        if (!wasConnected) {
-            console.log('[REDIS READY] Rate Limiter successfully connected to Redis server.');
-            wasConnected = true;
-        }
-        else {
-            console.log('[REDIS RESTORED] Rate Limiter successfully reconnected to Redis server.');
-        }
-    });
-    redisClient.connect().catch((err) => {
-        console.error("[REDIS INITIAL CONNECT FAILED] Could not connect to Redis for rate limiting:", err.message || err);
-    });
-    console.log("Rate Limiter: Redis Engine Configured");
+    console.log("Rate Limiter: Redis Engine Configured via Unified CacheService");
 }
 else {
     console.log("Rate Limiter: Local Memory Engine Active (Default)");
 }
 const getStore = (prefix) => {
-    if (isRedisStore && redisClient) {
+    const redisClient = cache_service_1.cacheService.getRedisClient();
+    if (env_1.env.RATE_LIMIT_STORE === 'redis' && redisClient) {
         return new rate_limit_redis_1.RedisStore({
             prefix: `rate-limit:${prefix}:`,
             sendCommand: (...args) => {

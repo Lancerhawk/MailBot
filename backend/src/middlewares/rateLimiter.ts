@@ -1,61 +1,19 @@
 import rateLimit from 'express-rate-limit';
-import { createClient } from 'redis';
 import { RedisStore } from 'rate-limit-redis';
-import dotenv from 'dotenv';
+import { env } from '../config/env';
+import { cacheService } from '../lib/cache.service';
 
-dotenv.config();
-
-const isRedisStore = process.env.RATE_LIMIT_STORE === 'redis';
-
-let redisClient: ReturnType<typeof createClient> | undefined;
+const isRedisStore = env.RATE_LIMIT_STORE === 'redis';
 
 if (isRedisStore) {
-  if (!process.env.REDIS_URL) {
-    throw new Error("RATE_LIMIT_STORE is set to 'redis', but REDIS_URL is missing in .env");
-  }
-
-  redisClient = createClient({
-    url: process.env.REDIS_URL,
-    socket: {
-      connectTimeout: 10000,
-      reconnectStrategy: (retries) => Math.min(retries * 100, 3000),
-    },
-  });
-
-  let wasConnected = false;
-
-  redisClient.on('error', (err) => {
-    if (wasConnected) {
-      console.error('[REDIS ERROR] Rate Limiter client error:', err.message || err);
-    }
-  });
-
-  redisClient.on('reconnecting', () => {
-    if (wasConnected) {
-      console.warn('[REDIS WARNING] Lost connection to Redis. Attempting to reconnect... (Fail-open mode active: requests passing through without hanging)');
-    }
-  });
-
-  redisClient.on('ready', () => {
-    if (!wasConnected) {
-      console.log('[REDIS READY] Rate Limiter successfully connected to Redis server.');
-      wasConnected = true;
-    } else {
-      console.log('[REDIS RESTORED] Rate Limiter successfully reconnected to Redis server.');
-    }
-  });
-
-  redisClient.connect().catch((err) => {
-    console.error("[REDIS INITIAL CONNECT FAILED] Could not connect to Redis for rate limiting:", err.message || err);
-  });
-
-  console.log("Rate Limiter: Redis Engine Configured");
+  console.log("Rate Limiter: Redis Engine Configured via Unified CacheService");
 } else {
   console.log("Rate Limiter: Local Memory Engine Active (Default)");
 }
 
 const getStore = (prefix: string) => {
-  if (isRedisStore && redisClient) {
+  const redisClient = cacheService.getRedisClient();
+  if (env.RATE_LIMIT_STORE === 'redis' && redisClient) {
     return new RedisStore({
       prefix: `rate-limit:${prefix}:`,
       sendCommand: (...args: string[]) => {

@@ -89,12 +89,12 @@ class GmailController {
     async sync(req, res) {
         const userId = req.session.userId;
         try {
-            const isRunning = this.syncService.isSyncRunning(userId);
+            const isRunning = await this.syncService.isSyncRunning(userId);
             if (isRunning) {
                 return res.status(409).json({
                     status: "error",
                     message: "Synchronization already in progress.",
-                    data: this.syncService.getSyncStatus(userId)
+                    data: await this.syncService.getSyncStatus(userId)
                 });
             }
             this.syncService.startSync(userId).catch(err => {
@@ -140,7 +140,7 @@ class GmailController {
             if (!dbStatus) {
                 return res.status(404).json({ status: "error", message: "Gmail connection not found" });
             }
-            const activeSync = this.syncService.getSyncStatus(userId);
+            const activeSync = await this.syncService.getSyncStatus(userId);
             res.json({
                 status: "success",
                 data: {

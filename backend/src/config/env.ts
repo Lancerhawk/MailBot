@@ -23,6 +23,8 @@ const envSchema = z.object({
   GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
   GMAIL_WEBHOOK_SECRET: z.string().optional(),
   GMAIL_WEBHOOK_REQUIRE_OIDC: z.string().default('true').transform((val) => val === 'true' || val === '1'),
+  RATE_LIMIT_STORE: z.enum(['memory', 'redis']).default('memory'),
+  REDIS_URL: z.string().default('redis://127.0.0.1:6379'),
   
   EMBEDDING_WORKERS: z.coerce.number().default(2),
   MAX_DOCUMENT_PAGES: z.coerce.number().default(500),
