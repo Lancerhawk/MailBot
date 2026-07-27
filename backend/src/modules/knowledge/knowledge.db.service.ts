@@ -148,7 +148,12 @@ export class KnowledgeDbService {
     folder: string;
   }>) {
     const result = await prisma.knowledgeBaseDocument.updateMany({
-      where: { id: documentId, userId, deletedAt: null },
+      where: { 
+        id: documentId, 
+        userId, 
+        deletedAt: null,
+        processingStatus: { notIn: [ProcessingStatus.PROCESSING, ProcessingStatus.PENDING] }
+      },
       data,
     });
     if (result.count === 0) {
@@ -159,7 +164,12 @@ export class KnowledgeDbService {
 
   async archiveDocument(userId: string, documentId: string) {
     const result = await prisma.knowledgeBaseDocument.updateMany({
-      where: { id: documentId, userId, deletedAt: null },
+      where: { 
+        id: documentId, 
+        userId, 
+        deletedAt: null,
+        processingStatus: { notIn: [ProcessingStatus.PROCESSING, ProcessingStatus.PENDING] }
+      },
       data: { isArchived: true },
     });
     if (result.count === 0) {
@@ -170,7 +180,12 @@ export class KnowledgeDbService {
 
   async restoreDocument(userId: string, documentId: string) {
     const result = await prisma.knowledgeBaseDocument.updateMany({
-      where: { id: documentId, userId, deletedAt: null },
+      where: { 
+        id: documentId, 
+        userId, 
+        deletedAt: null,
+        processingStatus: { notIn: [ProcessingStatus.PROCESSING, ProcessingStatus.PENDING] }
+      },
       data: { isArchived: false },
     });
     if (result.count === 0) {

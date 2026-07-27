@@ -111,7 +111,12 @@ class KnowledgeDbService {
     }
     async updateDocument(userId, documentId, data) {
         const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
-            where: { id: documentId, userId, deletedAt: null },
+            where: {
+                id: documentId,
+                userId,
+                deletedAt: null,
+                processingStatus: { notIn: [client_1.ProcessingStatus.PROCESSING, client_1.ProcessingStatus.PENDING] }
+            },
             data,
         });
         if (result.count === 0) {
@@ -121,7 +126,12 @@ class KnowledgeDbService {
     }
     async archiveDocument(userId, documentId) {
         const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
-            where: { id: documentId, userId, deletedAt: null },
+            where: {
+                id: documentId,
+                userId,
+                deletedAt: null,
+                processingStatus: { notIn: [client_1.ProcessingStatus.PROCESSING, client_1.ProcessingStatus.PENDING] }
+            },
             data: { isArchived: true },
         });
         if (result.count === 0) {
@@ -131,7 +141,12 @@ class KnowledgeDbService {
     }
     async restoreDocument(userId, documentId) {
         const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
-            where: { id: documentId, userId, deletedAt: null },
+            where: {
+                id: documentId,
+                userId,
+                deletedAt: null,
+                processingStatus: { notIn: [client_1.ProcessingStatus.PROCESSING, client_1.ProcessingStatus.PENDING] }
+            },
             data: { isArchived: false },
         });
         if (result.count === 0) {
