@@ -1,12 +1,62 @@
 {
   "versions": [
     {
+      "id": "be-v1.6.0",
+      "version": "v1.6.0",
+      "date": "2026-07-28",
+      "title": "Codebase Refactoring, Distributed Caching & Stability Polish",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Unified Cache & Distributed Lock Service (src/lib/cache.service.ts)",
+          "description": "Implemented a unified caching and distributed locking service with automatic fail-open fallback between Redis and in-memory storage based on RATE_LIMIT_STORE."
+        },
+        {
+          "title": "Centralized User Queue Module (src/utils/user-queue.ts)",
+          "description": "Added UserSerialQueue for per-user FIFO task sequencing and FairConcurrencyQueue for fair multi-user concurrency scheduling with automatic transient retry and exponential backoff."
+        },
+        {
+          "title": "Distributed Mutex Locks",
+          "description": "Migrated Gmail sync state, webhook queues, AI pipeline email analysis (ai:lock:<userId>), and draft generation (draft:lock:<emailId>) to use unified distributed locking via cacheService."
+        },
+        {
+          "title": "Consolidated Queue Logic",
+          "description": "Refactored ai.pipeline.service.ts and draft.service.ts to use UserSerialQueue, and refactored groq.service.ts to use FairConcurrencyQueue, eliminating 125+ lines of duplicate scheduler boilerplate."
+        },
+        {
+          "title": "Top-Level ES6 Imports",
+          "description": "Replaced mid-function require() calls in server.ts and gmail.sync.service.ts with clean top-level ES6 imports and property injections."
+        },
+        {
+          "title": "Structured Logging Across Controllers",
+          "description": "Replaced all raw console.log/warn/error calls across auth.controller.ts, gmail.controller.ts, and analytics.controller.ts with structured JSON logger calls."
+        },
+        {
+          "title": "HistoryId Watermark Advancement",
+          "description": "Updated Gmail incremental sync so that the historyId watermark advances only after all threads process without errors."
+        },
+        {
+          "title": "Draft Update Verification",
+          "description": "Added row count verification for updateMany in draft.db.service.ts to throw a 404 error when attempting to update a non-existent draft."
+        },
+        {
+          "title": "500 Server Error Logging",
+          "description": "Updated error middleware to log 500 server errors in all environments including production."
+        },
+        {
+          "title": "Silent Catch Blocks",
+          "description": "Uncommented silent catch blocks in Gmail sync and routed sync errors through the shared logger."
+        }
+      ]
+    },
+    {
       "id": "be-v1.5.0",
       "version": "v1.5.0",
       "date": "2026-07-27",
       "title": "Standalone AI Worker Microservice & WORKER_MODE Switch",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Standalone Worker Microservice (src/worker.ts)",

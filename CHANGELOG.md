@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.6.0] - Codebase Refactoring, Distributed Caching & Stability Polish
+
+### Added
+- **Unified Cache & Distributed Lock Service (`src/lib/cache.service.ts`):** Implemented a unified caching and distributed locking service with automatic fail-open fallback between Redis and in-memory storage based on `RATE_LIMIT_STORE`.
+- **Centralized User Queue Module (`src/utils/user-queue.ts`):** Added `UserSerialQueue` for per-user FIFO task sequencing and `FairConcurrencyQueue` for fair multi-user concurrency scheduling with automatic transient retry and exponential backoff.
+- **Distributed Mutex Locks:** Migrated Gmail sync state, webhook queues, AI pipeline email analysis (`ai:lock:<userId>`), and draft generation (`draft:lock:<emailId>`) to use unified distributed locking via `cacheService`.
+
+### Changed
+- **Consolidated Queue Logic:** Refactored `ai.pipeline.service.ts` and `draft.service.ts` to use `UserSerialQueue`, and refactored `groq.service.ts` to use `FairConcurrencyQueue`, eliminating 125+ lines of duplicate scheduler boilerplate.
+- **Top-Level ES6 Imports:** Replaced mid-function `require()` calls in `server.ts` and `gmail.sync.service.ts` with clean top-level ES6 imports and property injections.
+- **Structured Logging Across Controllers:** Replaced all raw `console.log/warn/error` calls across `auth.controller.ts`, `gmail.controller.ts`, and `analytics.controller.ts` with structured JSON `logger` calls.
+- **HistoryId Watermark Advancement:** Updated Gmail incremental sync so that the `historyId` watermark advances only after all threads process without errors.
+
+### Fixed
+- **Draft Update Verification:** Added row count verification for `updateMany` in `draft.db.service.ts` to throw a 404 error when attempting to update a non-existent draft.
+- **500 Server Error Logging:** Updated error middleware to log 500 server errors in all environments including production.
+- **Silent Catch Blocks:** Uncommented silent catch blocks in Gmail sync and routed sync errors through the shared logger.
+
 ## [Backend v1.5.0] - Standalone AI Worker Microservice & WORKER_MODE Switch
 
 ### Added
