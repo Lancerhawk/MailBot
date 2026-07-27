@@ -30,8 +30,8 @@ const errorHandler = (err, req, res, _next) => {
         ...(env_1.env.NODE_ENV === 'development' && error.statusCode >= 500 && { stack: error.stack }),
         ...(err instanceof zod_1.ZodError && { errors: err.errors }),
     };
-    if (env_1.env.NODE_ENV === 'development' && error.statusCode >= 500) {
-        logger_1.logger.error(error);
+    if (error.statusCode >= 500) {
+        logger_1.logger.error({ err: error, path: req.path, method: req.method }, 'Unhandled Server Error');
     }
     res.status(error.statusCode).json(response);
 };

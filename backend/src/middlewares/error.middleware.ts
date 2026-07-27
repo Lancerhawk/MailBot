@@ -34,8 +34,8 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     ...(err instanceof ZodError && { errors: err.errors }),
   };
 
-  if (env.NODE_ENV === 'development' && error.statusCode >= 500) {
-    logger.error(error);
+  if (error.statusCode >= 500) {
+    logger.error({ err: error, path: req.path, method: req.method }, 'Unhandled Server Error');
   }
 
   res.status(error.statusCode).json(response);
