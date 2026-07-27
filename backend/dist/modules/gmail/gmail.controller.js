@@ -10,6 +10,7 @@ const gmail_send_service_1 = require("./services/gmail.send.service");
 const ApiError_1 = require("../../utils/ApiError");
 const watch_renewal_service_1 = require("./services/watch-renewal.service");
 const logger_1 = require("../../config/logger");
+const prisma_1 = require("../../lib/prisma");
 class GmailController {
     syncService = new gmail_sync_service_1.GmailSyncService();
     dbService = new gmail_db_service_1.GmailDbService();
@@ -156,7 +157,38 @@ class GmailController {
         }
     }
     async getProfile(req, res) {
-        res.json({ status: "success", data: {} });
+        const userId = req.session.userId;
+        try {
+            const user = await prisma_1.prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    avatarUrl: true,
+                    timezone: true,
+                    connections: {
+                        where: { provider: 'GMAIL' },
+                        select: {
+                            id: true,
+                            emailAddress: true,
+                            syncStatus: true,
+                            lastSuccessfulSyncAt: true,
+                            lastSyncError: true,
+                            isActive: true,
+                        },
+                    },
+                },
+            });
+            if (!user) {
+                return res.status(404).json({ status: "error", message: "User profile not found" });
+            }
+            res.json({ status: "success", data: user });
+        }
+        catch (error) {
+            logger_1.logger.error({ err: error, userId }, "Failed to get profile");
+            res.status(500).json({ status: "error", message: "Failed to get profile" });
+        }
     }
     async listThreads(req, res) {
         const userId = req.session.userId;
@@ -201,7 +233,19 @@ class GmailController {
         }
     }
     async getEmail(req, res) {
-        res.json({ status: "success", data: {} });
+        const userId = req.session.userId;
+        const emailId = req.params.id;
+        try {
+            const email = await this.dbService.getEmailByIdWithConnection(userId, emailId);
+            if (!email) {
+                return res.status(404).json({ status: "error", message: "Email not found" });
+            }
+            res.json({ status: "success", data: email });
+        }
+        catch (error) {
+            logger_1.logger.error({ err: error, userId, emailId }, "Failed to get email");
+            res.status(500).json({ status: "error", message: "Failed to get email" });
+        }
     }
     async handleAction(req, res, actionFn) {
         const userId = req.session.userId;

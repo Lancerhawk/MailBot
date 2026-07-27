@@ -8,6 +8,7 @@ import { GmailSendService } from "./services/gmail.send.service";
 import { ApiError } from "../../utils/ApiError";
 import { WatchRenewalService } from "./services/watch-renewal.service";
 import { logger } from "../../config/logger";
+import { prisma } from "../../lib/prisma";
 
 export class GmailController {
   private syncService = new GmailSyncService();
@@ -173,7 +174,39 @@ export class GmailController {
   }
 
   async getProfile(req: Request, res: Response) {
-    res.json({ status: "success", data: {} });
+    const userId = req.session.userId!;
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          avatarUrl: true,
+          timezone: true,
+          connections: {
+            where: { provider: 'GMAIL' },
+            select: {
+              id: true,
+              emailAddress: true,
+              syncStatus: true,
+              lastSuccessfulSyncAt: true,
+              lastSyncError: true,
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        return res.status(404).json({ status: "error", message: "User profile not found" });
+      }
+
+      res.json({ status: "success", data: user });
+    } catch (error) {
+      logger.error({ err: error, userId }, "Failed to get profile");
+      res.status(500).json({ status: "error", message: "Failed to get profile" });
+    }
   }
 
   async listThreads(req: Request, res: Response) {
@@ -224,7 +257,19 @@ export class GmailController {
   }
 
   async getEmail(req: Request, res: Response) {
-    res.json({ status: "success", data: {} });
+    const userId = req.session.userId!;
+    const emailId = req.params.id;
+
+    try {
+      const email = await this.dbService.getEmailByIdWithConnection(userId, emailId);
+      if (!email) {
+        return res.status(404).json({ status: "error", message: "Email not found" });
+      }
+      res.json({ status: "success", data: email });
+    } catch (error) {
+      logger.error({ err: error, userId, emailId }, "Failed to get email");
+      res.status(500).json({ status: "error", message: "Failed to get email" });
+    }
   }
 
   private async handleAction(req: Request, res: Response, actionFn: (userId: string, emailId: string) => Promise<void>) {
