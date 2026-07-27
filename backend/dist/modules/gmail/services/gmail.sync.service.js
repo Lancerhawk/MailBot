@@ -4,6 +4,7 @@ exports.GmailSyncService = void 0;
 const gmail_client_service_1 = require("./gmail.client.service");
 const gmail_parser_service_1 = require("./gmail.parser.service");
 const gmail_db_service_1 = require("./gmail.db.service");
+const logger_1 = require("../../../config/logger");
 const syncMemoryMap = new Map();
 const pendingWebhooksMap = new Map();
 const MAX_INITIAL_THREADS = 100;
@@ -63,7 +64,7 @@ class GmailSyncService {
             await this.dbService.updateSyncStatus(userId, "IDLE");
         }
         catch (error) {
-            console.error(`Sync failed for user ${userId}:`, error);
+            logger_1.logger.error({ err: error, userId }, `Sync failed for user ${userId}`);
             state.status = "ERROR";
             state.lastError = error.message;
             await this.dbService.updateSyncStatus(userId, "ERROR", error.message);
@@ -95,18 +96,16 @@ class GmailSyncService {
                 console.log(`Reached MAX_INITIAL_MESSAGES (${MAX_INITIAL_MESSAGES}) for user ${userId}. Truncating first sync.`);
                 break;
             }
-            // console.time(`Gmail-FetchChunk`);
             const fetchedThreads = await Promise.all(chunk.map(async (threadId) => {
                 try {
                     const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
                     return threadRes.data;
                 }
-                catch (_e) {
-                    // console.error(`Failed to fetch thread ${threadId} from Gmail:`, e);
+                catch (e) {
+                    logger_1.logger.error({ err: e, threadId, userId }, `Failed to fetch thread ${threadId} from Gmail`);
                     return null;
                 }
             }));
-            // console.timeEnd(`Gmail-FetchChunk`);
             for (const threadData of fetchedThreads) {
                 if (!threadData)
                     continue;
@@ -119,8 +118,8 @@ class GmailSyncService {
                     state.emailsProcessed = totalMessagesProcessed;
                     state.threadsProcessed++;
                 }
-                catch (_e) {
-                    // console.error(`Failed to process thread in DB:`, e);
+                catch (e) {
+                    logger_1.logger.error({ err: e, threadId: threadData.id, userId }, `Failed to process thread in DB`);
                 }
             }
         }
@@ -140,9 +139,7 @@ class GmailSyncService {
         const processedEmailIds = [];
         const deletedMessageIds = new Set();
         try {
-            // console.time(`Gmail-HistoryList`);
             const res = await gmail.users.history.list({ userId: "me", startHistoryId });
-            // console.timeEnd(`Gmail-HistoryList`);
             if (res.data.historyId) {
                 await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
             }
@@ -209,11 +206,8 @@ class GmailSyncService {
                     break;
                 }
                 try {
-                    // console.time(`Prisma-ThreadCheck-${threadId}`);
                     const existingThread = await this.dbService.getThreadByProviderId(userId, threadId);
-                    // console.timeEnd(`Prisma-ThreadCheck-${threadId}`);
                     if (existingThread) {
-                        // console.time(`Gmail-MissingMessages-${threadId}`);
                         const fetchedMessagesRaw = await Promise.all(Array.from(messageIds).map(async (msgId) => {
                             try {
                                 const fullMsgRes = await gmail.users.messages.get({ userId: "me", id: msgId, format: "full" });
@@ -226,7 +220,6 @@ class GmailSyncService {
                             }
                         }));
                         const fetchedMessages = fetchedMessagesRaw.filter(m => m !== null);
-                        // console.timeEnd(`Gmail-MissingMessages-${threadId}`);
                         const parsedEmails = fetchedMessages.map(m => this.parserService.parseMessage(m));
                         parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
                         const savedEmails = await this.dbService.upsertThreadAndEmails(userId, connectionId, parsedEmails);
@@ -236,9 +229,7 @@ class GmailSyncService {
                         state.emailsProcessed += parsedEmails.length;
                     }
                     else {
-                        // console.time(`Gmail-FullThread-${threadId}`);
                         const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
-                        // console.timeEnd(`Gmail-FullThread-${threadId}`);
                         const threadMessages = threadRes.data.messages || [];
                         const parsedEmails = threadMessages.map(m => this.parserService.parseMessage(m));
                         parsedEmails.sort((a, b) => a.internalDate.getTime() - b.internalDate.getTime());
@@ -250,7 +241,7 @@ class GmailSyncService {
                     }
                 }
                 catch (e) {
-                    console.error(`Failed to process thread ${threadId}:`, e);
+                    logger_1.logger.error({ err: e, threadId, userId }, `Failed to process thread ${threadId} during incremental sync`);
                 }
             }
             state.currentStage = "Finalizing...";
@@ -258,7 +249,7 @@ class GmailSyncService {
         }
         catch (error) {
             if (error.code === 404) {
-                console.log(`History expired for user ${userId}. Restarting First Sync.`);
+                logger_1.logger.warn({ userId }, `History expired for user ${userId}. Restarting First Sync.`);
                 await this.dbService.updateLastHistoryId(userId, null);
                 await this.performFirstSync(userId, connectionId, gmail, state);
                 return [];
@@ -320,7 +311,7 @@ class GmailSyncService {
             });
         }
         catch (error) {
-            console.error(`Webhook Sync failed for user ${userId}:`, error);
+            logger_1.logger.error({ err: error, userId }, `Webhook Sync failed for user ${userId}`);
             state.status = "ERROR";
             state.lastError = error.message;
             emitToUser(userId, 'sync:error', { error: error.message });
@@ -333,7 +324,7 @@ class GmailSyncService {
                 console.log(`Executing queued webhook for ${userId} with historyId ${pendingHistoryId}`);
                 setTimeout(() => {
                     this.processWebhook(emailAddress, pendingHistoryId).catch(err => {
-                        console.error(`Queued webhook failed for ${emailAddress}:`, err);
+                        logger_1.logger.error({ err, emailAddress }, `Queued webhook failed for ${emailAddress}`);
                     });
                 }, 1000);
             }
