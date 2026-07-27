@@ -1,5 +1,6 @@
 import { AiProvider } from "@prisma/client";
 import { prisma } from "../../lib/prisma";
+import { ApiError } from "../../utils/ApiError";
 
 
 export class DraftDbService {
@@ -45,17 +46,25 @@ export class DraftDbService {
   }
 
   async updateDraftEditedText(draftId: string, userId: string, editedText: string) {
-    return prisma.aiDraftReply.updateMany({
+    const result = await prisma.aiDraftReply.updateMany({
       where: { id: draftId, userId },
       data: { editedText }
     });
+    if (result.count === 0) {
+      throw new ApiError(404, 'Draft not found');
+    }
+    return result;
   }
 
   async discardDraft(draftId: string, userId: string) {
-    return prisma.aiDraftReply.updateMany({
+    const result = await prisma.aiDraftReply.updateMany({
       where: { id: draftId, userId },
       data: { deletedAt: new Date(), isFinal: false }
     });
+    if (result.count === 0) {
+      throw new ApiError(404, 'Draft not found');
+    }
+    return result;
   }
 
   async getDraftById(draftId: string, userId: string) {

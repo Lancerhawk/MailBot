@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.DraftDbService = void 0;
 const prisma_1 = require("../../lib/prisma");
+const ApiError_1 = require("../../utils/ApiError");
 class DraftDbService {
     async getLatestFinalDraft(emailId, userId) {
         return prisma_1.prisma.aiDraftReply.findFirst({
@@ -29,16 +30,24 @@ class DraftDbService {
         });
     }
     async updateDraftEditedText(draftId, userId, editedText) {
-        return prisma_1.prisma.aiDraftReply.updateMany({
+        const result = await prisma_1.prisma.aiDraftReply.updateMany({
             where: { id: draftId, userId },
             data: { editedText }
         });
+        if (result.count === 0) {
+            throw new ApiError_1.ApiError(404, 'Draft not found');
+        }
+        return result;
     }
     async discardDraft(draftId, userId) {
-        return prisma_1.prisma.aiDraftReply.updateMany({
+        const result = await prisma_1.prisma.aiDraftReply.updateMany({
             where: { id: draftId, userId },
             data: { deletedAt: new Date(), isFinal: false }
         });
+        if (result.count === 0) {
+            throw new ApiError_1.ApiError(404, 'Draft not found');
+        }
+        return result;
     }
     async getDraftById(draftId, userId) {
         return prisma_1.prisma.aiDraftReply.findFirst({
