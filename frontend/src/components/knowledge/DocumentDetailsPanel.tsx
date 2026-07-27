@@ -76,6 +76,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
   const [titleValue, setTitleValue] = useState("");
   const [descValue, setDescValue] = useState("");
   const [folderValue, setFolderValue] = useState("");
+  const [isSavingTitle, setIsSavingTitle] = useState(false);
   const [isSavingDescription, setIsSavingDescription] = useState(false);
   const [editingFolder, setEditingFolder] = useState(false);
   const [isSavingFolder, setIsSavingFolder] = useState(false);
@@ -85,6 +86,10 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
     if (isOpen) {
       const interval = setInterval(() => setCurrentTime(Date.now()), 5000);
       return () => clearInterval(interval);
+    } else {
+      setEditingTitle(false);
+      setEditingDescription(false);
+      setEditingFolder(false);
     }
   }, [isOpen]);
 
@@ -93,7 +98,6 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
   useEffect(() => {
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
-      // If the target is no longer in the document (unmounted by the click itself), ignore
       if (!document.contains(e.target as Node)) return;
       // Don't close if clicking on a toast notification
       if ((e.target as Element).closest(".go3958317564, .go4109123758, ol[data-sonner-toaster]")) return;
@@ -116,13 +120,20 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
   }
 
   const handleSaveTitle = useCallback(async () => {
-    if (!doc || !titleValue.trim()) return;
+    if (!doc || !titleValue.trim() || titleValue === doc.title) {
+      setEditingTitle(false);
+      setTitleValue(doc?.title || "");
+      return;
+    }
+    setIsSavingTitle(true);
     try {
       await api.patch(`/knowledge/${doc.id}`, { title: titleValue });
       setEditingTitle(false);
       onUpdate();
     } catch {
       toast.error("Failed to update title");
+    } finally {
+      setIsSavingTitle(false);
     }
   }, [doc, titleValue, onUpdate]);
 
@@ -260,15 +271,61 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                 <div>
                   <label className="mb-1 block text-xs font-medium text-zinc-400 dark:text-zinc-500">Title</label>
                   {editingTitle ? (
-                    <div className="flex gap-2">
+                    <div className="flex flex-col gap-2 mt-1">
                       <input
                         autoFocus
                         value={titleValue}
                         onChange={(e) => setTitleValue(e.target.value)}
-                        onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); if (e.key === "Escape") setEditingTitle(false); }}
-                        className="flex-1 rounded-lg border border-zinc-300 bg-transparent px-3 py-1.5 text-sm text-zinc-900 outline-none focus:border-orange-400 dark:border-zinc-700 dark:text-zinc-100"
+                        onBlur={() => {
+                          setTimeout(() => {
+                            if (editingTitle) handleSaveTitle();
+                          }, 150);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleSaveTitle();
+                          }
+                          if (e.key === "Escape") {
+                            setEditingTitle(false);
+                            setTitleValue(doc.title || "");
+                          }
+                        }}
+                        className="w-full rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700/50 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:ring-zinc-600"
                       />
-                      <Button size="sm" onClick={handleSaveTitle}>Save</Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setEditingTitle(false);
+                            setTitleValue(doc.title || "");
+                          }}
+                          disabled={isSavingTitle}
+                          className="h-8 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSaveTitle();
+                          }}
+                          disabled={isSavingTitle}
+                          className="h-8 px-4 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 shadow-sm transition-all"
+                        >
+                          {isSavingTitle ? (
+                            <>
+                              <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />
+                              Saving...
+                            </>
+                          ) : (
+                            "Save Changes"
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   ) : (
                     <p
@@ -289,7 +346,6 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                   )}
                 </div>
 
-                {/* Description */}
                 <div>
                   <label className="mb-1 block text-xs font-medium text-zinc-400 dark:text-zinc-500">Description</label>
                   {editingDescription ? (
@@ -298,22 +354,40 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                         autoFocus
                         value={descValue}
                         onChange={(e) => setDescValue(e.target.value)}
+                        onBlur={() => {
+                          setTimeout(() => {
+                            if (editingDescription) handleSaveDescription();
+                          }, 150);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === "Escape") {
+                            setEditingDescription(false);
+                            setDescValue(doc.description || "");
+                          }
+                        }}
                         rows={4}
                         className="w-full resize-none rounded-lg border border-zinc-200 bg-zinc-50/50 px-3 py-2 text-sm text-zinc-900 shadow-sm outline-none focus:border-zinc-400 focus:ring-1 focus:ring-zinc-400 dark:border-zinc-700/50 dark:bg-zinc-900/50 dark:text-zinc-100 dark:focus:border-zinc-600 dark:focus:ring-zinc-600 scrollbar-thin scrollbar-thumb-zinc-200 dark:scrollbar-thumb-zinc-700"
                       />
                       <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          onClick={() => setEditingDescription(false)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            setEditingDescription(false);
+                            setDescValue(doc.description || "");
+                          }}
                           disabled={isSavingDescription}
                           className="h-8 text-xs text-zinc-500 hover:text-zinc-900 hover:bg-zinc-100 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
                         >
                           Cancel
                         </Button>
-                        <Button 
-                          size="sm" 
-                          onClick={handleSaveDescription}
+                        <Button
+                          size="sm"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            handleSaveDescription();
+                          }}
                           disabled={isSavingDescription}
                           className="h-8 px-4 text-xs font-medium bg-zinc-900 hover:bg-zinc-800 text-white dark:bg-zinc-100 dark:hover:bg-white dark:text-zinc-900 shadow-sm transition-all"
                         >
