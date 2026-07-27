@@ -54,7 +54,7 @@ class GmailController {
         logger_1.logger.warn("[Webhook Security] Webhook received without OIDC token. Ensure Pub/Sub OIDC auth is enabled in Google Cloud Console.");
         return true;
     }
-    async webhook(req, res, next) {
+    async webhook(req, res, _next) {
         try {
             logger_1.logger.info({ ip: req.ip }, "[Gmail Webhook] Received POST request");
             const isAuthorized = await this.verifyWebhookAuth(req);

@@ -57,7 +57,7 @@ export class GmailController {
     return true;
   }
 
-  async webhook(req: Request, res: Response, next: NextFunction) {
+  async webhook(req: Request, res: Response, _next: NextFunction) {
     try {
       logger.info({ ip: req.ip }, "[Gmail Webhook] Received POST request");
       const isAuthorized = await this.verifyWebhookAuth(req);
