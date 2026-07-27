@@ -133,7 +133,7 @@ class AuthService {
             await prisma_1.prisma.activityLog.create({
                 data: {
                     userId,
-                    action: client_1.ActivityType.LOGIN,
+                    action: client_1.ActivityType.LOGOUT,
                     ipAddress,
                     userAgent,
                     metadata: { action: 'logout' }

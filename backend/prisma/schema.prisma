@@ -130,6 +130,7 @@ enum NotificationType {
 
 enum ActivityType {
   LOGIN
+  LOGOUT
   SETTINGS_CHANGE
   EMAIL_SENT
   EMAIL_RECEIVED
