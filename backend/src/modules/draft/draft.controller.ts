@@ -35,7 +35,7 @@ export class DraftController {
 
       if (!userId) throw new ApiError(401, 'Unauthorized');
 
-      if (draftService.isGenerating(emailId)) {
+      if (await draftService.isGenerating(emailId)) {
         throw new ApiError(409, 'Draft generation already in progress for this email');
       }
 

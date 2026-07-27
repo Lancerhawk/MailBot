@@ -17,13 +17,18 @@ const contactDbService = new ContactDbService();
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
 import { PricingConfig } from '../analytics/services/pricing.config';
 import { AiProvider } from '@prisma/client';
+import { cacheService } from '../../lib/cache.service';
 
 const userProcessingQueue = new Map<string, Promise<void>>();
-const activeGenerations = new Set<string>();
 
 export class DraftService {
   async generateDraft(userId: string, emailId: string, isRegeneration = false) {
-    if (activeGenerations.has(emailId)) {
+    if (await this.isGenerating(emailId)) {
+      throw new Error('CONFLICT: Draft generation already in progress for this email');
+    }
+
+    const locked = await cacheService.acquireLock(`draft:lock:${emailId}`, 120);
+    if (!locked) {
       throw new Error('CONFLICT: Draft generation already in progress for this email');
     }
 
@@ -46,7 +51,7 @@ export class DraftService {
   }
 
   private async processDraft(userId: string, emailId: string, isRegeneration: boolean) {
-    activeGenerations.add(emailId);
+    await cacheService.set(`draft:active:${emailId}`, 'GENERATING', 120);
     try {
       const email = await gmailDbService.getEmailByIdWithConnection(userId, emailId);
       if (!email) {
@@ -195,11 +200,13 @@ export class DraftService {
       emitToUser(userId, 'draft:failed', { emailId, error: error.message });
       throw error;
     } finally {
-      activeGenerations.delete(emailId);
+      await cacheService.delete(`draft:active:${emailId}`);
+      await cacheService.releaseLock(`draft:lock:${emailId}`);
     }
   }
 
-  isGenerating(emailId: string) {
-    return activeGenerations.has(emailId);
+  async isGenerating(emailId: string): Promise<boolean> {
+    const status = await cacheService.get<string>(`draft:active:${emailId}`);
+    return status === 'GENERATING';
   }
 }

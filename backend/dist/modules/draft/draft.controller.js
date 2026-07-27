@@ -31,7 +31,7 @@ class DraftController {
             const userId = req.user?.id;
             if (!userId)
                 throw new ApiError_1.ApiError(401, 'Unauthorized');
-            if (draftService.isGenerating(emailId)) {
+            if (await draftService.isGenerating(emailId)) {
                 throw new ApiError_1.ApiError(409, 'Draft generation already in progress for this email');
             }
             draftService.generateDraft(userId, emailId, true).catch(err => {

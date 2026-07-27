@@ -19,11 +19,15 @@ const contactDbService = new contact_db_service_1.ContactDbService();
 const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
 const pricing_config_1 = require("../analytics/services/pricing.config");
 const client_1 = require("@prisma/client");
+const cache_service_1 = require("../../lib/cache.service");
 const userProcessingQueue = new Map();
-const activeGenerations = new Set();
 class DraftService {
     async generateDraft(userId, emailId, isRegeneration = false) {
-        if (activeGenerations.has(emailId)) {
+        if (await this.isGenerating(emailId)) {
+            throw new Error('CONFLICT: Draft generation already in progress for this email');
+        }
+        const locked = await cache_service_1.cacheService.acquireLock(`draft:lock:${emailId}`, 120);
+        if (!locked) {
             throw new Error('CONFLICT: Draft generation already in progress for this email');
         }
         const previousPromise = userProcessingQueue.get(userId) || Promise.resolve();
@@ -41,7 +45,7 @@ class DraftService {
         return nextPromise;
     }
     async processDraft(userId, emailId, isRegeneration) {
-        activeGenerations.add(emailId);
+        await cache_service_1.cacheService.set(`draft:active:${emailId}`, 'GENERATING', 120);
         try {
             const email = await gmailDbService.getEmailByIdWithConnection(userId, emailId);
             if (!email) {
@@ -170,11 +174,13 @@ class DraftService {
             throw error;
         }
         finally {
-            activeGenerations.delete(emailId);
+            await cache_service_1.cacheService.delete(`draft:active:${emailId}`);
+            await cache_service_1.cacheService.releaseLock(`draft:lock:${emailId}`);
         }
     }
-    isGenerating(emailId) {
-        return activeGenerations.has(emailId);
+    async isGenerating(emailId) {
+        const status = await cache_service_1.cacheService.get(`draft:active:${emailId}`);
+        return status === 'GENERATING';
     }
 }
 exports.DraftService = DraftService;
