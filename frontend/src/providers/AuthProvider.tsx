@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { Loader2 } from "lucide-react";
-import api from "../lib/api";
+import api, { API_URL } from "../lib/api";
 
 export interface UserSettings {
   id: string;
@@ -103,8 +103,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <div className="flex flex-col gap-2">
             <button
               onClick={() => {
-                const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-                window.location.href = `${apiUrl}/auth/google`;
+                window.location.href = `${API_URL}/auth/google`;
               }}
               className="w-full rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-orange-600 dark:bg-orange-600 dark:hover:bg-orange-700 cursor-pointer"
             >

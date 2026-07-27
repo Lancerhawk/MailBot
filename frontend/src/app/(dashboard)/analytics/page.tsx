@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { useQuery, useQueryClient, QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Download, AlertCircle, Loader2, ChevronDown, Info } from 'lucide-react';
 import { useSocket } from '@/providers/SocketProvider';
 import { Button } from '@/components/ui/button';
@@ -11,15 +11,14 @@ import { AnalyticsCharts } from '@/components/analytics/AnalyticsCharts';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportToPDF } from '@/lib/pdf-export';
 import axios from 'axios';
+import { API_URL } from '@/lib/api';
 
 const api = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1'}/analytics`,
+  baseURL: `${API_URL}/analytics`,
   withCredentials: true,
 });
 
-const queryClient = new QueryClient();
-
-function AnalyticsContent() {
+export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('30d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
@@ -227,13 +226,5 @@ function AnalyticsContent() {
         </div>
 
     </div>
-  );
-}
-
-export default function AnalyticsPage() {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AnalyticsContent />
-    </QueryClientProvider>
   );
 }
