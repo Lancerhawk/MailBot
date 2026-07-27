@@ -89,22 +89,6 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
     }
   }, [isOpen]);
 
-  // Auto-close when all uploads succeed
-  useEffect(() => {
-    if (isOpen && queue.length > 0) {
-      const uploadFinished = queue.every(q => q.stage !== "queued" && q.stage !== "uploading");
-      const noErrors = !queue.some(q => q.stage === "failed");
-
-      if (uploadFinished && noErrors) {
-        const t = setTimeout(() => {
-          onClose();
-        }, 1500);
-        return () => clearTimeout(t);
-      }
-    }
-  }, [queue, isOpen, onClose]);
-
-  // Listen for socket events to update processing status
   useEffect(() => {
     if (!socket) return;
 
@@ -218,9 +202,10 @@ export function UploadModal({ isOpen, onClose, onUploadComplete }: UploadModalPr
       // Intentionally leave isUploading = true if successful to prevent UI flash during fade-out
       setTimeout(() => {
         onUploadComplete();
+        onClose();
       }, 600);
     }
-  }, [queue, folder, onUploadComplete]);
+  }, [queue, folder, onUploadComplete, onClose]);
 
   const updateItemTitle = useCallback((id: string, title: string) => {
     setQueue((prev) => prev.map((q) => (q.id === id ? { ...q, title } : q)));

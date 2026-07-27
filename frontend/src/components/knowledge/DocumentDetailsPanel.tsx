@@ -406,6 +406,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                     icon={doc.processingStatus === "COMPLETED" ? CheckCircle2 : doc.processingStatus === "FAILED" ? AlertCircle : Loader2}
                     label="Processing"
                     value={doc.processingStatus}
+                    iconClassName={doc.processingStatus !== "COMPLETED" && doc.processingStatus !== "FAILED" ? "animate-spin text-blue-500" : ""}
                     valueColor={
                       doc.processingStatus === "COMPLETED" ? "text-emerald-600 dark:text-emerald-400" :
                         doc.processingStatus === "FAILED" ? "text-red-600 dark:text-red-400" :
@@ -467,16 +468,18 @@ function MetaRow({
   value,
   mono,
   valueColor,
+  iconClassName,
 }: {
   icon: React.ElementType;
   label: string;
   value: React.ReactNode;
   mono?: boolean;
   valueColor?: string;
+  iconClassName?: string;
 }) {
   return (
     <div className="flex items-start gap-3">
-      <Icon className="mt-0.5 h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500" />
+      <Icon className={cn("mt-0.5 h-4 w-4 shrink-0 text-zinc-400 dark:text-zinc-500", iconClassName)} />
       <div className="min-w-0 flex-1">
         <p className="text-xs text-zinc-400 dark:text-zinc-500">{label}</p>
         <p className={cn(
