@@ -30,21 +30,27 @@ const startServer = async () => {
         setInterval(() => {
             renewalService.runRenewalJob().catch((e) => logger_1.logger.error({ err: e }, 'Failed scheduled watch renewal'));
         }, 24 * 60 * 60 * 1000);
-        await local_embedding_service_1.localEmbeddingService.init();
-        const workerCount = env_1.env.EMBEDDING_WORKERS;
-        const workers = [];
-        const descWorkers = [];
-        for (let i = 1; i <= workerCount; i++) {
-            const worker = new embedding_worker_1.EmbeddingWorker(i);
-            worker.start();
-            workers.push(worker);
-            const descWorker = new description_worker_1.DescriptionWorker(i);
-            descWorker.start();
-            descWorkers.push(descWorker);
+        if (env_1.env.WORKER_MODE === 'local') {
+            logger_1.logger.info('[WorkerMode: LOCAL] Initializing local embedding service and background workers...');
+            await local_embedding_service_1.localEmbeddingService.init();
+            const workerCount = env_1.env.EMBEDDING_WORKERS;
+            const workers = [];
+            const descWorkers = [];
+            for (let i = 1; i <= workerCount; i++) {
+                const worker = new embedding_worker_1.EmbeddingWorker(i);
+                worker.start();
+                workers.push(worker);
+                const descWorker = new description_worker_1.DescriptionWorker(i);
+                descWorker.start();
+                descWorkers.push(descWorker);
+            }
+            setInterval(() => {
+                job_service_1.jobService.recoverStaleJobs().catch((e) => logger_1.logger.error({ err: e }, 'Failed to recover stale jobs'));
+            }, 5 * 60 * 1000);
         }
-        setInterval(() => {
-            job_service_1.jobService.recoverStaleJobs().catch((e) => logger_1.logger.error({ err: e }, 'Failed to recover stale jobs'));
-        }, 5 * 60 * 1000);
+        else {
+            logger_1.logger.info('[WorkerMode: REMOTE] Skipping local embedding & description workers. Standalone worker service will process ProcessingJob queue.');
+        }
     }
     catch (error) {
         logger_1.logger.fatal({ err: error, errorMessage: error.message }, 'Failed to start server');

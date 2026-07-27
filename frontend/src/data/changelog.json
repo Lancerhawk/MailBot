@@ -1,12 +1,42 @@
 {
   "versions": [
     {
+      "id": "be-v1.5.0",
+      "version": "v1.5.0",
+      "date": "2026-07-27",
+      "title": "Standalone AI Worker Microservice & WORKER_MODE Switch",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Standalone Worker Microservice (src/worker.ts)",
+          "description": "Dedicated entry point for processing CPU/RAM-heavy AI embedding (@xenova/transformers) and description jobs in the background without bloating the main API web server."
+        },
+        {
+          "title": "WORKER_MODE Toggle",
+          "description": "Added WORKER_MODE=\"local\" | \"remote\" to .env. In local mode, workers run inside the API server; in remote mode, the API server skips local worker initialization for millisecond boot times and minimal RAM overhead."
+        },
+        {
+          "title": "Secret-Authenticated Internal Webhooks",
+          "description": "Implemented POST /api/v1/internal/jobs/callback secured by INTERNAL_WORKER_SECRET to receive job completion notifications from remote worker servers and emit real-time Socket.IO events to connected frontend clients."
+        },
+        {
+          "title": "Worker Process Safeguard",
+          "description": "Added an automatic check in worker.ts that immediately exits if WORKER_MODE === \"local\" to prevent duplicate job processing."
+        },
+        {
+          "title": "New NPM Scripts",
+          "description": "Added npm run dev:worker and npm run start:worker in package.json."
+        }
+      ]
+    },
+    {
       "id": "be-v1.4.0",
       "version": "v1.4.0",
       "date": "2026-07-27",
       "title": "Security Hardening & Authentication Verification",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Gmail Webhook OIDC Verification",

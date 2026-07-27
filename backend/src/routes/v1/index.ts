@@ -10,6 +10,7 @@ import draftRoute from '../../modules/draft/draft.route';
 import knowledgeRoute from '../../modules/knowledge/knowledge.route';
 import contactRoute from '../../modules/contact/contact.route';
 import { analyticsRouter } from '../../modules/analytics/analytics.route';
+import internalRoute from './internal.route';
 
 const defaultRoutes = [
   {
@@ -39,7 +40,11 @@ const defaultRoutes = [
   {
     path: '/contacts',
     route: contactRoute,
-  }
+  },
+  {
+    path: '/internal',
+    route: internalRoute,
+  },
 ];
 
 defaultRoutes.forEach((route) => {

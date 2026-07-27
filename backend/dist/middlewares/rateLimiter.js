@@ -58,7 +58,7 @@ const getStore = (prefix) => {
                 if (redisClient && redisClient.isOpen) {
                     return redisClient.sendCommand(args);
                 }
-                console.warn(`⚠️ [RATE LIMITER FALLBACK] Redis is disconnected! Passing request through for limiter '${prefix}' without Redis check.`);
+                console.warn(`[RATE LIMITER FALLBACK] Redis is disconnected! Passing request through for limiter '${prefix}' without Redis check.`);
                 return Promise.reject(new Error("Redis client is not connected"));
             },
         });

@@ -30,6 +30,10 @@ const envSchema = z.object({
   EMBEDDING_BATCH_SIZE: z.coerce.number().default(32),
   PROCESSING_JOB_TIMEOUT: z.coerce.number().default(600000), // 10 minutes
   MODEL_CACHE_DIRECTORY: z.string().default('.cache/models'),
+
+  WORKER_MODE: z.enum(['local', 'remote']).default('local'),
+  INTERNAL_WORKER_SECRET: z.string().default('internal-worker-secret-dev'),
+  API_SERVER_URL: z.string().default('http://localhost:5000'),
 });
 
 const _env = envSchema.safeParse(process.env);

@@ -33,24 +33,29 @@ const startServer = async () => {
       renewalService.runRenewalJob().catch((e: any) => logger.error({ err: e }, 'Failed scheduled watch renewal'));
     }, 24 * 60 * 60 * 1000);
 
-    await localEmbeddingService.init();
+    if (env.WORKER_MODE === 'local') {
+      logger.info('[WorkerMode: LOCAL] Initializing local embedding service and background workers...');
+      await localEmbeddingService.init();
 
-    const workerCount = env.EMBEDDING_WORKERS;
-    const workers: EmbeddingWorker[] = [];
-    const descWorkers: DescriptionWorker[] = [];
-    for (let i = 1; i <= workerCount; i++) {
-      const worker = new EmbeddingWorker(i);
-      worker.start();
-      workers.push(worker);
+      const workerCount = env.EMBEDDING_WORKERS;
+      const workers: EmbeddingWorker[] = [];
+      const descWorkers: DescriptionWorker[] = [];
+      for (let i = 1; i <= workerCount; i++) {
+        const worker = new EmbeddingWorker(i);
+        worker.start();
+        workers.push(worker);
 
-      const descWorker = new DescriptionWorker(i);
-      descWorker.start();
-      descWorkers.push(descWorker);
+        const descWorker = new DescriptionWorker(i);
+        descWorker.start();
+        descWorkers.push(descWorker);
+      }
+
+      setInterval(() => {
+        jobService.recoverStaleJobs().catch((e: any) => logger.error({ err: e }, 'Failed to recover stale jobs'));
+      }, 5 * 60 * 1000);
+    } else {
+      logger.info('[WorkerMode: REMOTE] Skipping local embedding & description workers. Standalone worker service will process ProcessingJob queue.');
     }
-
-    setInterval(() => {
-      jobService.recoverStaleJobs().catch((e: any) => logger.error({ err: e }, 'Failed to recover stale jobs'));
-    }, 5 * 60 * 1000);
 
   } catch (error: any) {
     logger.fatal({ err: error, errorMessage: error.message }, 'Failed to start server');

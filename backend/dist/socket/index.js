@@ -55,10 +55,22 @@ const getIO = () => {
 exports.getIO = getIO;
 const emitToUser = (userId, event, data) => {
     if (!io) {
+        if (env_1.env.WORKER_MODE === 'remote') {
+            fetch(`${env_1.env.API_SERVER_URL}/api/v1/internal/jobs/callback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-internal-secret': env_1.env.INTERNAL_WORKER_SECRET,
+                },
+                body: JSON.stringify({ userId, event, data }),
+            }).catch((err) => {
+                logger_1.logger.error({ err }, `[Worker Callback Failed] Could not notify API server of event ${event} for user ${userId}`);
+            });
+            return;
+        }
         logger_1.logger.warn(`Failed to emit ${event} to ${userId}: Socket.io not initialized`);
         return;
     }
-    // logger.info(`Emitting socket event '${event}' to user ${userId}`);
     io.to(userId).emit(event, data);
 };
 exports.emitToUser = emitToUser;

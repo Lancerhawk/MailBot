@@ -1,11 +1,13 @@
 {
   "name": "mailbot-backend",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "main": "dist/server.js",
   "scripts": {
     "dev": "nodemon",
+    "dev:worker": "tsx watch src/worker.ts",
     "build": "tsc",
     "start": "node dist/server.js",
+    "start:worker": "node dist/worker.js",
     "lint": "eslint .",
     "format": "prettier --write \"src/**/*.ts\"",
     "analytics:backfill": "tsx scripts/run-analytics-backfill.ts"

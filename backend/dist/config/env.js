@@ -33,6 +33,9 @@ const envSchema = zod_1.z.object({
     EMBEDDING_BATCH_SIZE: zod_1.z.coerce.number().default(32),
     PROCESSING_JOB_TIMEOUT: zod_1.z.coerce.number().default(600000), // 10 minutes
     MODEL_CACHE_DIRECTORY: zod_1.z.string().default('.cache/models'),
+    WORKER_MODE: zod_1.z.enum(['local', 'remote']).default('local'),
+    INTERNAL_WORKER_SECRET: zod_1.z.string().default('internal-worker-secret-dev'),
+    API_SERVER_URL: zod_1.z.string().default('http://localhost:5000'),
 });
 const _env = envSchema.safeParse(process.env);
 if (!_env.success) {

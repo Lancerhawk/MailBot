@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.5.0] - Standalone AI Worker Microservice & WORKER_MODE Switch
+
+### Added
+- **Standalone Worker Microservice (`src/worker.ts`):** Dedicated entry point for processing CPU/RAM-heavy AI embedding (`@xenova/transformers`) and description jobs in the background without bloating the main API web server.
+- **WORKER_MODE Toggle:** Added `WORKER_MODE="local" | "remote"` to `.env`. In `local` mode, workers run inside the API server; in `remote` mode, the API server skips local worker initialization for millisecond boot times and minimal RAM overhead.
+- **Secret-Authenticated Internal Webhooks:** Implemented `POST /api/v1/internal/jobs/callback` secured by `INTERNAL_WORKER_SECRET` to receive job completion notifications from remote worker servers and emit real-time Socket.IO events to connected frontend clients.
+- **Worker Process Safeguard:** Added an automatic check in `worker.ts` that immediately exits if `WORKER_MODE === "local"` to prevent duplicate job processing.
+- **New NPM Scripts:** Added `npm run dev:worker` and `npm run start:worker` in `package.json`.
+
 ## [Backend v1.4.0] - Security Hardening & Authentication Verification
 
 ### Added

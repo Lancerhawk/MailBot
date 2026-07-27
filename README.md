@@ -6,7 +6,7 @@
   **An AI-Powered Email Assistant**
   
   [![Frontend Version](https://img.shields.io/badge/Frontend-v1.1.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
-  [![Backend Version](https://img.shields.io/badge/Backend-v1.4.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
+  [![Backend Version](https://img.shields.io/badge/Backend-v1.5.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)
 
@@ -745,6 +745,13 @@ erDiagram
    ```bash
    npm run dev
    ```
+6. (Optional) Start the Standalone AI Worker Microservice (for separated production architecture):
+   - In `.env`, set `WORKER_MODE="remote"`, `INTERNAL_WORKER_SECRET="your-secret"`, and `API_SERVER_URL="http://localhost:5000"`.
+   - In a separate terminal, start the worker process:
+     ```bash
+     npm run dev:worker
+     ```
+   - When `WORKER_MODE="local"` (default), the API server runs workers internally and `npm run dev:worker` will safely exit.
 
 ### Frontend Setup
 1. Navigate to the frontend directory:

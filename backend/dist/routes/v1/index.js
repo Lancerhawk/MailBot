@@ -12,6 +12,7 @@ const draft_route_1 = __importDefault(require("../../modules/draft/draft.route")
 const knowledge_route_1 = __importDefault(require("../../modules/knowledge/knowledge.route"));
 const contact_route_1 = __importDefault(require("../../modules/contact/contact.route"));
 const analytics_route_1 = require("../../modules/analytics/analytics.route");
+const internal_route_1 = __importDefault(require("./internal.route"));
 const defaultRoutes = [
     {
         path: '/health',
@@ -40,7 +41,11 @@ const defaultRoutes = [
     {
         path: '/contacts',
         route: contact_route_1.default,
-    }
+    },
+    {
+        path: '/internal',
+        route: internal_route_1.default,
+    },
 ];
 defaultRoutes.forEach((route) => {
     router.use(route.path, route.route);
