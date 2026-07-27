@@ -113,7 +113,6 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
   const [renameValue, setRenameValue] = useState(doc.title);
   const [optimisticDoc, setOptimisticDoc] = useState(doc);
   const [isProcessing, setIsProcessing] = useState(false);
-
   const isGenerating = doc.processingStatus === "PROCESSING" || doc.processingStatus === "PENDING";
 
   const [prevDoc, setPrevDoc] = useState(doc);

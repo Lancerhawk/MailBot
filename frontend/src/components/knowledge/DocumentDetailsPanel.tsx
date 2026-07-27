@@ -86,10 +86,6 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
     if (isOpen) {
       const interval = setInterval(() => setCurrentTime(Date.now()), 5000);
       return () => clearInterval(interval);
-    } else {
-      setEditingTitle(false);
-      setEditingDescription(false);
-      setEditingFolder(false);
     }
   }, [isOpen]);
 
@@ -99,7 +95,6 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
     if (!isOpen) return;
     const handleClickOutside = (e: MouseEvent) => {
       if (!document.contains(e.target as Node)) return;
-      // Don't close if clicking on a toast notification
       if ((e.target as Element).closest(".go3958317564, .go4109123758, ol[data-sonner-toaster]")) return;
       if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
         onClose();
@@ -116,6 +111,16 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
       setTitleValue(doc.title || "");
       setDescValue(doc.description || "");
       setFolderValue(doc.folder || "");
+    }
+  }
+
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen);
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen);
+    if (!isOpen) {
+      setEditingTitle(false);
+      setEditingDescription(false);
+      setEditingFolder(false);
     }
   }
 
