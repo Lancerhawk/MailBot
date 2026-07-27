@@ -4,6 +4,8 @@ import { GmailDbService } from "./gmail.db.service";
 import { gmail_v1 } from "googleapis";
 import { logger } from "../../../config/logger";
 import { cacheService } from "../../../lib/cache.service";
+import { emitToUser } from "../../../socket";
+import { AiPipelineService } from "../../ai/ai.pipeline.service";
 
 interface SyncProgress {
   status: "SYNCING" | "IDLE" | "ERROR";
@@ -24,6 +26,7 @@ export class GmailSyncService {
   private clientService = new GmailClientService();
   private parserService = new GmailParserService();
   private dbService = new GmailDbService();
+  private aiPipelineService = new AiPipelineService();
 
   async isSyncRunning(userId: string): Promise<boolean> {
     const state = await this.getSyncStatus(userId);
@@ -373,7 +376,6 @@ export class GmailSyncService {
     };
     await this.saveProgress(userId, state);
 
-    const { emitToUser } = require('../../../socket');
     emitToUser(userId, 'sync:started', { source: 'webhook' });
 
     let processedEmailIds: string[] = [];
@@ -387,10 +389,8 @@ export class GmailSyncService {
       if (processedEmailIds && processedEmailIds.length > 0) {
         state.currentStage = "Generating AI drafts...";
         await this.saveProgress(userId, state);
-        const { AiPipelineService } = require('../../ai/ai.pipeline.service');
-        const aiPipeline = new AiPipelineService();
 
-        const aiPromises = processedEmailIds.map(emailId => aiPipeline.scheduleAnalysis(userId, emailId));
+        const aiPromises = processedEmailIds.map(emailId => this.aiPipelineService.scheduleAnalysis(userId, emailId));
         await Promise.all(aiPromises);
       }
 

@@ -6,6 +6,8 @@ const gmail_parser_service_1 = require("./gmail.parser.service");
 const gmail_db_service_1 = require("./gmail.db.service");
 const logger_1 = require("../../../config/logger");
 const cache_service_1 = require("../../../lib/cache.service");
+const socket_1 = require("../../../socket");
+const ai_pipeline_service_1 = require("../../ai/ai.pipeline.service");
 const MAX_INITIAL_THREADS = 100;
 const MAX_INITIAL_MESSAGES = 1000;
 const BATCH_SIZE = 5;
@@ -13,6 +15,7 @@ class GmailSyncService {
     clientService = new gmail_client_service_1.GmailClientService();
     parserService = new gmail_parser_service_1.GmailParserService();
     dbService = new gmail_db_service_1.GmailDbService();
+    aiPipelineService = new ai_pipeline_service_1.AiPipelineService();
     async isSyncRunning(userId) {
         const state = await this.getSyncStatus(userId);
         return state?.status === "SYNCING";
@@ -322,8 +325,7 @@ class GmailSyncService {
             lastError: null
         };
         await this.saveProgress(userId, state);
-        const { emitToUser } = require('../../../socket');
-        emitToUser(userId, 'sync:started', { source: 'webhook' });
+        (0, socket_1.emitToUser)(userId, 'sync:started', { source: 'webhook' });
         let processedEmailIds = [];
         try {
             const gmail = await this.clientService.getAuthenticatedClient(userId);
@@ -332,16 +334,14 @@ class GmailSyncService {
             if (processedEmailIds && processedEmailIds.length > 0) {
                 state.currentStage = "Generating AI drafts...";
                 await this.saveProgress(userId, state);
-                const { AiPipelineService } = require('../../ai/ai.pipeline.service');
-                const aiPipeline = new AiPipelineService();
-                const aiPromises = processedEmailIds.map(emailId => aiPipeline.scheduleAnalysis(userId, emailId));
+                const aiPromises = processedEmailIds.map(emailId => this.aiPipelineService.scheduleAnalysis(userId, emailId));
                 await Promise.all(aiPromises);
             }
             state.status = "IDLE";
             state.currentStage = "Sync complete";
             await this.saveProgress(userId, state);
             await this.dbService.updateSyncStatus(userId, "IDLE");
-            emitToUser(userId, 'sync:completed', {
+            (0, socket_1.emitToUser)(userId, 'sync:completed', {
                 emailsProcessed: state.emailsProcessed
             });
         }
@@ -350,7 +350,7 @@ class GmailSyncService {
             state.status = "ERROR";
             state.lastError = error.message;
             await this.saveProgress(userId, state);
-            emitToUser(userId, 'sync:error', { error: error.message });
+            (0, socket_1.emitToUser)(userId, 'sync:error', { error: error.message });
         }
         finally {
             await cache_service_1.cacheService.releaseLock(`sync:lock:${userId}`);

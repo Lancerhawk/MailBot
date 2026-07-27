@@ -12,6 +12,7 @@ const local_embedding_service_1 = require("./modules/knowledge/services/local-em
 const embedding_worker_1 = require("./modules/jobs/workers/embedding.worker");
 const description_worker_1 = require("./modules/jobs/workers/description.worker");
 const job_service_1 = require("./modules/jobs/job.service");
+const watch_renewal_service_1 = require("./modules/gmail/services/watch-renewal.service");
 let server;
 const startServer = async () => {
     BigInt.prototype.toJSON = function () {
@@ -24,8 +25,7 @@ const startServer = async () => {
             logger_1.logger.info(`Server is running on port ${env_1.env.PORT} in ${env_1.env.NODE_ENV} mode`);
         });
         (0, socket_1.initSocket)(server);
-        const WatchRenewalService = require('./modules/gmail/services/watch-renewal.service').WatchRenewalService;
-        const renewalService = new WatchRenewalService();
+        const renewalService = new watch_renewal_service_1.WatchRenewalService();
         renewalService.runRenewalJob().catch((e) => logger_1.logger.error({ err: e }, 'Failed initial watch renewal'));
         setInterval(() => {
             renewalService.runRenewalJob().catch((e) => logger_1.logger.error({ err: e }, 'Failed scheduled watch renewal'));

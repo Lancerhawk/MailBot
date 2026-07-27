@@ -8,6 +8,7 @@ import { localEmbeddingService } from './modules/knowledge/services/local-embedd
 import { EmbeddingWorker } from './modules/jobs/workers/embedding.worker';
 import { DescriptionWorker } from './modules/jobs/workers/description.worker';
 import { jobService } from './modules/jobs/job.service';
+import { WatchRenewalService } from './modules/gmail/services/watch-renewal.service';
 
 let server: Server;
 
@@ -26,7 +27,6 @@ const startServer = async () => {
 
     initSocket(server);
 
-    const WatchRenewalService = require('./modules/gmail/services/watch-renewal.service').WatchRenewalService;
     const renewalService = new WatchRenewalService();
     renewalService.runRenewalJob().catch((e: any) => logger.error({ err: e }, 'Failed initial watch renewal'));
     setInterval(() => {
