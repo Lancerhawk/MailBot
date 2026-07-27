@@ -59,17 +59,17 @@ export class AuthService {
       const providerAccountId = payload.sub;
 
       const refreshToken = tokens.refresh_token || '';
-      
+
       const encryptedAccessToken = encryptToken(tokens.access_token);
       const encryptedRefreshToken = refreshToken ? encryptToken(refreshToken) : '';
-      
-      const accessTokenExpiresAt = tokens.expiry_date 
-        ? new Date(tokens.expiry_date) 
+
+      const accessTokenExpiresAt = tokens.expiry_date
+        ? new Date(tokens.expiry_date)
         : new Date(Date.now() + 3600 * 1000);
 
       const user = await prisma.$transaction(async (tx) => {
         const existingUser = await tx.user.findUnique({ where: { email } });
-        
+
         let targetUserId = '';
         let isNewUser = false;
 

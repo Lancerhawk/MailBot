@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.7.0] - Enterprise Security Hardening, Audit Compliance & Architecture Verification
+
+### Added
+- **OAuth Token Refresh & Persistence (`src/modules/gmail/gmail.client.service.ts`):** Implemented secure encryption and persistence of Google OAuth refresh tokens to `emailAccountConnection` during token refresh events.
+- **CSRF & Socket.IO Identity Verification:** Integrated `validateCsrfOrigin` directly into `requireAuth` middleware and wrapped Express session middleware in Socket.IO connections to prevent identity spoofing.
+- **Gmail Webhook & Rate Limiting Hardening:** Added OIDC token verification for Gmail push notifications and configured multi-instance fail-open Redis rate limiting.
+- **Database Connection Health Check (`src/routes/v1/health.route.ts`):** Updated `/api/v1/health` to return `HTTP 503 Service Unavailable` with `status: 'degraded'` when PostgreSQL is disconnected.
+- **Search Offset Type Safety (`src/modules/knowledge/services/search.service.ts`):** Added `sourceOffsetStart` and `sourceOffsetEnd` to `SearchResult` interface, eliminating unsafe type casts in `mergeNeighbors`.
+- **Activity Log Logout Type (`src/services/auth.service.ts`):** Added `LOGOUT` value to `ActivityType` enum in `schema.prisma` and updated `AuthService.logLogout` to record true logout events.
+- **Worker Lifecycle Management:** Added graceful shutdown hooks in `worker-manager.ts` to stop background workers and clear intervals on `SIGTERM` and `SIGINT`.
+- **Implemented User & Profile Lookups:** Implemented real database queries for `getProfile` and `getEmail` endpoints with standardized `ApiResponse` payloads.
+
+## [Frontend v1.2.0] - Security Headers, CSP & API Client Hardening
+
+### Added
+- **Content Security Policy & HTTP Security Headers (`next.config.ts`):** Added comprehensive Content-Security-Policy, X-Frame-Options DENY, HSTS, X-Content-Type-Options, and Referrer-Policy headers to secure all frontend routes.
+- **Unified API Base URL & Port Resolution (`src/lib/api.ts`):** Exported `API_URL` constant from central API module and imported it in `AuthProvider.tsx` to eliminate fallback port 3001 discrepancies.
+
+### Fixed
+- **React Query Provider Cleanup (`src/app/(dashboard)/analytics/page.tsx`):** Removed duplicate isolated `QueryClient` and `QueryClientProvider` instantiation on the Analytics dashboard page.
+
 ## [Backend v1.6.0] - Codebase Refactoring, Distributed Caching & Stability Polish
 
 ### Added
