@@ -5,14 +5,13 @@ import { GmailSyncService } from "./services/gmail.sync.service";
 import { GmailDbService } from "./services/gmail.db.service";
 import { GmailActionsService } from "./services/gmail.actions.service";
 import { GmailSendService } from "./services/gmail.send.service";
-import { GmailClientService } from "./services/gmail.client.service";
 import { ApiError } from "../../utils/ApiError";
 import { WatchRenewalService } from "./services/watch-renewal.service";
+import { logger } from "../../config/logger";
 
 export class GmailController {
   private syncService = new GmailSyncService();
   private dbService = new GmailDbService();
-  private clientService = new GmailClientService();
   private actionsService = new GmailActionsService();
   private sendService = new GmailSendService();
   private oauth2Client = new OAuth2Client();
@@ -29,14 +28,14 @@ export class GmailController {
         const payload = ticket.getPayload();
         if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
           if (env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL && payload.email !== env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL) {
-            console.warn(`[Webhook Security] OIDC email claim mismatch. Expected: ${env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL}, Received: ${payload.email}`);
+            logger.warn({ expected: env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL, received: payload.email }, "[Webhook Security] OIDC email claim mismatch");
             return false;
           }
           return true;
         }
         return false;
       } catch (error) {
-        console.warn('[Webhook Security] OIDC verification failed:', (error as Error).message);
+        logger.warn({ err: error }, "[Webhook Security] OIDC verification failed");
         return false;
       }
     }
@@ -49,26 +48,26 @@ export class GmailController {
     }
 
     if (env.GMAIL_WEBHOOK_REQUIRE_OIDC) {
-      console.warn('[Webhook Security] Rejected webhook request: GMAIL_WEBHOOK_REQUIRE_OIDC=true and no valid OIDC token/secret was provided.');
+      logger.warn("[Webhook Security] Rejected webhook request: GMAIL_WEBHOOK_REQUIRE_OIDC=true and no valid OIDC token/secret was provided.");
       return false;
     }
 
-    console.warn('[Webhook Security] Webhook received without OIDC token. Ensure Pub/Sub OIDC auth is enabled in Google Cloud Console.');
+    logger.warn("[Webhook Security] Webhook received without OIDC token. Ensure Pub/Sub OIDC auth is enabled in Google Cloud Console.");
     return true;
   }
 
   async webhook(req: Request, res: Response) {
     try {
-      console.log(`[Gmail Webhook] Received POST request from IP: ${req.ip}`);
+      logger.info({ ip: req.ip }, "[Gmail Webhook] Received POST request");
       const isAuthorized = await this.verifyWebhookAuth(req);
       if (!isAuthorized) {
-        console.warn(`[Webhook Security] Rejected unauthorized webhook POST from IP: ${req.ip}`);
+        logger.warn({ ip: req.ip }, "[Webhook Security] Rejected unauthorized webhook POST");
         return res.status(403).send('Forbidden: Invalid webhook authentication');
       }
 
       const message = req.body?.message;
       if (!message || !message.data) {
-        console.warn('[Gmail Webhook] Missing message or message.data in request body');
+        logger.warn('[Gmail Webhook] Missing message or message.data in request body');
         return res.status(400).send('Bad Request');
       }
 
@@ -79,20 +78,20 @@ export class GmailController {
       const historyId = payload.historyId;
 
       if (!emailAddress || !historyId) {
-        console.warn('[Gmail Webhook] Missing emailAddress or historyId in decoded payload:', payload);
+        logger.warn({ payload }, '[Gmail Webhook] Missing emailAddress or historyId in decoded payload');
         return res.status(400).send('Invalid payload');
       }
 
-      console.log(`[Gmail Webhook] Valid push notification received for ${emailAddress} (historyId: ${historyId})`);
+      logger.info({ emailAddress, historyId }, '[Gmail Webhook] Valid push notification received');
 
       res.status(200).send('OK');
 
       this.syncService.processWebhook(emailAddress, BigInt(historyId)).catch(err => {
-        console.error(`Webhook processing failed for ${emailAddress}:`, err);
+        logger.error({ err, emailAddress }, 'Webhook processing failed');
       });
 
     } catch (error) {
-      console.error('Webhook error:', error);
+      logger.error({ err: error }, 'Webhook error');
       res.status(200).send('OK');
     }
   }
@@ -111,7 +110,7 @@ export class GmailController {
       }
 
       this.syncService.startSync(userId).catch(err => {
-        console.error(`Background sync failed for user ${userId}:`, err);
+        logger.error({ err, userId }, "Background sync failed");
       });
 
       res.status(202).json({
@@ -119,7 +118,7 @@ export class GmailController {
         message: "Synchronization started",
       });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error, userId }, "Failed to start synchronization");
       res.status(500).json({ status: "error", message: "Failed to start synchronization" });
     }
   }
@@ -130,7 +129,7 @@ export class GmailController {
       await this.syncService.stopSync(userId);
       res.json({ status: "success", message: "Stop requested" });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error, userId }, "Failed to stop synchronization");
       res.status(500).json({ status: "error", message: "Failed to stop synchronization" });
     }
   }
@@ -142,7 +141,7 @@ export class GmailController {
       await watchService.registerWatch(userId, true);
       res.json({ status: "success", message: "Gmail watch registered successfully" });
     } catch (error: any) {
-      console.error('Watch registration failed:', error);
+      logger.error({ err: error, userId }, "Watch registration failed");
       res.status(500).json({ status: "error", message: error?.message || "Failed to register Gmail watch" });
     }
   }
@@ -168,7 +167,7 @@ export class GmailController {
         },
       });
     } catch (error) {
-      console.error(error);
+      logger.error({ err: error, userId }, "Failed to fetch status");
       res.status(500).json({ status: "error", message: "Failed to fetch status" });
     }
   }

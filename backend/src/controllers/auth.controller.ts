@@ -4,6 +4,7 @@ import { AuthService } from '../services/auth.service';
 import { env } from '../config/env';
 import { ApiError } from '../utils/ApiError';
 import { WatchRenewalService } from '../modules/gmail/services/watch-renewal.service';
+import { logger } from '../config/logger';
 
 export const googleAuth = catchAsync(async (req: Request, res: Response) => {
   const state = AuthService.generateState();
@@ -12,7 +13,7 @@ export const googleAuth = catchAsync(async (req: Request, res: Response) => {
   await new Promise<void>((resolve, reject) => {
     req.session.save((err) => {
       if (err) {
-        console.error("Session save error:", err);
+        logger.error({ err }, "Session save error");
         return reject(new ApiError(500, 'Failed to save session state'));
       }
       resolve();
@@ -51,7 +52,7 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
     await new Promise<void>((resolve, reject) => {
       req.session.save((err) => {
         if (err) {
-          console.error("Session save error in callback:", err);
+          logger.error({ err }, "Session save error in callback");
           return reject(new ApiError(500, 'Failed to save authenticated session'));
         }
         resolve();
@@ -59,11 +60,11 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
     });
 
     const watchService = new WatchRenewalService();
-    watchService.registerWatch(user.id, true).catch((err: unknown) => console.error("Watch registration error:", err));
+    watchService.registerWatch(user.id, true).catch((err: unknown) => logger.error({ err }, "Watch registration error"));
 
     res.redirect(`${env.FRONTEND_URL}/auth/callback?success=true`);
   } catch (err) {
-    console.error('Callback handling error:', err);
+    logger.error({ err }, 'Callback handling error');
     res.redirect(`${env.FRONTEND_URL}/?error=auth_failed`);
   }
 });
@@ -102,7 +103,7 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
   await new Promise<void>((resolve, reject) => {
     req.session.destroy((err) => {
       if (err) {
-        console.error("Session destroy error:", err);
+        logger.error({ err }, "Session destroy error");
         return reject(new ApiError(500, 'Failed to destroy session'));
       }
       resolve();

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../lib/prisma';
+import { logger } from '../../config/logger';
 
 function serializeData(obj: any) {
   return JSON.parse(
@@ -66,7 +67,7 @@ export class AnalyticsController {
 
       res.json(serializeData(aggregate));
     } catch (error) {
-      console.error('[AnalyticsController] overview error:', error);
+      logger.error({ err: error }, '[AnalyticsController] overview error');
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
@@ -86,7 +87,7 @@ export class AnalyticsController {
 
       res.json(serializeData(data));
     } catch (error) {
-      console.error('[AnalyticsController] charts error:', error);
+      logger.error({ err: error }, '[AnalyticsController] charts error');
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
@@ -119,7 +120,7 @@ export class AnalyticsController {
         nextCursor
       });
     } catch (error) {
-      console.error('[AnalyticsController] activity error:', error);
+      logger.error({ err: error }, '[AnalyticsController] activity error');
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
@@ -213,7 +214,7 @@ export class AnalyticsController {
       res.setHeader('Content-Disposition', `attachment; filename="MailBot_Executive_Briefing_${dateRangeStr.replace(/[^a-zA-Z0-9]/g, '_')}.csv"`);
       res.send(csvContent);
     } catch (error) {
-      console.error('[AnalyticsController] export error:', error);
+      logger.error({ err: error }, '[AnalyticsController] export error');
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }
@@ -266,7 +267,7 @@ export class AnalyticsController {
         activities: activities
       });
     } catch (error) {
-      console.error('[AnalyticsController] exportJson error:', error);
+      logger.error({ err: error }, '[AnalyticsController] exportJson error');
       res.status(500).json({ error: 'Internal Server Error' });
     }
   }

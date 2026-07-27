@@ -2,6 +2,7 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsController = void 0;
 const prisma_1 = require("../../lib/prisma");
+const logger_1 = require("../../config/logger");
 function serializeData(obj) {
     return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? value.toString() : value));
 }
@@ -59,7 +60,7 @@ class AnalyticsController {
             res.json(serializeData(aggregate));
         }
         catch (error) {
-            console.error('[AnalyticsController] overview error:', error);
+            logger_1.logger.error({ err: error }, '[AnalyticsController] overview error');
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
@@ -77,7 +78,7 @@ class AnalyticsController {
             res.json(serializeData(data));
         }
         catch (error) {
-            console.error('[AnalyticsController] charts error:', error);
+            logger_1.logger.error({ err: error }, '[AnalyticsController] charts error');
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
@@ -107,7 +108,7 @@ class AnalyticsController {
             });
         }
         catch (error) {
-            console.error('[AnalyticsController] activity error:', error);
+            logger_1.logger.error({ err: error }, '[AnalyticsController] activity error');
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
@@ -188,7 +189,7 @@ class AnalyticsController {
             res.send(csvContent);
         }
         catch (error) {
-            console.error('[AnalyticsController] export error:', error);
+            logger_1.logger.error({ err: error }, '[AnalyticsController] export error');
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
@@ -238,7 +239,7 @@ class AnalyticsController {
             });
         }
         catch (error) {
-            console.error('[AnalyticsController] exportJson error:', error);
+            logger_1.logger.error({ err: error }, '[AnalyticsController] exportJson error');
             res.status(500).json({ error: 'Internal Server Error' });
         }
     }
