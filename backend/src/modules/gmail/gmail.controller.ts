@@ -28,6 +28,10 @@ export class GmailController {
         });
         const payload = ticket.getPayload();
         if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
+          if (env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL && payload.email !== env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL) {
+            console.warn(`[Webhook Security] OIDC email claim mismatch. Expected: ${env.GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL}, Received: ${payload.email}`);
+            return false;
+          }
           return true;
         }
         return false;

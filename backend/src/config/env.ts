@@ -20,8 +20,9 @@ const envSchema = z.object({
   AWS_S3_BUCKET: z.string().min(1, 'AWS S3 Bucket is required'),
   OPENAI_API_KEY: z.string().optional(),
   GMAIL_WEBHOOK_AUDIENCE: z.string().optional(),
+  GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL: z.string().optional(),
   GMAIL_WEBHOOK_SECRET: z.string().optional(),
-  GMAIL_WEBHOOK_REQUIRE_OIDC: z.string().optional().transform((val) => val === 'true' || val === '1'),
+  GMAIL_WEBHOOK_REQUIRE_OIDC: z.string().default('true').transform((val) => val === 'true' || val === '1'),
   
   EMBEDDING_WORKERS: z.coerce.number().default(2),
   MAX_DOCUMENT_PAGES: z.coerce.number().default(500),
