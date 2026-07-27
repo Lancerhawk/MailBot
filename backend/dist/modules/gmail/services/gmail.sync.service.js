@@ -153,9 +153,6 @@ class GmailSyncService {
         const deletedMessageIds = new Set();
         try {
             const res = await gmail.users.history.list({ userId: "me", startHistoryId });
-            if (res.data.historyId) {
-                await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
-            }
             const historyRecords = res.data.history || [];
             const threadsToProcess = new Map();
             for (const record of historyRecords) {
@@ -207,12 +204,16 @@ class GmailSyncService {
                 await this.dbService.markMessagesAsDeleted(userId, connectionId, Array.from(deletedMessageIds));
             }
             if (threadsToProcess.size === 0) {
+                if (res.data.historyId) {
+                    await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
+                }
                 await new Promise(resolve => setTimeout(resolve, 800));
                 state.currentStage = "Up to date";
                 return [];
             }
             state.totalEmailsEstimated = Array.from(threadsToProcess.values()).reduce((sum, set) => sum + set.size, 0);
             state.currentStage = "Importing new conversations...";
+            let hasErrors = false;
             for (const [threadId, messageIds] of threadsToProcess.entries()) {
                 if (state.stopRequested) {
                     console.log(`Sync stopped by user ${userId}`);
@@ -255,8 +256,15 @@ class GmailSyncService {
                     }
                 }
                 catch (e) {
+                    hasErrors = true;
                     logger_1.logger.error({ err: e, threadId, userId }, `Failed to process thread ${threadId} during incremental sync`);
                 }
+            }
+            if (res.data.historyId && !state.stopRequested && !hasErrors) {
+                await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
+            }
+            else if (hasErrors) {
+                logger_1.logger.warn({ userId }, 'One or more threads failed during incremental sync; not advancing historyId watermark so failed threads can be retried.');
             }
             state.currentStage = "Finalizing...";
             return processedEmailIds;

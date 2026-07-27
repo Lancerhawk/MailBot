@@ -196,10 +196,6 @@ export class GmailSyncService {
     try {
       const res = await gmail.users.history.list({ userId: "me", startHistoryId });
 
-      if (res.data.historyId) {
-        await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
-      }
-
       const historyRecords = res.data.history || [];
       const threadsToProcess = new Map<string, Set<string>>();
 
@@ -254,6 +250,9 @@ export class GmailSyncService {
       }
 
       if (threadsToProcess.size === 0) {
+        if (res.data.historyId) {
+          await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
+        }
         await new Promise(resolve => setTimeout(resolve, 800));
         state.currentStage = "Up to date";
         return [];
@@ -262,6 +261,7 @@ export class GmailSyncService {
       state.totalEmailsEstimated = Array.from(threadsToProcess.values()).reduce((sum, set) => sum + set.size, 0);
       state.currentStage = "Importing new conversations...";
 
+      let hasErrors = false;
       for (const [threadId, messageIds] of threadsToProcess.entries()) {
         if (state.stopRequested) {
           console.log(`Sync stopped by user ${userId}`);
@@ -303,8 +303,15 @@ export class GmailSyncService {
           }
 
         } catch (e: any) {
+          hasErrors = true;
           logger.error({ err: e, threadId, userId }, `Failed to process thread ${threadId} during incremental sync`);
         }
+      }
+
+      if (res.data.historyId && !state.stopRequested && !hasErrors) {
+        await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
+      } else if (hasErrors) {
+        logger.warn({ userId }, 'One or more threads failed during incremental sync; not advancing historyId watermark so failed threads can be retried.');
       }
 
       state.currentStage = "Finalizing...";
