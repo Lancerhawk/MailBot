@@ -2,9 +2,10 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsBackfillService = void 0;
 const prisma_1 = require("../../../lib/prisma");
+const logger_1 = require("../../../config/logger");
 class AnalyticsBackfillService {
     static async runBackfill(userId) {
-        console.log(`[AnalyticsBackfill] Starting backfill for user: ${userId}`);
+        logger_1.logger.info({ userId }, `[AnalyticsBackfill] Starting backfill`);
         const batchSize = 1000;
         const analyticsMap = new Map();
         const activityLogsToInsert = [];
@@ -178,7 +179,7 @@ class AnalyticsBackfillService {
             }
             lastId = orgs[orgs.length - 1].id;
         }
-        console.log(`[AnalyticsBackfill] Committing ${analyticsMap.size} days of analytics...`);
+        logger_1.logger.info({ userId, days: analyticsMap.size }, `[AnalyticsBackfill] Committing analytics days`);
         for (const data of analyticsMap.values()) {
             const avgConfidence = data.draftsGenerated > 0 ? data._confidenceSum / data.draftsGenerated : 0;
             const avgLatency = data.draftsGenerated > 0 ? data._latencySum / data.draftsGenerated : 0;
@@ -240,21 +241,21 @@ class AnalyticsBackfillService {
                 }
             });
         }
-        console.log(`[AnalyticsBackfill] Purging old activity logs (excluding LOGIN/SETTINGS)...`);
+        logger_1.logger.info({ userId }, `[AnalyticsBackfill] Purging old activity logs (excluding LOGIN/SETTINGS)`);
         await prisma_1.prisma.activityLog.deleteMany({
             where: {
                 userId,
                 action: { notIn: ['LOGIN', 'SETTINGS_CHANGE'] }
             }
         });
-        console.log(`[AnalyticsBackfill] Inserting ${activityLogsToInsert.length} activity logs...`);
+        logger_1.logger.info({ userId, count: activityLogsToInsert.length }, `[AnalyticsBackfill] Inserting activity logs`);
         const chunkSize = 5000;
         for (let i = 0; i < activityLogsToInsert.length; i += chunkSize) {
             await prisma_1.prisma.activityLog.createMany({
                 data: activityLogsToInsert.slice(i, i + chunkSize)
             });
         }
-        console.log(`[AnalyticsBackfill] Completed for user: ${userId}`);
+        logger_1.logger.info({ userId }, `[AnalyticsBackfill] Completed`);
     }
 }
 exports.AnalyticsBackfillService = AnalyticsBackfillService;

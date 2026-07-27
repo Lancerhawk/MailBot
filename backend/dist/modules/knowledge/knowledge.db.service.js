@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.KnowledgeDbService = void 0;
 const prisma_1 = require("../../lib/prisma");
 const client_1 = require("@prisma/client");
+const ApiError_1 = require("../../utils/ApiError");
 const MAX_STORAGE_PER_USER = 500 * 1024 * 1024;
 const MAX_DOCUMENTS_PER_USER = 100;
 class KnowledgeDbService {
@@ -109,28 +110,44 @@ class KnowledgeDbService {
         };
     }
     async updateDocument(userId, documentId, data) {
-        return prisma_1.prisma.knowledgeBaseDocument.updateMany({
+        const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
             where: { id: documentId, userId, deletedAt: null },
             data,
         });
+        if (result.count === 0) {
+            throw new ApiError_1.ApiError(404, 'Document not found or unauthorized');
+        }
+        return result;
     }
     async archiveDocument(userId, documentId) {
-        return prisma_1.prisma.knowledgeBaseDocument.updateMany({
+        const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
             where: { id: documentId, userId, deletedAt: null },
             data: { isArchived: true },
         });
+        if (result.count === 0) {
+            throw new ApiError_1.ApiError(404, 'Document not found or unauthorized');
+        }
+        return result;
     }
     async restoreDocument(userId, documentId) {
-        return prisma_1.prisma.knowledgeBaseDocument.updateMany({
+        const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
             where: { id: documentId, userId, deletedAt: null },
             data: { isArchived: false },
         });
+        if (result.count === 0) {
+            throw new ApiError_1.ApiError(404, 'Document not found or unauthorized');
+        }
+        return result;
     }
     async softDeleteDocument(userId, documentId) {
-        return prisma_1.prisma.knowledgeBaseDocument.updateMany({
+        const result = await prisma_1.prisma.knowledgeBaseDocument.updateMany({
             where: { id: documentId, userId, deletedAt: null },
             data: { deletedAt: new Date() },
         });
+        if (result.count === 0) {
+            throw new ApiError_1.ApiError(404, 'Document not found or unauthorized');
+        }
+        return result;
     }
     async hardDeleteChunks(documentId) {
         return prisma_1.prisma.knowledgeBaseChunk.deleteMany({

@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import { OAuth2Client } from "google-auth-library";
 import { env } from "../../config/env";
 import { GmailSyncService } from "./services/gmail.sync.service";
@@ -57,7 +57,7 @@ export class GmailController {
     return true;
   }
 
-  async webhook(req: Request, res: Response) {
+  async webhook(req: Request, res: Response, next: NextFunction) {
     try {
       logger.info({ ip: req.ip }, "[Gmail Webhook] Received POST request");
       const isAuthorized = await this.verifyWebhookAuth(req);
@@ -97,10 +97,9 @@ export class GmailController {
     }
   }
 
-  async sync(req: Request, res: Response) {
-    const userId = req.session.userId!;
-
+  async sync(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
       const isRunning = await this.syncService.isSyncRunning(userId);
       if (isRunning) {
         return res.status(409).json({
@@ -119,41 +118,38 @@ export class GmailController {
         message: "Synchronization started",
       });
     } catch (error) {
-      logger.error({ err: error, userId }, "Failed to start synchronization");
-      res.status(500).json({ status: "error", message: "Failed to start synchronization" });
+      next(error);
     }
   }
 
-  async stopSync(req: Request, res: Response) {
-    const userId = req.session.userId!;
+  async stopSync(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
       await this.syncService.stopSync(userId);
       res.json({ status: "success", message: "Stop requested" });
     } catch (error) {
-      logger.error({ err: error, userId }, "Failed to stop synchronization");
-      res.status(500).json({ status: "error", message: "Failed to stop synchronization" });
+      next(error);
     }
   }
 
-  async registerWatch(req: Request, res: Response) {
-    const userId = req.session.userId!;
+  async registerWatch(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
       const watchService = new WatchRenewalService();
       await watchService.registerWatch(userId, true);
       res.json({ status: "success", message: "Gmail watch registered successfully" });
-    } catch (error: any) {
-      logger.error({ err: error, userId }, "Watch registration failed");
-      res.status(500).json({ status: "error", message: error?.message || "Failed to register Gmail watch" });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getStatus(req: Request, res: Response) {
-    const userId = req.session.userId!;
+  async getStatus(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
       const dbStatus = await this.dbService.getConnectionStatus(userId);
 
       if (!dbStatus) {
-        return res.status(404).json({ status: "error", message: "Gmail connection not found" });
+        throw new ApiError(404, "Gmail connection not found");
       }
 
       const activeSync = await this.syncService.getSyncStatus(userId);
@@ -168,14 +164,13 @@ export class GmailController {
         },
       });
     } catch (error) {
-      logger.error({ err: error, userId }, "Failed to fetch status");
-      res.status(500).json({ status: "error", message: "Failed to fetch status" });
+      next(error);
     }
   }
 
-  async getProfile(req: Request, res: Response) {
-    const userId = req.session.userId!;
+  async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: {
@@ -199,140 +194,138 @@ export class GmailController {
       });
 
       if (!user) {
-        return res.status(404).json({ status: "error", message: "User profile not found" });
+        throw new ApiError(404, "User profile not found");
       }
 
       res.json({ status: "success", data: user });
     } catch (error) {
-      logger.error({ err: error, userId }, "Failed to get profile");
-      res.status(500).json({ status: "error", message: "Failed to get profile" });
+      next(error);
     }
   }
 
-  async listThreads(req: Request, res: Response) {
-    const userId = req.session.userId!;
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
-
-    const filter = req.query.filter as string;
-    const search = req.query.search as string;
-
+  async listThreads(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 20;
+
+      const filter = req.query.filter as string;
+      const search = req.query.search as string;
+
       const threads = await this.dbService.listThreads(userId, page, limit, filter, search);
       res.json({ status: "success", data: threads });
-    } catch {
-      res.status(500).json({ status: "error", message: "Failed to list threads" });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getThread(req: Request, res: Response) {
-    const userId = req.session.userId!;
-    const threadId = req.params.id;
-
+  async getThread(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
+      const threadId = req.params.id;
+
       const thread = await this.dbService.getThread(userId, threadId);
       if (!thread) {
-        return res.status(404).json({ status: "error", message: "Thread not found" });
+        throw new ApiError(404, "Thread not found");
       }
       res.json({ status: "success", data: thread });
-    } catch {
-      res.status(500).json({ status: "error", message: "Failed to get thread" });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getThreadsBulk(req: Request, res: Response) {
-    const userId = req.session.userId!;
-    const threadIds = req.body.threadIds;
-
-    if (!Array.isArray(threadIds)) {
-      return res.status(400).json({ status: "error", message: "threadIds must be an array" });
-    }
-
+  async getThreadsBulk(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
+      const threadIds = req.body.threadIds;
+
+      if (!Array.isArray(threadIds)) {
+        throw new ApiError(400, "threadIds must be an array");
+      }
+
       const threads = await this.dbService.getThreadsBulk(userId, threadIds);
       res.json({ status: "success", data: threads });
-    } catch {
-      res.status(500).json({ status: "error", message: "Failed to get threads bulk" });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async getEmail(req: Request, res: Response) {
-    const userId = req.session.userId!;
-    const emailId = req.params.id;
-
+  async getEmail(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId!;
+      const emailId = req.params.id;
+
       const email = await this.dbService.getEmailByIdWithConnection(userId, emailId);
       if (!email) {
-        return res.status(404).json({ status: "error", message: "Email not found" });
+        throw new ApiError(404, "Email not found");
       }
       res.json({ status: "success", data: email });
     } catch (error) {
-      logger.error({ err: error, userId, emailId }, "Failed to get email");
-      res.status(500).json({ status: "error", message: "Failed to get email" });
+      next(error);
     }
   }
 
-  private async handleAction(req: Request, res: Response, actionFn: (userId: string, emailId: string) => Promise<void>) {
-    const userId = req.session.userId;
-    if (!userId) throw new ApiError(401, 'Unauthorized');
-    const emailId = req.params.id;
+  private async handleAction(req: Request, res: Response, next: NextFunction, actionFn: (userId: string, emailId: string) => Promise<void>) {
     try {
+      const userId = req.session.userId;
+      if (!userId) throw new ApiError(401, 'Unauthorized');
+      const emailId = req.params.id;
+      
       await actionFn.call(this.actionsService, userId, emailId);
       res.json({ status: 'success' });
-    } catch (err: unknown) {
-      const error = err as Error & { statusCode?: number };
-      res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 
-  markRead = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.markRead);
-  markUnread = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.markUnread);
-  star = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.star);
-  unstar = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.unstar);
-  archive = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.archive);
-  unarchive = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.unarchive);
-  deleteToTrash = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.deleteToTrash);
-  restoreFromTrash = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.restoreFromTrash);
-  markSpam = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.markSpam);
-  unmarkSpam = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.unmarkSpam);
-  permanentlyDelete = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.permanentlyDelete);
+  markRead = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.markRead);
+  markUnread = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.markUnread);
+  star = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.star);
+  unstar = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.unstar);
+  archive = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.archive);
+  unarchive = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.unarchive);
+  deleteToTrash = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.deleteToTrash);
+  restoreFromTrash = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.restoreFromTrash);
+  markSpam = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.markSpam);
+  unmarkSpam = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.unmarkSpam);
+  permanentlyDelete = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.permanentlyDelete);
 
-  threadMarkRead = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadMarkRead);
-  threadMarkUnread = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadMarkUnread);
-  threadStar = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadStar);
-  threadUnstar = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadUnstar);
-  threadArchive = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadArchive);
-  threadUnarchive = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadUnarchive);
-  threadDeleteToTrash = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadDeleteToTrash);
-  threadRestoreFromTrash = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadRestoreFromTrash);
-  threadMarkSpam = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadMarkSpam);
-  threadUnmarkSpam = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadUnmarkSpam);
-  threadPermanentlyDelete = async (req: Request, res: Response) => this.handleAction(req, res, this.actionsService.threadPermanentlyDelete);
+  threadMarkRead = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadMarkRead);
+  threadMarkUnread = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadMarkUnread);
+  threadStar = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadStar);
+  threadUnstar = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadUnstar);
+  threadArchive = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadArchive);
+  threadUnarchive = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadUnarchive);
+  threadDeleteToTrash = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadDeleteToTrash);
+  threadRestoreFromTrash = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadRestoreFromTrash);
+  threadMarkSpam = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadMarkSpam);
+  threadUnmarkSpam = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadUnmarkSpam);
+  threadPermanentlyDelete = async (req: Request, res: Response, next: NextFunction) => this.handleAction(req, res, next, this.actionsService.threadPermanentlyDelete);
 
-  async sendReply(req: Request, res: Response) {
-    const userId = req.session.userId;
-    if (!userId) throw new ApiError(401, 'Unauthorized');
-    const targetEmailId = req.body.emailId;
-    const editedText = req.body.editedText;
-    if (!targetEmailId) throw new ApiError(400, 'emailId is required in body');
+  async sendReply(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId;
+      if (!userId) throw new ApiError(401, 'Unauthorized');
+      const targetEmailId = req.body.emailId;
+      const editedText = req.body.editedText;
+      if (!targetEmailId) throw new ApiError(400, 'emailId is required in body');
+      
       await this.sendService.sendReply(userId, targetEmailId, editedText);
       res.json({ status: 'success' });
-    } catch (err: unknown) {
-      const error = err as Error & { statusCode?: number };
-      res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 
-  async sendCompose(req: Request, res: Response) {
-    const userId = req.session.userId;
-    if (!userId) throw new ApiError(401, 'Unauthorized');
+  async sendCompose(req: Request, res: Response, next: NextFunction) {
     try {
+      const userId = req.session.userId;
+      if (!userId) throw new ApiError(401, 'Unauthorized');
+      
       await this.sendService.sendCompose(userId, req.body);
       res.json({ status: 'success' });
-    } catch (err: unknown) {
-      const error = err as Error & { statusCode?: number };
-      res.status(error.statusCode || 500).json({ status: 'error', message: error.message });
+    } catch (error) {
+      next(error);
     }
   }
 }

@@ -41,12 +41,12 @@ class GmailSyncService {
             return;
         const locked = await cache_service_1.cacheService.acquireLock(`sync:lock:${userId}`, 600);
         if (!locked) {
-            console.log(`Sync already running for ${userId} (lock busy)`);
+            logger_1.logger.info({ userId }, `Sync already running (lock busy)`);
             return;
         }
         const connection = await this.clientService.getConnection(userId);
         if (!connection) {
-            console.error(`No connection found for user ${userId}`);
+            logger_1.logger.error({ userId }, `No connection found for user`);
             await cache_service_1.cacheService.releaseLock(`sync:lock:${userId}`);
             return;
         }
@@ -104,11 +104,11 @@ class GmailSyncService {
         const threadChunks = chunkArray(threadIds, BATCH_SIZE);
         for (const chunk of threadChunks) {
             if (state.stopRequested) {
-                console.log(`Sync stopped by user ${userId}`);
+                logger_1.logger.info({ userId }, `Sync stopped by user`);
                 break;
             }
             if (totalMessagesProcessed >= MAX_INITIAL_MESSAGES) {
-                console.log(`Reached MAX_INITIAL_MESSAGES (${MAX_INITIAL_MESSAGES}) for user ${userId}. Truncating first sync.`);
+                logger_1.logger.info({ userId, maxMessages: MAX_INITIAL_MESSAGES }, `Reached MAX_INITIAL_MESSAGES. Truncating first sync.`);
                 break;
             }
             const fetchedThreads = await Promise.all(chunk.map(async (threadId) => {
@@ -147,7 +147,7 @@ class GmailSyncService {
             }
         }
         else {
-            console.log(`First sync for user ${userId} was halted manually. Not saving historyId to allow resume.`);
+            logger_1.logger.info({ userId }, `First sync halted manually. Not saving historyId to allow resume.`);
         }
     }
     async performIncrementalSync(userId, connectionId, startHistoryId, gmail, state) {
@@ -219,7 +219,7 @@ class GmailSyncService {
             let hasErrors = false;
             for (const [threadId, messageIds] of threadsToProcess.entries()) {
                 if (state.stopRequested) {
-                    console.log(`Sync stopped by user ${userId}`);
+                    logger_1.logger.info({ userId }, `Sync stopped by user`);
                     break;
                 }
                 try {
@@ -287,17 +287,17 @@ class GmailSyncService {
     async processWebhook(emailAddress, newHistoryId) {
         const connection = await this.dbService.getConnectionByEmail(emailAddress);
         if (!connection) {
-            console.warn(`[Gmail Webhook] No active database connection found for email: ${emailAddress}`);
+            logger_1.logger.warn({ emailAddress }, `[Gmail Webhook] No active database connection found for email`);
             return;
         }
         if (connection.lastHistoryId && newHistoryId <= connection.lastHistoryId) {
-            console.log(`[Gmail Webhook] Ignoring duplicate webhook for ${emailAddress} (historyId: ${newHistoryId} <= ${connection.lastHistoryId})`);
+            logger_1.logger.info({ emailAddress, newHistoryId, lastHistoryId: connection.lastHistoryId }, `[Gmail Webhook] Ignoring duplicate webhook`);
             return;
         }
         const userId = connection.userId;
-        console.log(`[Gmail Webhook] Triggering incremental sync for ${emailAddress} (userId: ${userId}, newHistoryId: ${newHistoryId})`);
+        logger_1.logger.info({ emailAddress, userId, newHistoryId }, `[Gmail Webhook] Triggering incremental sync`);
         if (await this.isSyncRunning(userId)) {
-            console.log(`Sync already running for ${userId}, queuing concurrent webhook execution.`);
+            logger_1.logger.info({ userId }, `Sync already running, queuing concurrent webhook execution.`);
             const currentPendingStr = await cache_service_1.cacheService.get(`sync:webhook:${userId}`);
             const currentPending = currentPendingStr ? BigInt(currentPendingStr) : BigInt(0);
             if (newHistoryId > currentPending) {
@@ -307,7 +307,7 @@ class GmailSyncService {
         }
         const locked = await cache_service_1.cacheService.acquireLock(`sync:lock:${userId}`, 600);
         if (!locked) {
-            console.log(`Sync already running for ${userId} (lock busy), queuing webhook.`);
+            logger_1.logger.info({ userId }, `Sync already running (lock busy), queuing webhook.`);
             const currentPendingStr = await cache_service_1.cacheService.get(`sync:webhook:${userId}`);
             const currentPending = currentPendingStr ? BigInt(currentPendingStr) : BigInt(0);
             if (newHistoryId > currentPending) {
@@ -359,7 +359,7 @@ class GmailSyncService {
             if (pendingHistoryIdStr) {
                 await cache_service_1.cacheService.delete(`sync:webhook:${userId}`);
                 const pendingHistoryId = BigInt(pendingHistoryIdStr);
-                console.log(`Executing queued webhook for ${userId} with historyId ${pendingHistoryId}`);
+                logger_1.logger.info({ userId, pendingHistoryId }, `Executing queued webhook`);
                 setTimeout(() => {
                     this.processWebhook(emailAddress, pendingHistoryId).catch(err => {
                         logger_1.logger.error({ err, emailAddress }, `Queued webhook failed for ${emailAddress}`);

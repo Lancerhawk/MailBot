@@ -1,5 +1,6 @@
 import { prisma } from '../../lib/prisma';
 import { ProcessingStatus, Prisma } from '@prisma/client';
+import { ApiError } from '../../utils/ApiError';
 
 const MAX_STORAGE_PER_USER = 500 * 1024 * 1024;
 const MAX_DOCUMENTS_PER_USER = 100;
@@ -146,31 +147,47 @@ export class KnowledgeDbService {
     description: string;
     folder: string;
   }>) {
-    return prisma.knowledgeBaseDocument.updateMany({
+    const result = await prisma.knowledgeBaseDocument.updateMany({
       where: { id: documentId, userId, deletedAt: null },
       data,
     });
+    if (result.count === 0) {
+      throw new ApiError(404, 'Document not found or unauthorized');
+    }
+    return result;
   }
 
   async archiveDocument(userId: string, documentId: string) {
-    return prisma.knowledgeBaseDocument.updateMany({
+    const result = await prisma.knowledgeBaseDocument.updateMany({
       where: { id: documentId, userId, deletedAt: null },
       data: { isArchived: true },
     });
+    if (result.count === 0) {
+      throw new ApiError(404, 'Document not found or unauthorized');
+    }
+    return result;
   }
 
   async restoreDocument(userId: string, documentId: string) {
-    return prisma.knowledgeBaseDocument.updateMany({
+    const result = await prisma.knowledgeBaseDocument.updateMany({
       where: { id: documentId, userId, deletedAt: null },
       data: { isArchived: false },
     });
+    if (result.count === 0) {
+      throw new ApiError(404, 'Document not found or unauthorized');
+    }
+    return result;
   }
 
   async softDeleteDocument(userId: string, documentId: string) {
-    return prisma.knowledgeBaseDocument.updateMany({
+    const result = await prisma.knowledgeBaseDocument.updateMany({
       where: { id: documentId, userId, deletedAt: null },
       data: { deletedAt: new Date() },
     });
+    if (result.count === 0) {
+      throw new ApiError(404, 'Document not found or unauthorized');
+    }
+    return result;
   }
 
   async hardDeleteChunks(documentId: string) {

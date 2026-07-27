@@ -1,9 +1,10 @@
 import { prisma } from '../../../lib/prisma';
+import { logger } from '../../../config/logger';
 
 export class AnalyticsBackfillService {
 
   public static async runBackfill(userId: string): Promise<void> {
-    console.log(`[AnalyticsBackfill] Starting backfill for user: ${userId}`);
+    logger.info({ userId }, `[AnalyticsBackfill] Starting backfill`);
     const batchSize = 1000;
     const analyticsMap: Map<string, any> = new Map();
     const activityLogsToInsert: any[] = [];
@@ -186,7 +187,7 @@ export class AnalyticsBackfillService {
       lastId = orgs[orgs.length - 1].id;
     }
 
-    console.log(`[AnalyticsBackfill] Committing ${analyticsMap.size} days of analytics...`);
+    logger.info({ userId, days: analyticsMap.size }, `[AnalyticsBackfill] Committing analytics days`);
 
     for (const data of analyticsMap.values()) {
       const avgConfidence = data.draftsGenerated > 0 ? data._confidenceSum / data.draftsGenerated : 0;
@@ -251,7 +252,7 @@ export class AnalyticsBackfillService {
       });
     }
 
-    console.log(`[AnalyticsBackfill] Purging old activity logs (excluding LOGIN/SETTINGS)...`);
+    logger.info({ userId }, `[AnalyticsBackfill] Purging old activity logs (excluding LOGIN/SETTINGS)`);
     await prisma.activityLog.deleteMany({
       where: {
         userId,
@@ -259,7 +260,7 @@ export class AnalyticsBackfillService {
       }
     });
 
-    console.log(`[AnalyticsBackfill] Inserting ${activityLogsToInsert.length} activity logs...`);
+    logger.info({ userId, count: activityLogsToInsert.length }, `[AnalyticsBackfill] Inserting activity logs`);
     const chunkSize = 5000;
     for (let i = 0; i < activityLogsToInsert.length; i += chunkSize) {
       await prisma.activityLog.createMany({
@@ -267,6 +268,6 @@ export class AnalyticsBackfillService {
       });
     }
 
-    console.log(`[AnalyticsBackfill] Completed for user: ${userId}`);
+    logger.info({ userId }, `[AnalyticsBackfill] Completed`);
   }
 }

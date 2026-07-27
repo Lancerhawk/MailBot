@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma';
 import { env } from '../config/env';
 import { encryptToken } from '../utils/encryption';
 import { ApiError } from '../utils/ApiError';
+import { logger } from '../config/logger';
 
 const oauth2Client = new OAuth2Client(
   env.GOOGLE_CLIENT_ID,
@@ -139,7 +140,7 @@ export class AuthService {
 
       return user!;
     } catch (error: any) {
-      console.error('Google callback error:', error);
+      logger.error({ err: error }, 'Google callback error');
       throw new ApiError(500, 'Authentication failed during Google OAuth callback');
     }
   }
@@ -156,7 +157,7 @@ export class AuthService {
         }
       });
     } catch (error) {
-      console.error('Failed to log logout:', error);
+      logger.error({ err: error }, 'Failed to log logout');
     }
   }
 }

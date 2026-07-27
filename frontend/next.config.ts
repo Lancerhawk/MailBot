@@ -1,12 +1,14 @@
 import type { NextConfig } from "next";
+const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+const wsUrl = apiUrl.replace(/^http/, 'ws');
 
 const cspHeader = `
   default-src 'self';
   script-src 'self' 'unsafe-eval' 'unsafe-inline';
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com data:;
-  img-src 'self' data: blob: https://*.googleusercontent.com https://lh3.googleusercontent.com;
-  connect-src 'self' http://localhost:5000 http://localhost:3000 ws://localhost:5000 wss://* https://* http://*;
+  img-src * data: blob:;
+  connect-src 'self' ${apiUrl} ${wsUrl};
   frame-ancestors 'none';
   form-action 'self';
   base-uri 'self';

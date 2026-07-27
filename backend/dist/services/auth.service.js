@@ -11,6 +11,7 @@ const prisma_1 = require("../lib/prisma");
 const env_1 = require("../config/env");
 const encryption_1 = require("../utils/encryption");
 const ApiError_1 = require("../utils/ApiError");
+const logger_1 = require("../config/logger");
 const oauth2Client = new google_auth_library_1.OAuth2Client(env_1.env.GOOGLE_CLIENT_ID, env_1.env.GOOGLE_CLIENT_SECRET, `${env_1.env.API_URL}/api/v1/auth/google/callback`);
 class AuthService {
     static generateAuthUrl(state) {
@@ -124,7 +125,7 @@ class AuthService {
             return user;
         }
         catch (error) {
-            console.error('Google callback error:', error);
+            logger_1.logger.error({ err: error }, 'Google callback error');
             throw new ApiError_1.ApiError(500, 'Authentication failed during Google OAuth callback');
         }
     }
@@ -141,7 +142,7 @@ class AuthService {
             });
         }
         catch (error) {
-            console.error('Failed to log logout:', error);
+            logger_1.logger.error({ err: error }, 'Failed to log logout');
         }
     }
 }

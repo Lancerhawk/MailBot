@@ -2,6 +2,7 @@ import { google, gmail_v1 } from "googleapis";
 import { prisma } from "../../../lib/prisma";
 import { decryptToken, encryptToken } from "../../../utils/encryption";
 import { env } from "../../../config/env";
+import { logger } from "../../../config/logger";
 
 export class GmailClientService {
   async getAuthenticatedClient(userId: string): Promise<gmail_v1.Gmail> {
@@ -51,9 +52,9 @@ export class GmailClientService {
             data: dataToUpdate,
           });
 
-          console.log(`[OAuth Refresh] Updated refreshed access token in DB for connection ${connection.id}`);
+          logger.info({ connectionId: connection.id }, `[OAuth Refresh] Updated refreshed access token in DB`);
         } catch (error) {
-          console.error(`[OAuth Refresh Error] Failed to update token in DB for connection ${connection.id}:`, error);
+          logger.error({ err: error, connectionId: connection.id }, `[OAuth Refresh Error] Failed to update token in DB`);
         }
       }
     });

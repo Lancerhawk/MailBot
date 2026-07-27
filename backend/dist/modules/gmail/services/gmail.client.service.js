@@ -5,6 +5,7 @@ const googleapis_1 = require("googleapis");
 const prisma_1 = require("../../../lib/prisma");
 const encryption_1 = require("../../../utils/encryption");
 const env_1 = require("../../../config/env");
+const logger_1 = require("../../../config/logger");
 class GmailClientService {
     async getAuthenticatedClient(userId) {
         const connection = await prisma_1.prisma.emailAccountConnection.findFirst({
@@ -37,10 +38,10 @@ class GmailClientService {
                         where: { id: connection.id },
                         data: dataToUpdate,
                     });
-                    console.log(`[OAuth Refresh] Updated refreshed access token in DB for connection ${connection.id}`);
+                    logger_1.logger.info({ connectionId: connection.id }, `[OAuth Refresh] Updated refreshed access token in DB`);
                 }
                 catch (error) {
-                    console.error(`[OAuth Refresh Error] Failed to update token in DB for connection ${connection.id}:`, error);
+                    logger_1.logger.error({ err: error, connectionId: connection.id }, `[OAuth Refresh Error] Failed to update token in DB`);
                 }
             }
         });
