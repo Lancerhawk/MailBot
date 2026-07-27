@@ -114,6 +114,8 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
   const [optimisticDoc, setOptimisticDoc] = useState(doc);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  const isGenerating = doc.processingStatus === "PROCESSING" || doc.processingStatus === "PENDING";
+
   const [prevDoc, setPrevDoc] = useState(doc);
   if (doc !== prevDoc) {
     setPrevDoc(doc);
@@ -283,10 +285,10 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuItem onClick={handleDownload}>
+            <DropdownMenuItem onClick={handleDownload} disabled={isGenerating}>
               <Download className="mr-2 h-4 w-4" /> Download
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => { setIsRenaming(true); setRenameValue(doc.title); }}>
+            <DropdownMenuItem onClick={() => { setIsRenaming(true); setRenameValue(doc.title); }} disabled={isGenerating}>
               <Pencil className="mr-2 h-4 w-4" /> Rename
             </DropdownMenuItem>
             <DropdownMenuItem onClick={() => onDetailsOpen(doc)}>
@@ -298,7 +300,7 @@ export function DocumentCard({ document: doc, isSelected, onSelect, onUpdate, on
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleArchive}>
+            <DropdownMenuItem onClick={handleArchive} disabled={isGenerating}>
               {optimisticDoc.isArchived ? (
                 <><ArchiveRestore className="mr-2 h-4 w-4" /> Restore</>
               ) : (

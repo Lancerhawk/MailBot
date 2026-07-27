@@ -381,8 +381,15 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                   ) : (
                     <Badge
                       variant="outline"
-                      className="cursor-pointer hover:border-orange-400"
-                      onClick={() => setEditingFolder(true)}
+                      className={cn(
+                        "transition-colors",
+                        isGenerating ? "opacity-70 cursor-not-allowed" : "cursor-pointer hover:border-orange-400"
+                      )}
+                      onClick={() => {
+                        if (!isGenerating) {
+                          setEditingFolder(true);
+                        }
+                      }}
                     >
                       {folderValue || "Uncategorized"}
                     </Badge>
@@ -436,7 +443,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
 
             {/* Action buttons */}
             <div className="flex flex-wrap gap-2 border-t border-zinc-200 px-6 py-4 dark:border-zinc-800">
-              <Button variant="outline" size="sm" onClick={handleDownload}>
+              <Button variant="outline" size="sm" onClick={handleDownload} disabled={isGenerating}>
                 <Download className="mr-1.5 h-3.5 w-3.5" /> Download
               </Button>
               {doc.processingStatus === "FAILED" && (
@@ -444,7 +451,7 @@ export function DocumentDetailsPanel({ document: doc, isOpen, onClose, onUpdate,
                   <RefreshCw className="mr-1.5 h-3.5 w-3.5" /> Retry
                 </Button>
               )}
-              <Button variant="outline" size="sm" onClick={handleArchiveToggle}>
+              <Button variant="outline" size="sm" onClick={handleArchiveToggle} disabled={isGenerating}>
                 {doc.isArchived ? (
                   <><ArchiveRestore className="mr-1.5 h-3.5 w-3.5" /> Restore</>
                 ) : (

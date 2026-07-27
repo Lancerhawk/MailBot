@@ -3,7 +3,7 @@ let apiOrigin = 'http://localhost:5000';
 if (process.env.NEXT_PUBLIC_API_URL) {
   try {
     apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL).origin;
-  } catch (e) { }
+  } catch { }
 }
 const wsOrigin = apiOrigin.replace(/^http/, 'ws');
 
