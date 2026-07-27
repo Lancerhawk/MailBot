@@ -20,6 +20,8 @@ export interface SearchResult {
   documentVersionChunk: number | null;
   metadata: any;
   similarity: number;
+  sourceOffsetStart?: number | null;
+  sourceOffsetEnd?: number | null;
 }
 
 interface RankedResult extends SearchResult {
@@ -100,6 +102,8 @@ export class SearchService {
         c.heading,
         c.section,
         c."pageNumber",
+        c."sourceOffsetStart",
+        c."sourceOffsetEnd",
         c."documentVersion",
         c.metadata,
         d.id as "documentId",
@@ -137,6 +141,8 @@ export class SearchService {
       heading: r.heading,
       section: r.section,
       pageNumber: r.pageNumber,
+      sourceOffsetStart: r.sourceOffsetStart ?? null,
+      sourceOffsetEnd: r.sourceOffsetEnd ?? null,
       documentVersionChunk: r.documentVersion,
       metadata: r.metadata,
       similarity: parseFloat(r.similarity) || 0,
@@ -208,8 +214,8 @@ export class SearchService {
           content: current.content + '\n\n' + next.content,
           tokenCount: current.tokenCount + next.tokenCount,
           similarity: Math.max(current.similarity, next.similarity),
-          sourceOffsetEnd: next.pageNumber,
-        } as any;
+          sourceOffsetEnd: next.sourceOffsetEnd ?? next.pageNumber,
+        };
       } else {
         merged.push(current);
         current = next;
