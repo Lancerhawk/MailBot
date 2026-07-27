@@ -1,6 +1,11 @@
 import type { NextConfig } from "next";
-const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-const wsUrl = apiUrl.replace(/^http/, 'ws');
+let apiOrigin = 'http://localhost:5000';
+if (process.env.NEXT_PUBLIC_API_URL) {
+  try {
+    apiOrigin = new URL(process.env.NEXT_PUBLIC_API_URL).origin;
+  } catch (e) { }
+}
+const wsOrigin = apiOrigin.replace(/^http/, 'ws');
 
 const cspHeader = `
   default-src 'self';
@@ -8,7 +13,7 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
   font-src 'self' https://fonts.gstatic.com data:;
   img-src * data: blob:;
-  connect-src 'self' ${apiUrl} ${wsUrl};
+  connect-src 'self' ${apiOrigin} ${wsOrigin};
   frame-ancestors 'none';
   form-action 'self';
   base-uri 'self';
