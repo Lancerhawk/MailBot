@@ -5,6 +5,7 @@ import { localEmbeddingService } from './modules/knowledge/services/local-embedd
 import { EmbeddingWorker } from './modules/jobs/workers/embedding.worker';
 import { DescriptionWorker } from './modules/jobs/workers/description.worker';
 import { jobService } from './modules/jobs/job.service';
+import { WorkerManager } from './modules/jobs/worker-manager';
 
 const startWorkerService = async () => {
   (BigInt.prototype as any).toJSON = function () {
@@ -32,18 +33,21 @@ const startWorkerService = async () => {
       const worker = new EmbeddingWorker(i);
       worker.start();
       workers.push(worker);
+      WorkerManager.register(worker);
 
       const descWorker = new DescriptionWorker(i);
       descWorker.start();
       descWorkers.push(descWorker);
+      WorkerManager.register(descWorker);
     }
 
     logger.info(`[Worker Microservice] Successfully booted ${workerCount} EmbeddingWorkers and ${workerCount} DescriptionWorkers.`);
     logger.info(`[Worker Microservice] Polling ProcessingJob table. Mode: ${env.WORKER_MODE} (Callback URL: ${env.API_SERVER_URL})`);
 
-    setInterval(() => {
+    const recoveryInterval = setInterval(() => {
       jobService.recoverStaleJobs().catch((e: any) => logger.error({ err: e }, 'Failed to recover stale jobs'));
     }, 5 * 60 * 1000);
+    WorkerManager.setRecoveryInterval(recoveryInterval);
 
   } catch (error: any) {
     logger.fatal({ err: error, errorMessage: error.message }, 'Failed to start Standalone Worker Service');
@@ -65,6 +69,7 @@ process.on('unhandledRejection', unexpectedErrorHandler);
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received by Worker Service');
+  WorkerManager.stopAll();
   prisma.$disconnect().then(() => {
     logger.info('Prisma disconnected gracefully');
     process.exit(0);
@@ -73,6 +78,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received by Worker Service');
+  WorkerManager.stopAll();
   prisma.$disconnect().then(() => {
     logger.info('Prisma disconnected gracefully');
     process.exit(0);

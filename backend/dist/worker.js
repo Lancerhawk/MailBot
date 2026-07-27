@@ -7,6 +7,7 @@ const local_embedding_service_1 = require("./modules/knowledge/services/local-em
 const embedding_worker_1 = require("./modules/jobs/workers/embedding.worker");
 const description_worker_1 = require("./modules/jobs/workers/description.worker");
 const job_service_1 = require("./modules/jobs/job.service");
+const worker_manager_1 = require("./modules/jobs/worker-manager");
 const startWorkerService = async () => {
     BigInt.prototype.toJSON = function () {
         return this.toString();
@@ -28,15 +29,18 @@ const startWorkerService = async () => {
             const worker = new embedding_worker_1.EmbeddingWorker(i);
             worker.start();
             workers.push(worker);
+            worker_manager_1.WorkerManager.register(worker);
             const descWorker = new description_worker_1.DescriptionWorker(i);
             descWorker.start();
             descWorkers.push(descWorker);
+            worker_manager_1.WorkerManager.register(descWorker);
         }
         logger_1.logger.info(`[Worker Microservice] Successfully booted ${workerCount} EmbeddingWorkers and ${workerCount} DescriptionWorkers.`);
         logger_1.logger.info(`[Worker Microservice] Polling ProcessingJob table. Mode: ${env_1.env.WORKER_MODE} (Callback URL: ${env_1.env.API_SERVER_URL})`);
-        setInterval(() => {
+        const recoveryInterval = setInterval(() => {
             job_service_1.jobService.recoverStaleJobs().catch((e) => logger_1.logger.error({ err: e }, 'Failed to recover stale jobs'));
         }, 5 * 60 * 1000);
+        worker_manager_1.WorkerManager.setRecoveryInterval(recoveryInterval);
     }
     catch (error) {
         logger_1.logger.fatal({ err: error, errorMessage: error.message }, 'Failed to start Standalone Worker Service');
@@ -54,6 +58,7 @@ process.on('uncaughtException', unexpectedErrorHandler);
 process.on('unhandledRejection', unexpectedErrorHandler);
 process.on('SIGTERM', () => {
     logger_1.logger.info('SIGTERM received by Worker Service');
+    worker_manager_1.WorkerManager.stopAll();
     prisma_1.prisma.$disconnect().then(() => {
         logger_1.logger.info('Prisma disconnected gracefully');
         process.exit(0);
@@ -61,6 +66,7 @@ process.on('SIGTERM', () => {
 });
 process.on('SIGINT', () => {
     logger_1.logger.info('SIGINT received by Worker Service');
+    worker_manager_1.WorkerManager.stopAll();
     prisma_1.prisma.$disconnect().then(() => {
         logger_1.logger.info('Prisma disconnected gracefully');
         process.exit(0);
