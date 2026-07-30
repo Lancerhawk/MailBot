@@ -39,6 +39,7 @@ export class GmailSyncService {
 
   private async saveProgress(userId: string, state: SyncProgress): Promise<void> {
     await cacheService.set(`sync:progress:${userId}`, state, 1800);
+    emitToUser(userId, 'sync:progress', state);
   }
 
   async stopSync(userId: string) {
@@ -50,6 +51,7 @@ export class GmailSyncService {
       await this.saveProgress(userId, state);
     }
     await this.dbService.updateSyncStatus(userId, "IDLE");
+    emitToUser(userId, 'sync:completed', { source: 'stopped' });
   }
 
   async startSync(userId: string) {
@@ -136,7 +138,9 @@ export class GmailSyncService {
     const threadChunks = chunkArray(threadIds, BATCH_SIZE);
 
     for (const chunk of threadChunks) {
-      if (state.stopRequested) {
+      const currentProgress = await this.getSyncStatus(userId);
+      if (state.stopRequested || currentProgress?.stopRequested || currentProgress?.status === "IDLE") {
+        state.stopRequested = true;
         logger.info({ userId }, `Sync stopped by user`);
         break;
       }
@@ -193,6 +197,7 @@ export class GmailSyncService {
     state: SyncProgress
   ): Promise<string[]> {
     state.currentStage = "Checking for updates...";
+    await this.saveProgress(userId, state);
     const processedEmailIds: string[] = [];
     const deletedMessageIds = new Set<string>();
 
@@ -263,10 +268,13 @@ export class GmailSyncService {
 
       state.totalEmailsEstimated = Array.from(threadsToProcess.values()).reduce((sum, set) => sum + set.size, 0);
       state.currentStage = "Importing new conversations...";
+      await this.saveProgress(userId, state);
 
       let hasErrors = false;
       for (const [threadId, messageIds] of threadsToProcess.entries()) {
-        if (state.stopRequested) {
+        const currentProgress = await this.getSyncStatus(userId);
+        if (state.stopRequested || currentProgress?.stopRequested || currentProgress?.status === "IDLE") {
+          state.stopRequested = true;
           logger.info({ userId }, `Sync stopped by user`);
           break;
         }
@@ -292,6 +300,7 @@ export class GmailSyncService {
               processedEmailIds.push(...savedEmails.map((e: any) => e.id));
             }
             state.emailsProcessed += parsedEmails.length;
+            await this.saveProgress(userId, state);
           } else {
             const threadRes = await gmail.users.threads.get({ userId: "me", id: threadId, format: "full" });
             const threadMessages = threadRes.data.messages || [];
@@ -306,6 +315,10 @@ export class GmailSyncService {
           }
 
         } catch (e: any) {
+          if (e.code === 404 || e.status === 404) {
+            logger.info({ threadId, userId }, `Thread ${threadId} not found (404) in Gmail during incremental sync; skipping.`);
+            continue;
+          }
           hasErrors = true;
           logger.error({ err: e, threadId, userId }, `Failed to process thread ${threadId} during incremental sync`);
         }

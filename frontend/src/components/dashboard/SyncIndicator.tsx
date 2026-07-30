@@ -44,7 +44,19 @@ export function SyncIndicator() {
       fetchStatus();
     }, 0);
 
-    if (!socket) return;
+    const interval = setInterval(() => {
+      if (mountedRef.current) {
+        fetchStatus();
+      }
+    }, 4000);
+
+    if (!socket) {
+      return () => {
+        mountedRef.current = false;
+        clearTimeout(timer);
+        clearInterval(interval);
+      };
+    }
 
     const handleSyncStarted = (data: { source?: string }) => {
       setStatus(prev => prev ? {
@@ -59,18 +71,54 @@ export function SyncIndicator() {
       } : null);
     };
 
+    const handleSyncProgress = (data: SyncMetadata) => {
+      setStatus(prev => prev ? {
+        ...prev,
+        connectionStatus: "SYNCING",
+        activeSync: data,
+      } : null);
+    };
+
     const handleSyncCompleted = () => {
       fetchStatus();
     };
 
+    const handleDraftStarted = () => {
+      setStatus(prev => prev ? {
+        ...prev,
+        connectionStatus: "SYNCING",
+        activeSync: {
+          status: "SYNCING",
+          currentStage: "Creating AI draft...",
+          emailsProcessed: 0,
+          totalEmailsEstimated: 0,
+        }
+      } : null);
+    };
+
+    const handleDraftFinished = () => {
+      fetchStatus();
+    };
+
     socket.on('sync:started', handleSyncStarted);
+    socket.on('sync:progress', handleSyncProgress);
     socket.on('sync:completed', handleSyncCompleted);
+    socket.on('draft:started', handleDraftStarted);
+    socket.on('draft:generated', handleDraftFinished);
+    socket.on('draft:regenerated', handleDraftFinished);
+    socket.on('draft:failed', handleDraftFinished);
 
     return () => {
       mountedRef.current = false;
       socket.off('sync:started', handleSyncStarted);
+      socket.off('sync:progress', handleSyncProgress);
       socket.off('sync:completed', handleSyncCompleted);
+      socket.off('draft:started', handleDraftStarted);
+      socket.off('draft:generated', handleDraftFinished);
+      socket.off('draft:regenerated', handleDraftFinished);
+      socket.off('draft:failed', handleDraftFinished);
       clearTimeout(timer);
+      clearInterval(interval);
     };
   }, [fetchStatus, socket]);
 
