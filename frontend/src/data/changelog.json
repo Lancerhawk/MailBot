@@ -1,6 +1,24 @@
 {
   "versions": [
     {
+      "id": "fe-v1.3.0",
+      "version": "v1.3.0",
+      "date": "2026-07-30",
+      "title": "Modern Homepage Redesign & Status Heartbeat Polling Optimization",
+      "service": "Frontend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Homepage Redesign (src/app/page.tsx)",
+          "description": "Removed the old homepage design and completely replaced it with a new modern, dynamic, and responsive landing page design from scratch."
+        },
+        {
+          "title": "Restrict Status Heartbeat Polling to Active Sync States (src/components/gmail/SyncIndicator.tsx)",
+          "description": "Guarded the 4-second setInterval polling in SyncIndicator to only execute when isSyncing is true, preventing background HTTP GET requests to /api/v1/gmail/status during idle application states and eliminating 304 Not Modified log spam."
+        }
+      ]
+    },
+    {
       "id": "be-v1.8.0",
       "version": "v1.8.0",
       "date": "2026-07-30",
@@ -98,7 +116,7 @@
       "date": "2026-07-28",
       "title": "Security Headers, CSP & API Client Hardening",
       "service": "Frontend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Content Security Policy & HTTP Security Headers (next.config.ts)",

@@ -5,7 +5,7 @@
   
   **An AI-Powered Email Assistant**
   
-  [![Frontend Version](https://img.shields.io/badge/Frontend-v1.2.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
+  [![Frontend Version](https://img.shields.io/badge/Frontend-v1.3.0-000000?style=for-the-badge&logo=next.js)](frontend/package.json)
   [![Backend Version](https://img.shields.io/badge/Backend-v1.8.0-339933?style=for-the-badge&logo=nodedotjs)](backend/package.json)
   [![Database](https://img.shields.io/badge/Prisma_&_PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white)](#)
   [![AI](https://img.shields.io/badge/Powered_by_Groq-f55036?style=for-the-badge&logo=openai&logoColor=white)](#)

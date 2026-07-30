@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v1.3.0] - Modern Homepage Redesign & Status Heartbeat Polling Optimization
+
+### Changed
+- **Homepage Redesign (`src/app/page.tsx`):** Removed the old homepage design and completely replaced it with a new modern, dynamic, and responsive landing page design from scratch.
+
+### Performance
+- **Restrict Status Heartbeat Polling to Active Sync States (`src/components/gmail/SyncIndicator.tsx`):**
+  - Guard the 4-second setInterval polling in `SyncIndicator` to only execute when `isSyncing` is true.
+  - Prevent background HTTP GET requests to `/api/v1/gmail/status` during idle application states.
+  - Eliminate 304 Not Modified log spam in backend server logs when no sync is in progress.
+
 ## [Backend v1.8.0] - Distributed Queue, Gmail Sync Reliability, Webhook AI Draft Guarding & Apache 2.0 Licensing
 
 ### Changed
