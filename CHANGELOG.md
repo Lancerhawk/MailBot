@@ -5,9 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Backend v1.8.0] - Distributed Queue: Redis/Memory Switching for FairConcurrencyQueue & UserSerialQueue
+## [Backend v1.8.0] - Distributed Queue, Gmail Sync Reliability, Webhook AI Draft Guarding & Apache 2.0 Licensing
 
 ### Changed
+- **Gmail API 404 Watermark Lock Resolution (`src/modules/gmail/services/gmail.sync.service.ts`):** Handled Gmail API `404 Not Found` errors gracefully during incremental sync without flagging batch errors, allowing `lastHistoryId` to advance cleanly and preventing repetitive re-syncing of old email queues.
+- **Immediate Stop Sync Execution (`src/modules/gmail/services/gmail.sync.service.ts`):** Added Redis `getSyncStatus` checks to every loop iteration in `performFirstSync` and `performIncrementalSync` so manual Stop Sync requests halt active worker loops immediately and emit completion events.
+- **Real-Time Sync Progress & AI Draft Socket Broadcasts (`src/modules/gmail/services/gmail.sync.service.ts`):** Broadcasted live `'sync:progress'` Socket.io events from `saveProgress` on stage transitions and email processing increments, alongside real-time AI draft generation events (`'draft:started'`, `'draft:generated'`, `'draft:failed'`).
+- **Guarded Webhook AI Draft Generation (`src/modules/gmail/services/gmail.db.service.ts`, `src/modules/gmail/services/gmail.sync.service.ts`):** Added `getPendingEmailIds` to `GmailDbService` to filter out already-processed emails from webhook sync batches, ensuring `processWebhook` only transitions to `'Generating AI drafts...'` when genuine unprocessed emails (`PENDING` status) exist.
+- **Apache License 2.0 Upgrade (`package.json`, `LICENSE`):** Upgraded project licensing from MIT to Apache License 2.0 with explicit patent grants, trademark protection, and contributor governance.
 - **FairConcurrencyQueue & UserSerialQueue (`src/utils/user-queue.ts`):** Refactored to support horizontal scalability by adding Redis-backed state coordination, controlled by the `RATE_LIMIT_STORE` environment variable.
 - **Queue Initialization (`src/modules/ai/groq.service.ts`, `src/modules/ai/ai.pipeline.service.ts`, `src/modules/draft/draft.service.ts`):** Injected `cacheService` into queue constructors to enable Redis-based locking and concurrency tracking.
 - **Global Concurrency Tracking:** `FairConcurrencyQueue` now uses `INCR`/`DECR` on `queue:fair:concurrency` to enforce Groq API limits across multiple server instances.
@@ -317,4 +322,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive ESLint and Prettier configurations for code formatting and linting.
 - Root and backend `.gitignore` configurations.
 - Base configurations including `tsconfig.json`, `nodemon.json`, and `.env.example`.
-- Project `README.md`, `CHANGELOG.md`, and MIT `LICENSE`.
+- Project `README.md`, `CHANGELOG.md`, and Apache 2.0 `LICENSE`.

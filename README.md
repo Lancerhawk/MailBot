@@ -775,3 +775,10 @@ erDiagram
 - **OCR for Image Chunking:** Add Optical Character Recognition so images uploaded to the knowledge base can have text extracted and chunked for RAG.
 - **Security Handlers:** Implement robust security handling for production APIs and webhooks.
 - **Logging System:** Remove `morgan` and implement a production-grade logging system.
+
+---
+
+## License
+
+Licensed under the [Apache License, Version 2.0](file:///z:/Work%20Files/Projects/mailman/LICENSE).
+

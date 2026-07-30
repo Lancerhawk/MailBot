@@ -4,10 +4,30 @@
       "id": "be-v1.8.0",
       "version": "v1.8.0",
       "date": "2026-07-30",
-      "title": "Distributed Queue: Redis/Memory Switching for FairConcurrencyQueue & UserSerialQueue",
+      "title": "Distributed Queue, Gmail Sync Reliability, Webhook AI Draft Guarding & Apache 2.0 Licensing",
       "service": "Backend",
       "isCurrent": true,
       "features": [
+        {
+          "title": "Gmail API 404 Watermark Lock Resolution (src/modules/gmail/services/gmail.sync.service.ts)",
+          "description": "Handled Gmail API 404 Not Found errors gracefully during incremental sync without flagging batch errors, allowing lastHistoryId to advance cleanly and preventing repetitive re-syncing of old email queues."
+        },
+        {
+          "title": "Immediate Stop Sync Execution (src/modules/gmail/services/gmail.sync.service.ts)",
+          "description": "Added Redis getSyncStatus checks to every loop iteration in performFirstSync and performIncrementalSync so manual Stop Sync requests halt active worker loops immediately and emit completion events."
+        },
+        {
+          "title": "Real-Time Sync Progress & AI Draft Socket Broadcasts (src/modules/gmail/services/gmail.sync.service.ts)",
+          "description": "Broadcasted live 'sync:progress' Socket.io events from saveProgress on stage transitions and email processing increments, alongside real-time AI draft generation events ('draft:started', 'draft:generated', 'draft:failed')."
+        },
+        {
+          "title": "Guarded Webhook AI Draft Generation (src/modules/gmail/services/gmail.db.service.ts, src/modules/gmail/services/gmail.sync.service.ts)",
+          "description": "Added getPendingEmailIds to GmailDbService to filter out already-processed emails from webhook sync batches, ensuring processWebhook only transitions to 'Generating AI drafts...' when genuine unprocessed emails (PENDING status) exist."
+        },
+        {
+          "title": "Apache License 2.0 Upgrade (package.json, LICENSE)",
+          "description": "Upgraded project licensing from MIT to Apache License 2.0 with explicit patent grants, trademark protection, and contributor governance."
+        },
         {
           "title": "FairConcurrencyQueue & UserSerialQueue (src/utils/user-queue.ts)",
           "description": "Refactored to support horizontal scalability by adding Redis-backed state coordination, controlled by the RATE_LIMIT_STORE environment variable."
