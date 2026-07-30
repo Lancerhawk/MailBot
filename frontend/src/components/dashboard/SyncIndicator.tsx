@@ -38,23 +38,28 @@ export function SyncIndicator() {
     }
   }, []);
 
+  const isActivelySyncing = status?.connectionStatus === "SYNCING" || !!status?.activeSync;
+
+  useEffect(() => {
+    if (!isActivelySyncing) return;
+    const interval = setInterval(() => {
+      if (mountedRef.current) {
+        fetchStatus();
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [isActivelySyncing, fetchStatus]);
+
   useEffect(() => {
     mountedRef.current = true;
     const timer = setTimeout(() => {
       fetchStatus();
     }, 0);
 
-    const interval = setInterval(() => {
-      if (mountedRef.current) {
-        fetchStatus();
-      }
-    }, 4000);
-
     if (!socket) {
       return () => {
         mountedRef.current = false;
         clearTimeout(timer);
-        clearInterval(interval);
       };
     }
 
@@ -118,7 +123,6 @@ export function SyncIndicator() {
       socket.off('draft:regenerated', handleDraftFinished);
       socket.off('draft:failed', handleDraftFinished);
       clearTimeout(timer);
-      clearInterval(interval);
     };
   }, [fetchStatus, socket]);
 
