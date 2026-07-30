@@ -21,7 +21,7 @@ const pricing_config_1 = require("../analytics/services/pricing.config");
 const client_1 = require("@prisma/client");
 const cache_service_1 = require("../../lib/cache.service");
 const user_queue_1 = require("../../utils/user-queue");
-const draftUserQueue = new user_queue_1.UserSerialQueue();
+const draftUserQueue = new user_queue_1.UserSerialQueue('draft', cache_service_1.cacheService);
 class DraftService {
     async generateDraft(userId, emailId, isRegeneration = false) {
         if (await this.isGenerating(emailId)) {

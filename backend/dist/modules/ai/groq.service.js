@@ -7,13 +7,14 @@ exports.GroqService = void 0;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const env_1 = require("../../config/env");
 const user_queue_1 = require("../../utils/user-queue");
+const cache_service_1 = require("../../lib/cache.service");
 const groq = new groq_sdk_1.default({
     apiKey: env_1.env.GROQ_API_KEY || 'dummy-key-will-fail',
 });
 const MAX_GLOBAL_CONCURRENCY = parseInt(process.env.GROQ_CONCURRENCY_LIMIT || '2', 10);
 const MAX_PENDING_PER_USER = 100;
 const REQUEST_TIMEOUT_MS = 60000;
-const groqQueue = new user_queue_1.FairConcurrencyQueue(MAX_GLOBAL_CONCURRENCY, MAX_PENDING_PER_USER, REQUEST_TIMEOUT_MS);
+const groqQueue = new user_queue_1.FairConcurrencyQueue(MAX_GLOBAL_CONCURRENCY, MAX_PENDING_PER_USER, REQUEST_TIMEOUT_MS, cache_service_1.cacheService);
 function enqueueTask(userId, taskFn) {
     return groqQueue.enqueueTask(userId, taskFn);
 }

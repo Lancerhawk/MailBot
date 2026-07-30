@@ -15,7 +15,7 @@ const cache_service_1 = require("../../lib/cache.service");
 const user_queue_1 = require("../../utils/user-queue");
 const groqService = new groq_service_1.GroqService();
 const contactDbService = new contact_db_service_1.ContactDbService();
-const aiPipelineQueue = new user_queue_1.UserSerialQueue();
+const aiPipelineQueue = new user_queue_1.UserSerialQueue('ai-pipeline', cache_service_1.cacheService);
 class AiPipelineService {
     scheduleAnalysis(userId, emailId) {
         const run = async () => {
