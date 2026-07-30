@@ -12,7 +12,8 @@ import { useTheme } from "next-themes";
 
 export default function LandingNavbar() {
   const { user, logout, setLoading } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const isDark = (resolvedTheme || theme) === "dark";
   const [mounted, setMounted] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
@@ -98,17 +99,16 @@ export default function LandingNavbar() {
           </nav>
         </div>
 
-        {/* Right: Actions */}
         <div className="flex items-center gap-3">
-          {/* Theme Toggle */}
           <button
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            aria-label="Toggle theme"
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700/50 transition-colors"
           >
-            {mounted && theme === "dark" ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            {mounted && isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
           </button>
 
-          {/* Desktop: User Menu or Sign In */}
           <div className="hidden md:block">
             {user ? (
               <div className="relative" ref={menuRef}>

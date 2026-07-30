@@ -18,7 +18,8 @@ interface HeaderProps {
 }
 
 export function Header({ setSidebarOpen }: HeaderProps) {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, resolvedTheme } = useTheme();
+  const isDark = (resolvedTheme || theme) === "dark";
   const { user, logout } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
@@ -94,11 +95,12 @@ export function Header({ setSidebarOpen }: HeaderProps) {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            onClick={() => setTheme(isDark ? "light" : "dark")}
+            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
             className="-m-2.5 p-2.5 text-zinc-400 hover:text-zinc-500"
           >
             <span className="sr-only">Toggle theme</span>
-            {mounted && theme === "dark" ? (
+            {mounted && isDark ? (
               <Sun className="h-5 w-5" />
             ) : (
               <Moon className="h-5 w-5" />
