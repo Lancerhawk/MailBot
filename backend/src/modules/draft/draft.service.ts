@@ -20,7 +20,7 @@ import { AiProvider } from '@prisma/client';
 import { cacheService } from '../../lib/cache.service';
 import { UserSerialQueue } from '../../utils/user-queue';
 
-const draftUserQueue = new UserSerialQueue();
+const draftUserQueue = new UserSerialQueue('draft', cacheService);
 
 export class DraftService {
   async generateDraft(userId: string, emailId: string, isRegeneration = false) {

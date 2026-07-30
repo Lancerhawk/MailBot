@@ -14,7 +14,7 @@ import { UserSerialQueue } from '../../utils/user-queue';
 const groqService = new GroqService();
 const contactDbService = new ContactDbService();
 
-const aiPipelineQueue = new UserSerialQueue();
+const aiPipelineQueue = new UserSerialQueue('ai-pipeline', cacheService);
 
 export class AiPipelineService {
   scheduleAnalysis(userId: string, emailId: string): Promise<void> {

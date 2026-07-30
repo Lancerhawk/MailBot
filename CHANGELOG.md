@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.8.0] - Distributed Queue: Redis/Memory Switching for FairConcurrencyQueue & UserSerialQueue
+
+### Changed
+- **FairConcurrencyQueue & UserSerialQueue (`src/utils/user-queue.ts`):** Refactored to support horizontal scalability by adding Redis-backed state coordination, controlled by the `RATE_LIMIT_STORE` environment variable.
+- **Queue Initialization (`src/modules/ai/groq.service.ts`, `src/modules/ai/ai.pipeline.service.ts`, `src/modules/draft/draft.service.ts`):** Injected `cacheService` into queue constructors to enable Redis-based locking and concurrency tracking.
+- **Global Concurrency Tracking:** `FairConcurrencyQueue` now uses `INCR`/`DECR` on `queue:fair:concurrency` to enforce Groq API limits across multiple server instances.
+- **Distributed Locks:** Added `SET NX EX` based locking (`queue:fair:active:{userId}` and `queue:serial:lock:{queueName}:{userId}`) to prevent concurrent execution of user tasks across multiple server instances.
+- **Fallback Mechanism:** Implemented robust try/catch fallbacks so that if Redis is disconnected, queues gracefully degrade to in-memory tracking without dropping tasks.
+
 ## [Backend v1.7.0] - Enterprise Security Hardening, Audit Compliance & Architecture Verification
 
 ### Added

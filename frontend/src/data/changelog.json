@@ -1,12 +1,42 @@
 {
   "versions": [
     {
+      "id": "be-v1.8.0",
+      "version": "v1.8.0",
+      "date": "2026-07-30",
+      "title": "Distributed Queue: Redis/Memory Switching for FairConcurrencyQueue & UserSerialQueue",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "FairConcurrencyQueue & UserSerialQueue (src/utils/user-queue.ts)",
+          "description": "Refactored to support horizontal scalability by adding Redis-backed state coordination, controlled by the RATE_LIMIT_STORE environment variable."
+        },
+        {
+          "title": "Queue Initialization",
+          "description": "Injected cacheService into queue constructors in groq.service.ts, ai.pipeline.service.ts, and draft.service.ts to enable Redis-based locking and concurrency tracking."
+        },
+        {
+          "title": "Global Concurrency Tracking",
+          "description": "FairConcurrencyQueue now uses INCR/DECR on queue:fair:concurrency to enforce Groq API limits across multiple server instances."
+        },
+        {
+          "title": "Distributed Locks",
+          "description": "Added SET NX EX based locking to prevent concurrent execution of user tasks across multiple server instances."
+        },
+        {
+          "title": "Fallback Mechanism",
+          "description": "Implemented robust try/catch fallbacks so that if Redis is disconnected, queues gracefully degrade to in-memory tracking without dropping tasks."
+        }
+      ]
+    },
+    {
       "id": "be-v1.7.0",
       "version": "v1.7.0",
       "date": "2026-07-28",
       "title": "Enterprise Security Hardening, Audit Compliance & Architecture Verification",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "OAuth Token Refresh & Persistence (src/modules/gmail/gmail.client.service.ts)",

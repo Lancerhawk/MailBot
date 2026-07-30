@@ -1,13 +1,59 @@
 import { logger } from '../config/logger';
+import type { CacheService } from '../lib/cache.service';
+
+const SERIAL_LOCK_TTL = 120;
+const SERIAL_RETRY_DELAY = 200;
+const CONCURRENCY_KEY = 'queue:fair:concurrency';
+const CONCURRENCY_TTL = 300;
+const ACTIVE_USER_TTL = 120;
 
 export class UserSerialQueue {
   private queues = new Map<string, Promise<any>>();
+  private name: string;
+  private cache: CacheService | null;
+
+  constructor(name: string = 'default', cache?: CacheService) {
+    this.name = name;
+    this.cache = cache || null;
+  }
 
   public enqueue<T>(userId: string, taskFn: () => Promise<T>): Promise<T> {
     const previous = this.queues.get(userId) || Promise.resolve();
 
+    const wrappedTask = async (): Promise<T> => {
+      if (this.cache) {
+        const lockKey = `queue:serial:lock:${this.name}:${userId}`;
+        let acquired = false;
+        let attempts = 0;
+
+        while (!acquired && attempts < 15) {
+          acquired = await this.cache.acquireLock(lockKey, SERIAL_LOCK_TTL);
+          if (!acquired) {
+            attempts++;
+            await new Promise(r => setTimeout(r, SERIAL_RETRY_DELAY * attempts));
+          }
+        }
+
+        if (!acquired) {
+          logger.warn({ userId, queueName: this.name }, 'UserSerialQueue: Could not acquire distributed lock after retries. Proceeding with local-only serialization.');
+        }
+
+        try {
+          return await taskFn();
+        } finally {
+          if (acquired) {
+            await this.cache.releaseLock(lockKey).catch((err: any) => {
+              logger.warn({ err, lockKey }, 'UserSerialQueue: Failed to release distributed lock');
+            });
+          }
+        }
+      }
+
+      return taskFn();
+    };
+
     const next = previous
-      .then(taskFn)
+      .then(wrappedTask)
       .catch((err) => {
         logger.error({ err, userId }, 'Error in UserSerialQueue task execution');
         throw err;
@@ -46,12 +92,102 @@ export class FairConcurrencyQueue {
   private readyUsers: string[] = [];
   private activeUsers = new Set<string>();
   private currentGlobalConcurrency = 0;
+  private cache: CacheService | null;
 
   constructor(
     private maxGlobalConcurrency: number,
     private maxPendingPerUser: number,
-    private requestTimeoutMs: number
-  ) { }
+    private requestTimeoutMs: number,
+    cache?: CacheService
+  ) {
+    this.cache = cache || null;
+  }
+
+  private get useDistributed(): boolean {
+    return this.cache !== null;
+  }
+
+  private async acquireSlot(): Promise<boolean> {
+    if (!this.useDistributed) {
+      if (this.currentGlobalConcurrency < this.maxGlobalConcurrency) {
+        this.currentGlobalConcurrency++;
+        return true;
+      }
+      return false;
+    }
+
+    try {
+      const client = this.cache!.getRedisClient();
+      if (client && client.isOpen) {
+        const current = await client.incr(CONCURRENCY_KEY);
+        await client.expire(CONCURRENCY_KEY, CONCURRENCY_TTL);
+
+        if (current <= this.maxGlobalConcurrency) {
+          this.currentGlobalConcurrency++;
+          return true;
+        }
+
+        await client.decr(CONCURRENCY_KEY);
+        return false;
+      }
+    } catch (err) {
+      logger.warn({ err }, 'FairConcurrencyQueue: Redis acquireSlot failed. Falling back to memory.');
+    }
+
+    if (this.currentGlobalConcurrency < this.maxGlobalConcurrency) {
+      this.currentGlobalConcurrency++;
+      return true;
+    }
+    return false;
+  }
+
+  private async releaseSlot(): Promise<void> {
+    this.currentGlobalConcurrency = Math.max(0, this.currentGlobalConcurrency - 1);
+
+    if (!this.useDistributed) return;
+
+    try {
+      const client = this.cache!.getRedisClient();
+      if (client && client.isOpen) {
+        const val = await client.decr(CONCURRENCY_KEY);
+        if (val < 0) {
+          await client.set(CONCURRENCY_KEY, '0', { EX: CONCURRENCY_TTL });
+        }
+      }
+    } catch (err) {
+      logger.warn({ err }, 'FairConcurrencyQueue: Redis releaseSlot failed.');
+    }
+  }
+
+  private async markUserActive(userId: string): Promise<boolean> {
+    this.activeUsers.add(userId);
+
+    if (!this.useDistributed) return true;
+
+    try {
+      const acquired = await this.cache!.acquireLock(`queue:fair:active:${userId}`, ACTIVE_USER_TTL);
+      if (!acquired) {
+        this.activeUsers.delete(userId);
+        return false;
+      }
+      return true;
+    } catch (err) {
+      logger.warn({ err, userId }, 'FairConcurrencyQueue: Redis markUserActive failed. Using memory only.');
+      return true;
+    }
+  }
+
+  private async clearUserActive(userId: string): Promise<void> {
+    this.activeUsers.delete(userId);
+
+    if (!this.useDistributed) return;
+
+    try {
+      await this.cache!.releaseLock(`queue:fair:active:${userId}`);
+    } catch (err) {
+      logger.warn({ err, userId }, 'FairConcurrencyQueue: Redis clearUserActive failed.');
+    }
+  }
 
   public enqueueTask<T>(userId: string, taskFn: () => Promise<T>): Promise<T> {
     return new Promise((resolve, reject) => {
@@ -75,24 +211,39 @@ export class FairConcurrencyQueue {
     });
   }
 
-  private processScheduler() {
-    while (this.currentGlobalConcurrency < this.maxGlobalConcurrency && this.readyUsers.length > 0) {
-      const userId = this.readyUsers.shift()!;
-      const queue = this.userQueues.get(userId);
+  private async processScheduler() {
+    while (this.readyUsers.length > 0) {
+      const slotAvailable = await this.acquireSlot();
+      if (!slotAvailable) break;
 
+      const userId = this.readyUsers.shift();
+      if (!userId) {
+        await this.releaseSlot();
+        break;
+      }
+
+      const queue = this.userQueues.get(userId);
       if (!queue || queue.length === 0) {
         this.userQueues.delete(userId);
+        await this.releaseSlot();
         continue;
       }
 
       if (this.activeUsers.has(userId)) {
+        await this.releaseSlot();
+        continue;
+      }
+
+      const userMarked = await this.markUserActive(userId);
+      if (!userMarked) {
+        if (!this.readyUsers.includes(userId)) {
+          this.readyUsers.push(userId);
+        }
+        await this.releaseSlot();
         continue;
       }
 
       const task = queue.shift()!;
-      this.activeUsers.add(userId);
-      this.currentGlobalConcurrency++;
-
       this.executeTaskWorker(userId, task);
     }
   }
@@ -140,18 +291,18 @@ export class FairConcurrencyQueue {
         task.reject(error);
       }
     } finally {
-      this.currentGlobalConcurrency--;
+      await this.releaseSlot();
 
       if (isTransientRetry) {
-        setTimeout(() => {
-          this.activeUsers.delete(userId);
+        setTimeout(async () => {
+          await this.clearUserActive(userId);
           if (!this.readyUsers.includes(userId)) {
             this.readyUsers.push(userId);
           }
           this.processScheduler();
         }, delayMs);
       } else {
-        this.activeUsers.delete(userId);
+        await this.clearUserActive(userId);
         const remainingQueue = this.userQueues.get(userId);
         if (remainingQueue && remainingQueue.length > 0) {
           if (!this.readyUsers.includes(userId)) {

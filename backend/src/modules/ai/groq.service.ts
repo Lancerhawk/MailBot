@@ -1,6 +1,7 @@
 import Groq from 'groq-sdk';
 import { env } from '../../config/env';
 import { FairConcurrencyQueue } from '../../utils/user-queue';
+import { cacheService } from '../../lib/cache.service';
 
 const groq = new Groq({
   apiKey: env.GROQ_API_KEY || 'dummy-key-will-fail',
@@ -30,7 +31,8 @@ const REQUEST_TIMEOUT_MS = 60000;
 const groqQueue = new FairConcurrencyQueue(
   MAX_GLOBAL_CONCURRENCY,
   MAX_PENDING_PER_USER,
-  REQUEST_TIMEOUT_MS
+  REQUEST_TIMEOUT_MS,
+  cacheService
 );
 
 function enqueueTask<T>(userId: string, taskFn: () => Promise<T>): Promise<T> {
