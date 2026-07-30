@@ -345,10 +345,13 @@ class GmailSyncService {
             const startHistoryId = connection.lastHistoryId ? connection.lastHistoryId.toString() : (newHistoryId - BigInt(1)).toString();
             processedEmailIds = await this.performIncrementalSync(userId, connection.id, startHistoryId, gmail, state);
             if (processedEmailIds && processedEmailIds.length > 0) {
-                state.currentStage = "Generating AI drafts...";
-                await this.saveProgress(userId, state);
-                const aiPromises = processedEmailIds.map(emailId => this.aiPipelineService.scheduleAnalysis(userId, emailId));
-                await Promise.all(aiPromises);
+                const pendingEmailIds = await this.dbService.getPendingEmailIds(processedEmailIds);
+                if (pendingEmailIds.length > 0) {
+                    state.currentStage = "Generating AI drafts...";
+                    await this.saveProgress(userId, state);
+                    const aiPromises = pendingEmailIds.map(emailId => this.aiPipelineService.scheduleAnalysis(userId, emailId));
+                    await Promise.all(aiPromises);
+                }
             }
             state.status = "IDLE";
             state.currentStage = "Sync complete";

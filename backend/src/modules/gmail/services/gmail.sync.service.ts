@@ -400,11 +400,14 @@ export class GmailSyncService {
       processedEmailIds = await this.performIncrementalSync(userId, connection.id, startHistoryId, gmail, state);
 
       if (processedEmailIds && processedEmailIds.length > 0) {
-        state.currentStage = "Generating AI drafts...";
-        await this.saveProgress(userId, state);
+        const pendingEmailIds = await this.dbService.getPendingEmailIds(processedEmailIds);
+        if (pendingEmailIds.length > 0) {
+          state.currentStage = "Generating AI drafts...";
+          await this.saveProgress(userId, state);
 
-        const aiPromises = processedEmailIds.map(emailId => this.aiPipelineService.scheduleAnalysis(userId, emailId));
-        await Promise.all(aiPromises);
+          const aiPromises = pendingEmailIds.map(emailId => this.aiPipelineService.scheduleAnalysis(userId, emailId));
+          await Promise.all(aiPromises);
+        }
       }
 
       state.status = "IDLE";

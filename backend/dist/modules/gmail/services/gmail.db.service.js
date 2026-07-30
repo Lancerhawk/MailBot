@@ -429,5 +429,20 @@ class GmailDbService {
         }
         return createdEmails;
     }
+    async getPendingEmailIds(emailIds) {
+        if (!emailIds || emailIds.length === 0)
+            return [];
+        const pendingEmails = await prisma_1.prisma.email.findMany({
+            where: {
+                id: { in: emailIds },
+                processingStatus: client_1.ProcessingStatus.PENDING,
+                isDeleted: false,
+                isDraft: false,
+                isSpam: false,
+            },
+            select: { id: true }
+        });
+        return pendingEmails.map(e => e.id);
+    }
 }
 exports.GmailDbService = GmailDbService;

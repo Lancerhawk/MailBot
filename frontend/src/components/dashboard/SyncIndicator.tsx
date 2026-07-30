@@ -194,7 +194,7 @@ export function SyncIndicator() {
           ) : (
           <span className="hidden sm:inline text-zinc-600 dark:text-zinc-400">
               {status.activeSync?.currentStage || "Syncing..."}
-              {status.activeSync && status.activeSync.totalEmailsEstimated > 0 && (
+              {status.activeSync && status.activeSync.totalEmailsEstimated > 1 && (
                 <span className="ml-1 text-xs">
                   ({status.activeSync.emailsProcessed}/{status.activeSync.totalEmailsEstimated})
                 </span>
