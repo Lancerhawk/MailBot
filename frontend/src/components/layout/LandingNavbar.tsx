@@ -103,7 +103,7 @@ export default function LandingNavbar() {
           <button
             onClick={() => setTheme(isDark ? "light" : "dark")}
             aria-label="Toggle theme"
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : undefined}
             className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800/50 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-200 dark:hover:bg-zinc-700/50 transition-colors"
           >
             {mounted && isDark ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}

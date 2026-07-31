@@ -96,7 +96,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
             variant="ghost"
             size="icon"
             onClick={() => setTheme(isDark ? "light" : "dark")}
-            title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            title={mounted ? (isDark ? "Switch to light mode" : "Switch to dark mode") : undefined}
             className="-m-2.5 p-2.5 text-zinc-400 hover:text-zinc-500"
           >
             <span className="sr-only">Toggle theme</span>
