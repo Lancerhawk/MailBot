@@ -149,7 +149,11 @@ export class GmailController {
       const dbStatus = await this.dbService.getConnectionStatus(userId);
 
       if (!dbStatus) {
-        throw new ApiError(404, "Gmail connection not found");
+        res.json({
+          status: "success",
+          data: { connectionStatus: "DISCONNECTED", activeSync: null }
+        });
+        return;
       }
 
       const activeSync = await this.syncService.getSyncStatus(userId);
