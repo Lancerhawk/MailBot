@@ -1,4 +1,4 @@
-import app from './app';
+import app, { pgPool } from './app';
 import { env } from './config/env';
 import { logger } from './config/logger';
 import { prisma } from './lib/prisma';
@@ -91,13 +91,13 @@ process.on('SIGTERM', () => {
   if (server) {
     server.close(() => {
       logger.info('Server closed gracefully');
-      prisma.$disconnect().then(() => {
-        logger.info('Prisma disconnected gracefully');
+      Promise.all([prisma.$disconnect(), pgPool.end()]).then(() => {
+        logger.info('Database connections closed gracefully');
         process.exit(0);
       });
     });
   } else {
-    prisma.$disconnect().then(() => {
+    Promise.all([prisma.$disconnect(), pgPool.end()]).then(() => {
       process.exit(0);
     });
   }
@@ -109,13 +109,13 @@ process.on('SIGINT', () => {
   if (server) {
     server.close(() => {
       logger.info('Server closed gracefully');
-      prisma.$disconnect().then(() => {
-        logger.info('Prisma disconnected gracefully');
+      Promise.all([prisma.$disconnect(), pgPool.end()]).then(() => {
+        logger.info('Database connections closed gracefully');
         process.exit(0);
       });
     });
   } else {
-    prisma.$disconnect().then(() => {
+    Promise.all([prisma.$disconnect(), pgPool.end()]).then(() => {
       process.exit(0);
     });
   }
