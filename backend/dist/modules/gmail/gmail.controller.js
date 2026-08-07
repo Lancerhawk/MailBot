@@ -24,7 +24,7 @@ class GmailController {
             try {
                 const ticket = await this.oauth2Client.verifyIdToken({
                     idToken,
-                    audience: env_1.env.GMAIL_WEBHOOK_AUDIENCE || `${env_1.env.API_URL}/api/v1/gmail/webhook`,
+                    audience: env_1.env.GMAIL_WEBHOOK_AUDIENCE || `${env_1.env.API_URL.replace(/\/$/, '')}/api/v1/gmail/webhook`,
                 });
                 const payload = ticket.getPayload();
                 if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {
@@ -135,7 +135,11 @@ class GmailController {
             const userId = req.session.userId;
             const dbStatus = await this.dbService.getConnectionStatus(userId);
             if (!dbStatus) {
-                throw new ApiError_1.ApiError(404, "Gmail connection not found");
+                res.json({
+                    status: "success",
+                    data: { connectionStatus: "DISCONNECTED", activeSync: null }
+                });
+                return;
             }
             const activeSync = await this.syncService.getSyncStatus(userId);
             res.json({

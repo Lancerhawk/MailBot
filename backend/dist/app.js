@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.sessionMiddleware = void 0;
+exports.sessionMiddleware = exports.pgPool = void 0;
 const express_1 = __importDefault(require("express"));
 const helmet_1 = __importDefault(require("helmet"));
 const cors_1 = __importDefault(require("cors"));
@@ -21,7 +21,7 @@ const ApiError_1 = require("./utils/ApiError");
 const v1_1 = __importDefault(require("./routes/v1"));
 const app = (0, express_1.default)();
 const PgStore = (0, connect_pg_simple_1.default)(express_session_1.default);
-const pgPool = new pg_1.default.Pool({
+exports.pgPool = new pg_1.default.Pool({
     connectionString: env_1.env.DATABASE_URL,
     max: 10,
 });
@@ -42,7 +42,7 @@ app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
 exports.sessionMiddleware = (0, express_session_1.default)({
     store: new PgStore({
-        pool: pgPool,
+        pool: exports.pgPool,
         tableName: 'session',
     }),
     secret: env_1.env.SESSION_SECRET,

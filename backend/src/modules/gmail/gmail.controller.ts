@@ -24,7 +24,7 @@ export class GmailController {
       try {
         const ticket = await this.oauth2Client.verifyIdToken({
           idToken,
-          audience: env.GMAIL_WEBHOOK_AUDIENCE || `${env.API_URL}/api/v1/gmail/webhook`,
+          audience: env.GMAIL_WEBHOOK_AUDIENCE || `${env.API_URL.replace(/\/$/, '')}/api/v1/gmail/webhook`,
         });
         const payload = ticket.getPayload();
         if (payload && (payload.iss === 'https://accounts.google.com' || payload.iss === 'accounts.google.com')) {

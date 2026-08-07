@@ -26,6 +26,7 @@ const envSchema = zod_1.z.object({
     GMAIL_WEBHOOK_AUDIENCE: zod_1.z.string().optional(),
     GMAIL_WEBHOOK_SERVICE_ACCOUNT_EMAIL: zod_1.z.string().optional(),
     GMAIL_WEBHOOK_SECRET: zod_1.z.string().optional(),
+    GMAIL_PUBSUB_TOPIC: zod_1.z.string().optional(),
     GMAIL_WEBHOOK_REQUIRE_OIDC: zod_1.z.string().default('true').transform((val) => val === 'true' || val === '1'),
     RATE_LIMIT_STORE: zod_1.z.enum(['memory', 'redis']).default('memory'),
     REDIS_URL: zod_1.z.string().default('redis://127.0.0.1:6379'),

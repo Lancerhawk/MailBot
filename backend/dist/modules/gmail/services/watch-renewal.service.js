@@ -5,10 +5,16 @@ const client_1 = require("@prisma/client");
 const prisma_1 = require("../../../lib/prisma");
 const gmail_client_service_1 = require("./gmail.client.service");
 const logger_1 = require("../../../config/logger");
+const env_1 = require("../../../config/env");
 const gmailClient = new gmail_client_service_1.GmailClientService();
 class WatchRenewalService {
     isRenewing = false;
-    pubSubTopic = process.env.GMAIL_PUBSUB_TOPIC || 'projects/your-project-id/topics/gmail-webhooks';
+    pubSubTopic = env_1.env.GMAIL_PUBSUB_TOPIC || 'projects/your-project-id/topics/gmail-webhooks';
+    constructor() {
+        if (!env_1.env.GMAIL_PUBSUB_TOPIC || this.pubSubTopic === 'projects/your-project-id/topics/gmail-webhooks') {
+            logger_1.logger.warn('[WatchRenewal] GMAIL_PUBSUB_TOPIC is not set in environment variables. Falling back to placeholder topic. Gmail watch registration will fail in production.');
+        }
+    }
     async registerWatch(userId, force = false) {
         const connection = await gmailClient.getConnection(userId);
         if (!connection) {
