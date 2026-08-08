@@ -92,10 +92,161 @@ export class AnalyticsController {
     }
   }
 
-  public async getEmail(req: Request, res: Response) { res.json({ message: 'Email insights' }); }
-  public async getAi(req: Request, res: Response) { res.json({ message: 'AI insights' }); }
-  public async getKnowledge(req: Request, res: Response) { res.json({ message: 'Knowledge insights' }); }
-  public async getContacts(req: Request, res: Response) { res.json({ message: 'Contact insights' }); }
+  public async getEmail(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const dateFilter = this.buildDateFilter(req);
+
+      const where: any = { userId };
+      if (dateFilter) where.date = dateFilter;
+
+      const aggregate = await prisma.analytics.aggregate({
+        where,
+        _sum: {
+          emailsReceived: true,
+          emailsClassified: true,
+          emailsSummarized: true,
+          emailsReplied: true,
+          timeSavedSeconds: true,
+        },
+        _avg: {
+          averageReplyGenerationTime: true,
+        }
+      });
+
+      const timeseries = await prisma.analytics.findMany({
+        where,
+        select: {
+          date: true,
+          emailsReceived: true,
+          emailsReplied: true,
+        },
+        orderBy: { date: 'asc' },
+        take: 1000
+      });
+
+      res.json(serializeData({ aggregate, timeseries }));
+    } catch (error) {
+      logger.error({ err: error }, '[AnalyticsController] getEmail error');
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  public async getAi(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const dateFilter = this.buildDateFilter(req);
+
+      const where: any = { userId };
+      if (dateFilter) where.date = dateFilter;
+
+      const aggregate = await prisma.analytics.aggregate({
+        where,
+        _sum: {
+          draftsGenerated: true,
+          draftsApproved: true,
+          draftsRejected: true,
+          totalPromptTokens: true,
+          totalCompletionTokens: true,
+          estimatedCost: true,
+        },
+        _avg: {
+          averageConfidence: true,
+          averageLatency: true,
+        }
+      });
+
+      const timeseries = await prisma.analytics.findMany({
+        where,
+        select: {
+          date: true,
+          draftsGenerated: true,
+          draftsApproved: true,
+          estimatedCost: true,
+        },
+        orderBy: { date: 'asc' },
+        take: 1000
+      });
+
+      res.json(serializeData({ aggregate, timeseries }));
+    } catch (error) {
+      logger.error({ err: error }, '[AnalyticsController] getAi error');
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  public async getKnowledge(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const dateFilter = this.buildDateFilter(req);
+
+      const where: any = { userId };
+      if (dateFilter) where.date = dateFilter;
+
+      const aggregate = await prisma.analytics.aggregate({
+        where,
+        _sum: {
+          documentsUploaded: true,
+          documentsEmbedded: true,
+          knowledgeRetrievalCount: true,
+          processingFailures: true,
+        },
+        _max: {
+          storageUsedBytes: true,
+        }
+      });
+
+      const timeseries = await prisma.analytics.findMany({
+        where,
+        select: {
+          date: true,
+          documentsUploaded: true,
+          knowledgeRetrievalCount: true,
+        },
+        orderBy: { date: 'asc' },
+        take: 1000
+      });
+
+      res.json(serializeData({ aggregate, timeseries }));
+    } catch (error) {
+      logger.error({ err: error }, '[AnalyticsController] getKnowledge error');
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
+
+  public async getContacts(req: Request, res: Response) {
+    try {
+      const userId = req.user!.id;
+      const dateFilter = this.buildDateFilter(req);
+
+      const where: any = { userId };
+      if (dateFilter) where.date = dateFilter;
+
+      const aggregate = await prisma.analytics.aggregate({
+        where,
+        _sum: {
+          contactsCreated: true,
+          organizationsCreated: true,
+        }
+      });
+
+      const timeseries = await prisma.analytics.findMany({
+        where,
+        select: {
+          date: true,
+          contactsCreated: true,
+          organizationsCreated: true,
+        },
+        orderBy: { date: 'asc' },
+        take: 1000
+      });
+
+      res.json(serializeData({ aggregate, timeseries }));
+    } catch (error) {
+      logger.error({ err: error }, '[AnalyticsController] getContacts error');
+      res.status(500).json({ error: 'Internal Server Error' });
+    }
+  }
   public async getActivity(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
