@@ -135,7 +135,8 @@ export class AnalyticsController {
 
       const data = await prisma.analytics.findMany({
         where,
-        orderBy: { date: 'asc' }
+        orderBy: { date: 'asc' },
+        take: 1000
       });
 
       const aggregate = await prisma.analytics.aggregate({
@@ -229,7 +230,8 @@ export class AnalyticsController {
 
       const data = await prisma.analytics.findMany({
         where,
-        orderBy: { date: 'asc' }
+        orderBy: { date: 'asc' },
+        take: 1000
       });
 
       const aggregate = await prisma.analytics.aggregate({
