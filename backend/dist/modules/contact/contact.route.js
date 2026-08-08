@@ -2,7 +2,9 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const auth_middleware_1 = require("../../middlewares/auth.middleware");
+const validate_middleware_1 = require("../../middlewares/validate.middleware");
 const contact_controller_1 = require("./contact.controller");
+const contact_validation_1 = require("./contact.validation");
 const router = (0, express_1.Router)();
 const controller = new contact_controller_1.ContactController();
 router.use(auth_middleware_1.requireAuth);
@@ -19,7 +21,7 @@ router.patch("/:id", controller.update.bind(controller));
 router.delete("/:id", controller.remove.bind(controller));
 router.post("/:id/archive", controller.archive.bind(controller));
 router.post("/:id/restore", controller.restore.bind(controller));
-router.post("/:id/merge", controller.merge.bind(controller));
+router.post("/:id/merge", (0, validate_middleware_1.validate)(contact_validation_1.mergeContactSchema), controller.merge.bind(controller));
 router.get("/:id/emails", controller.getEmails.bind(controller));
 router.get("/:id/timeline", controller.getTimeline.bind(controller));
 exports.default = router;

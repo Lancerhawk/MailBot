@@ -50,9 +50,6 @@ class DraftController {
             const userId = req.user?.id;
             if (!userId)
                 throw new ApiError_1.ApiError(401, 'Unauthorized');
-            if (typeof editedText !== 'string') {
-                throw new ApiError_1.ApiError(400, 'editedText is required and must be a string');
-            }
             await draftDbService.updateDraftEditedText(draftId, userId, editedText);
             res.status(200).json({ status: 'success', message: 'Draft updated' });
         }

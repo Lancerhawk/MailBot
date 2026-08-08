@@ -89,7 +89,6 @@ export class ContactController {
       if (!userId) throw new ApiError(401, "Unauthorized");
 
       const { secondaryId } = req.body;
-      if (!secondaryId) throw new ApiError(400, "secondaryId is required");
 
       const merged = await contactService.mergeContacts(userId, req.params.id, secondaryId);
       res.json({ status: "success", data: merged });

@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { requireAuth } from "../../middlewares/auth.middleware";
+import { validate } from "../../middlewares/validate.middleware";
 import { ContactController } from "./contact.controller";
+import { mergeContactSchema } from "./contact.validation";
 
 const router = Router();
 const controller = new ContactController();
@@ -23,7 +25,7 @@ router.delete("/:id", controller.remove.bind(controller));
 
 router.post("/:id/archive", controller.archive.bind(controller));
 router.post("/:id/restore", controller.restore.bind(controller));
-router.post("/:id/merge", controller.merge.bind(controller));
+router.post("/:id/merge", validate(mergeContactSchema), controller.merge.bind(controller));
 
 router.get("/:id/emails", controller.getEmails.bind(controller));
 router.get("/:id/timeline", controller.getTimeline.bind(controller));
