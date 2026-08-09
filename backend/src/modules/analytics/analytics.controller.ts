@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../../lib/prisma';
 import { logger } from '../../config/logger';
+import { cacheService } from '../../lib/cache.service';
 
 function serializeData(obj: any) {
   return JSON.parse(
@@ -29,8 +30,15 @@ export class AnalyticsController {
   public async getOverview(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const dateFilter = this.buildDateFilter(req);
+      const cacheKey = `analytics:overview:${userId}:${req.originalUrl}`;
+      
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
 
+      const dateFilter = this.buildDateFilter(req);
       const where: any = { userId };
       if (dateFilter) where.date = dateFilter;
 
@@ -65,7 +73,9 @@ export class AnalyticsController {
         }
       });
 
-      res.json(serializeData(aggregate));
+      const payload = serializeData(aggregate);
+      await cacheService.set(cacheKey, payload, 300);
+      res.json(payload);
     } catch (error) {
       logger.error({ err: error }, '[AnalyticsController] overview error');
       res.status(500).json({ error: 'Internal Server Error' });
@@ -75,17 +85,27 @@ export class AnalyticsController {
   public async getCharts(req: Request, res: Response): Promise<void> {
     try {
       const userId = req.user!.id;
-      const dateFilter = this.buildDateFilter(req);
+      const cacheKey = `analytics:charts:${userId}:${req.originalUrl}`;
+      
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
 
+      const dateFilter = this.buildDateFilter(req);
       const where: any = { userId };
       if (dateFilter) where.date = dateFilter;
 
       const data = await prisma.analytics.findMany({
         where,
-        orderBy: { date: 'asc' }
+        orderBy: { date: 'asc' },
+        take: 1000
       });
 
-      res.json(serializeData(data));
+      const payload = serializeData(data);
+      await cacheService.set(cacheKey, payload, 300);
+      res.json(payload);
     } catch (error) {
       logger.error({ err: error }, '[AnalyticsController] charts error');
       res.status(500).json({ error: 'Internal Server Error' });

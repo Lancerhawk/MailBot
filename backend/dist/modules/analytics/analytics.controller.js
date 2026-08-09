@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AnalyticsController = void 0;
 const prisma_1 = require("../../lib/prisma");
 const logger_1 = require("../../config/logger");
+const cache_service_1 = require("../../lib/cache.service");
 function serializeData(obj) {
     return JSON.parse(JSON.stringify(obj, (key, value) => typeof value === 'bigint' ? value.toString() : value));
 }
@@ -23,6 +24,12 @@ class AnalyticsController {
     async getOverview(req, res) {
         try {
             const userId = req.user.id;
+            const cacheKey = `analytics:overview:${userId}:${req.originalUrl}`;
+            const cached = await cache_service_1.cacheService.get(cacheKey);
+            if (cached) {
+                res.json(cached);
+                return;
+            }
             const dateFilter = this.buildDateFilter(req);
             const where = { userId };
             if (dateFilter)
@@ -57,7 +64,9 @@ class AnalyticsController {
                     storageUsedBytes: true,
                 }
             });
-            res.json(serializeData(aggregate));
+            const payload = serializeData(aggregate);
+            await cache_service_1.cacheService.set(cacheKey, payload, 300);
+            res.json(payload);
         }
         catch (error) {
             logger_1.logger.error({ err: error }, '[AnalyticsController] overview error');
@@ -67,15 +76,24 @@ class AnalyticsController {
     async getCharts(req, res) {
         try {
             const userId = req.user.id;
+            const cacheKey = `analytics:charts:${userId}:${req.originalUrl}`;
+            const cached = await cache_service_1.cacheService.get(cacheKey);
+            if (cached) {
+                res.json(cached);
+                return;
+            }
             const dateFilter = this.buildDateFilter(req);
             const where = { userId };
             if (dateFilter)
                 where.date = dateFilter;
             const data = await prisma_1.prisma.analytics.findMany({
                 where,
-                orderBy: { date: 'asc' }
+                orderBy: { date: 'asc' },
+                take: 1000
             });
-            res.json(serializeData(data));
+            const payload = serializeData(data);
+            await cache_service_1.cacheService.set(cacheKey, payload, 300);
+            res.json(payload);
         }
         catch (error) {
             logger_1.logger.error({ err: error }, '[AnalyticsController] charts error');
