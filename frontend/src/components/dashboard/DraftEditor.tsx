@@ -34,17 +34,7 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
     return () => clearInterval(interval);
   }, [blockedUntil]);
 
-  useEffect(() => {
-    setDraft(initialDraft || null);
-    setText(initialDraft?.editedText ?? initialDraft?.generatedText ?? "");
-    setIsGenerating(false);
-  }, [initialDraft]);
 
-  useEffect(() => {
-    if (!initialDraft) {
-      setIsGenerating(isProcessing || false);
-    }
-  }, [isProcessing, initialDraft]);
 
   useEffect(() => {
     if (!socket) return;

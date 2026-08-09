@@ -600,6 +600,7 @@ export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: 
 
             return (
               <DraftEditor
+                key={`${targetEmail.id}-${draftFromLatest?.id || 'nodraft'}-${isCurrentlyProcessing}`}
                 emailId={targetEmail.id}
                 initialDraft={draftFromLatest as Draft | null}
                 isProcessing={isCurrentlyProcessing}
