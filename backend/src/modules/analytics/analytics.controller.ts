@@ -115,8 +115,15 @@ export class AnalyticsController {
   public async getEmail(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const dateFilter = this.buildDateFilter(req);
+      const cacheKey = `analytics:email:${userId}:${req.originalUrl}`;
+      
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
 
+      const dateFilter = this.buildDateFilter(req);
       const where: any = { userId };
       if (dateFilter) where.date = dateFilter;
 
@@ -145,7 +152,9 @@ export class AnalyticsController {
         take: 1000
       });
 
-      res.json(serializeData({ aggregate, timeseries }));
+      const payload = serializeData({ aggregate, timeseries });
+      await cacheService.set(cacheKey, payload, 300);
+      res.json(payload);
     } catch (error) {
       logger.error({ err: error }, '[AnalyticsController] getEmail error');
       res.status(500).json({ error: 'Internal Server Error' });
@@ -155,8 +164,15 @@ export class AnalyticsController {
   public async getAi(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const dateFilter = this.buildDateFilter(req);
+      const cacheKey = `analytics:ai:${userId}:${req.originalUrl}`;
+      
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
 
+      const dateFilter = this.buildDateFilter(req);
       const where: any = { userId };
       if (dateFilter) where.date = dateFilter;
 
@@ -188,7 +204,9 @@ export class AnalyticsController {
         take: 1000
       });
 
-      res.json(serializeData({ aggregate, timeseries }));
+      const payload = serializeData({ aggregate, timeseries });
+      await cacheService.set(cacheKey, payload, 300);
+      res.json(payload);
     } catch (error) {
       logger.error({ err: error }, '[AnalyticsController] getAi error');
       res.status(500).json({ error: 'Internal Server Error' });
@@ -198,8 +216,15 @@ export class AnalyticsController {
   public async getKnowledge(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const dateFilter = this.buildDateFilter(req);
+      const cacheKey = `analytics:knowledge:${userId}:${req.originalUrl}`;
+      
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
 
+      const dateFilter = this.buildDateFilter(req);
       const where: any = { userId };
       if (dateFilter) where.date = dateFilter;
 
@@ -227,7 +252,9 @@ export class AnalyticsController {
         take: 1000
       });
 
-      res.json(serializeData({ aggregate, timeseries }));
+      const payload = serializeData({ aggregate, timeseries });
+      await cacheService.set(cacheKey, payload, 300);
+      res.json(payload);
     } catch (error) {
       logger.error({ err: error }, '[AnalyticsController] getKnowledge error');
       res.status(500).json({ error: 'Internal Server Error' });
@@ -237,8 +264,15 @@ export class AnalyticsController {
   public async getContacts(req: Request, res: Response) {
     try {
       const userId = req.user!.id;
-      const dateFilter = this.buildDateFilter(req);
+      const cacheKey = `analytics:contacts:${userId}:${req.originalUrl}`;
+      
+      const cached = await cacheService.get(cacheKey);
+      if (cached) {
+        res.json(cached);
+        return;
+      }
 
+      const dateFilter = this.buildDateFilter(req);
       const where: any = { userId };
       if (dateFilter) where.date = dateFilter;
 
@@ -261,7 +295,9 @@ export class AnalyticsController {
         take: 1000
       });
 
-      res.json(serializeData({ aggregate, timeseries }));
+      const payload = serializeData({ aggregate, timeseries });
+      await cacheService.set(cacheKey, payload, 300);
+      res.json(payload);
     } catch (error) {
       logger.error({ err: error }, '[AnalyticsController] getContacts error');
       res.status(500).json({ error: 'Internal Server Error' });

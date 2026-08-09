@@ -103,6 +103,12 @@ class AnalyticsController {
     async getEmail(req, res) {
         try {
             const userId = req.user.id;
+            const cacheKey = `analytics:email:${userId}:${req.originalUrl}`;
+            const cached = await cache_service_1.cacheService.get(cacheKey);
+            if (cached) {
+                res.json(cached);
+                return;
+            }
             const dateFilter = this.buildDateFilter(req);
             const where = { userId };
             if (dateFilter)
@@ -130,7 +136,9 @@ class AnalyticsController {
                 orderBy: { date: 'asc' },
                 take: 1000
             });
-            res.json(serializeData({ aggregate, timeseries }));
+            const payload = serializeData({ aggregate, timeseries });
+            await cache_service_1.cacheService.set(cacheKey, payload, 300);
+            res.json(payload);
         }
         catch (error) {
             logger_1.logger.error({ err: error }, '[AnalyticsController] getEmail error');
@@ -140,6 +148,12 @@ class AnalyticsController {
     async getAi(req, res) {
         try {
             const userId = req.user.id;
+            const cacheKey = `analytics:ai:${userId}:${req.originalUrl}`;
+            const cached = await cache_service_1.cacheService.get(cacheKey);
+            if (cached) {
+                res.json(cached);
+                return;
+            }
             const dateFilter = this.buildDateFilter(req);
             const where = { userId };
             if (dateFilter)
@@ -170,7 +184,9 @@ class AnalyticsController {
                 orderBy: { date: 'asc' },
                 take: 1000
             });
-            res.json(serializeData({ aggregate, timeseries }));
+            const payload = serializeData({ aggregate, timeseries });
+            await cache_service_1.cacheService.set(cacheKey, payload, 300);
+            res.json(payload);
         }
         catch (error) {
             logger_1.logger.error({ err: error }, '[AnalyticsController] getAi error');
@@ -180,6 +196,12 @@ class AnalyticsController {
     async getKnowledge(req, res) {
         try {
             const userId = req.user.id;
+            const cacheKey = `analytics:knowledge:${userId}:${req.originalUrl}`;
+            const cached = await cache_service_1.cacheService.get(cacheKey);
+            if (cached) {
+                res.json(cached);
+                return;
+            }
             const dateFilter = this.buildDateFilter(req);
             const where = { userId };
             if (dateFilter)
@@ -206,7 +228,9 @@ class AnalyticsController {
                 orderBy: { date: 'asc' },
                 take: 1000
             });
-            res.json(serializeData({ aggregate, timeseries }));
+            const payload = serializeData({ aggregate, timeseries });
+            await cache_service_1.cacheService.set(cacheKey, payload, 300);
+            res.json(payload);
         }
         catch (error) {
             logger_1.logger.error({ err: error }, '[AnalyticsController] getKnowledge error');
@@ -216,6 +240,12 @@ class AnalyticsController {
     async getContacts(req, res) {
         try {
             const userId = req.user.id;
+            const cacheKey = `analytics:contacts:${userId}:${req.originalUrl}`;
+            const cached = await cache_service_1.cacheService.get(cacheKey);
+            if (cached) {
+                res.json(cached);
+                return;
+            }
             const dateFilter = this.buildDateFilter(req);
             const where = { userId };
             if (dateFilter)
@@ -237,7 +267,9 @@ class AnalyticsController {
                 orderBy: { date: 'asc' },
                 take: 1000
             });
-            res.json(serializeData({ aggregate, timeseries }));
+            const payload = serializeData({ aggregate, timeseries });
+            await cache_service_1.cacheService.set(cacheKey, payload, 300);
+            res.json(payload);
         }
         catch (error) {
             logger_1.logger.error({ err: error }, '[AnalyticsController] getContacts error');
