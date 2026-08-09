@@ -53,7 +53,7 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function ThreadSkeleton() {
+const ThreadSkeleton = React.memo(function ThreadSkeleton() {
   return (
     <div className="flex items-start gap-3 px-4 py-3.5">
       <Skeleton className="h-10 w-10 shrink-0 rounded-full" />
@@ -67,7 +67,7 @@ function ThreadSkeleton() {
       </div>
     </div>
   );
-}
+});
 
 function decodeHtmlEntities(text: string | null | undefined): string {
   if (!text) return "";
@@ -81,6 +81,67 @@ function decodeHtmlEntities(text: string | null | undefined): string {
     .replace(/&#x2F;/g, '/')
     .replace(/&nbsp;/g, ' ');
 }
+
+const ThreadCard = React.memo(function ThreadCard({ 
+  thread, 
+  isSelected, 
+  isUnread, 
+  sender, 
+  onClick, 
+  lastElementRef 
+}: { 
+  thread: EmailThread; 
+  isSelected: boolean; 
+  isUnread: boolean; 
+  sender: { name: string; initial: string; color: { bg: string; text: string } }; 
+  onClick: () => void; 
+  lastElementRef?: (node: HTMLDivElement) => void;
+}) {
+  return (
+    <div
+      ref={lastElementRef}
+      onClick={onClick}
+      className={`group relative flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-all duration-150
+        ${isSelected
+          ? "bg-orange-50/80 dark:bg-orange-500/5"
+          : "hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
+        }`}
+    >
+      {isSelected && (
+        <div className="absolute inset-y-0 left-0 w-[3px] rounded-r-full bg-orange-500 dark:bg-orange-400" />
+      )}
+
+      <div className={`relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${sender.color.bg} ${sender.color.text}`}>
+        {sender.initial}
+        {isUnread && (
+          <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-blue-500 dark:border-zinc-950" />
+        )}
+      </div>
+
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-2">
+          <p className={`truncate text-sm ${isUnread ? "font-bold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-600 dark:text-zinc-300"}`}>
+            {sender.name}
+            {thread.messageCount > 1 && (
+              <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-zinc-200 px-1 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
+                {thread.messageCount}
+              </span>
+            )}
+          </p>
+          <span className={`shrink-0 text-[11px] ${isUnread ? "font-semibold text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}`}>
+            {formatDistanceToNow(new Date(thread.lastMessageAt), { addSuffix: false })}
+          </span>
+        </div>
+        <p className={`mt-0.5 truncate text-[13px] ${isUnread ? "font-semibold text-zinc-800 dark:text-zinc-100" : "text-zinc-700 dark:text-zinc-300"}`}>
+          {thread.subject || "(No Subject)"}
+        </p>
+        <p className="mt-0.5 line-clamp-1 text-xs text-zinc-400 dark:text-zinc-500">
+          {decodeHtmlEntities(thread.emails[0]?.snippet)}
+        </p>
+      </div>
+    </div>
+  );
+});
 
 export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | "drafts" }) {
   const { socket } = useSocket();
@@ -383,51 +444,15 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
                 const sender = getSenderInfo(thread);
 
                 return (
-                  <div
+                  <ThreadCard
                     key={thread.id}
-                    ref={index === filteredThreads.length - 1 ? lastElementRef : undefined}
-                    onClick={() => {
-                      setSelectedThreadId(thread.id);
-                    }}
-                    className={`group relative flex cursor-pointer items-start gap-3 px-4 py-3.5 transition-all duration-150
-                      ${isSelected
-                        ? "bg-orange-50/80 dark:bg-orange-500/5"
-                        : "hover:bg-zinc-50 dark:hover:bg-zinc-900/50"
-                      }`}
-                  >
-                    {isSelected && (
-                      <div className="absolute inset-y-0 left-0 w-[3px] rounded-r-full bg-orange-500 dark:bg-orange-400" />
-                    )}
-
-                    <div className={`relative mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold ${sender.color.bg} ${sender.color.text}`}>
-                      {sender.initial}
-                      {isUnread && (
-                        <div className="absolute -right-0.5 -top-0.5 h-3 w-3 rounded-full border-2 border-white bg-blue-500 dark:border-zinc-950" />
-                      )}
-                    </div>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className={`truncate text-sm ${isUnread ? "font-bold text-zinc-900 dark:text-zinc-50" : "font-medium text-zinc-600 dark:text-zinc-300"}`}>
-                          {sender.name}
-                          {thread.messageCount > 1 && (
-                            <span className="ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-zinc-200 px-1 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-700 dark:text-zinc-300">
-                              {thread.messageCount}
-                            </span>
-                          )}
-                        </p>
-                        <span className={`shrink-0 text-[11px] ${isUnread ? "font-semibold text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}`}>
-                          {formatDistanceToNow(new Date(thread.lastMessageAt), { addSuffix: false })}
-                        </span>
-                      </div>
-                      <p className={`mt-0.5 truncate text-[13px] ${isUnread ? "font-semibold text-zinc-800 dark:text-zinc-100" : "text-zinc-700 dark:text-zinc-300"}`}>
-                        {thread.subject || "(No Subject)"}
-                      </p>
-                      <p className="mt-0.5 line-clamp-1 text-xs text-zinc-400 dark:text-zinc-500">
-                        {decodeHtmlEntities(thread.emails[0]?.snippet)}
-                      </p>
-                    </div>
-                  </div>
+                    thread={thread}
+                    isSelected={isSelected}
+                    isUnread={isUnread}
+                    sender={sender}
+                    onClick={() => setSelectedThreadId(thread.id)}
+                    lastElementRef={index === filteredThreads.length - 1 ? lastElementRef : undefined}
+                  />
                 );
               })}
               {isFetchingMore && (

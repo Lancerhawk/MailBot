@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import api from "@/lib/api";
 import { ChevronDown } from "lucide-react";
 import { format } from "date-fns";
@@ -96,7 +96,7 @@ function getAvatarColor(name: string) {
   return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 }
 
-function ThreadSkeleton() {
+const ThreadSkeleton = React.memo(function ThreadSkeleton() {
   return (
     <div className="flex h-full w-full flex-col animate-fade-in">
       <div className="border-b border-zinc-200 px-6 py-5 dark:border-zinc-800">
@@ -128,18 +128,20 @@ function ThreadSkeleton() {
       </div>
     </div>
   );
-}
+});
 
-function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: string }) {
+const EmailCard = React.memo(function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: string }) {
   const sender = email.participants.find(p => p.role === "SENDER");
   const to = email.participants.filter(p => p.role === "TO");
   const senderName = sender?.displayName || sender?.emailAddress || "Unknown";
   const color = getAvatarColor(senderName);
   const [isCollapsed, setIsCollapsed] = useState(!isLast);
 
-  const cleanHtml = email.htmlBody
-    ? DOMPurify.sanitize(email.htmlBody, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style'] })
-    : null;
+  const cleanHtml = useMemo(() => {
+    return email.htmlBody
+      ? DOMPurify.sanitize(email.htmlBody, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style'] })
+      : null;
+  }, [email.htmlBody]);
 
   return (
     <div id={id} className="animate-fade-in rounded-xl border border-zinc-200/80 bg-white shadow-sm transition-shadow hover:shadow-md dark:border-zinc-800 dark:bg-zinc-900/80">
@@ -292,7 +294,7 @@ function EmailCard({ email, isLast, id }: { email: Email; isLast: boolean; id?: 
       </AnimatePresence>
     </div>
   );
-}
+});
 
 export function ThreadViewer({ threadId, onClose, forceShowClose }: { threadId: string; onClose?: () => void; forceShowClose?: boolean }) {
   const { user } = useAuth();
