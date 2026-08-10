@@ -79,7 +79,7 @@ export function KnowledgeAnalyticsTab({ data, isLoading }: KnowledgeAnalyticsTab
       value: formatBytes(Number(data?.aggregate?._max?.storageUsedBytes || 0)),
       icon: <HardDrive className="w-5 h-5 text-zinc-400" />,
       color: 'bg-zinc-500/10 border-zinc-500/20',
-      subtitle: 'Vector DB & Asset Storage'
+      subtitle: 'Active document files'
     }
   ];
 

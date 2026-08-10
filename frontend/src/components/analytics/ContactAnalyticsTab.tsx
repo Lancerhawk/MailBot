@@ -61,11 +61,13 @@ export function ContactAnalyticsTab({ data, isLoading }: ContactAnalyticsTabProp
       subtitle: 'Total entities added'
     },
     {
-      title: 'Data Quality',
-      value: '98.5%',
+      title: 'Avg. Interactions',
+      value: (data?.aggregate?._sum?.contactsCreated || 0) > 0
+        ? Math.round(((data?.aggregate?._sum?.contactsCreated || 0) + (data?.aggregate?._sum?.organizationsCreated || 0)) / Math.max(1, data?.aggregate?._sum?.contactsCreated || 1))
+        : '0',
       icon: <ShieldAlert className="w-5 h-5 text-amber-400" />,
       color: 'bg-amber-500/10 border-amber-500/20',
-      subtitle: 'Entity extraction confidence'
+      subtitle: 'Entities per contact'
     }
   ];
 
