@@ -50,11 +50,11 @@ export function AnalyticsOverview({ data, isLoading }: AnalyticsOverviewProps) {
 
   const kpis = [
     {
-      title: 'Total Emails Processed',
+      title: 'Emails Synced',
       value: data?._sum?.emailsReceived || 0,
       icon: <Mail className="w-5 h-5 text-blue-400" />,
       color: 'bg-blue-500/10 border-blue-500/20',
-      subtitle: `${data?._sum?.emailsClassified || 0} classified`
+      subtitle: 'Historical & new messages'
     },
     {
       title: 'Drafts Automated',

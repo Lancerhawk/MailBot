@@ -67,11 +67,19 @@ export class AnalyticsController {
           averageConfidence: true,
           averageLatency: true,
           averageReplyGenerationTime: true,
-        },
-        _max: {
-          storageUsedBytes: true,
         }
       });
+
+      const actualStorage = await prisma.knowledgeBaseDocument.aggregate({
+        where: { userId, deletedAt: null },
+        _sum: { fileSize: true }
+      });
+      const activeDocsCount = await prisma.knowledgeBaseDocument.count({
+        where: { userId, deletedAt: null }
+      });
+      
+      (aggregate as any)._max = { storageUsedBytes: actualStorage._sum.fileSize || 0 };
+      (aggregate as any)._sum.documentsUploaded = activeDocsCount;
 
       const payload = serializeData(aggregate);
       await cacheService.set(cacheKey, payload, 300);
@@ -235,11 +243,23 @@ export class AnalyticsController {
           documentsEmbedded: true,
           knowledgeRetrievalCount: true,
           processingFailures: true,
-        },
-        _max: {
-          storageUsedBytes: true,
         }
       });
+
+      const actualStorage = await prisma.knowledgeBaseDocument.aggregate({
+        where: { userId, deletedAt: null },
+        _sum: { fileSize: true }
+      });
+      const activeDocsCount = await prisma.knowledgeBaseDocument.count({
+        where: { userId, deletedAt: null }
+      });
+      const activeEmbeddedCount = await prisma.knowledgeBaseDocument.count({
+        where: { userId, deletedAt: null, processingStatus: 'COMPLETED' }
+      });
+
+      (aggregate as any)._max = { storageUsedBytes: actualStorage._sum.fileSize || 0 };
+      (aggregate as any)._sum.documentsUploaded = activeDocsCount;
+      (aggregate as any)._sum.documentsEmbedded = activeEmbeddedCount;
 
       const timeseries = await prisma.analytics.findMany({
         where,
@@ -351,14 +371,36 @@ export class AnalyticsController {
         _sum: {
           emailsReceived: true,
           emailsClassified: true,
+          emailsSummarized: true,
+          emailsReplied: true,
           draftsGenerated: true,
           draftsApproved: true,
+          draftsRejected: true,
+          totalPromptTokens: true,
+          totalCompletionTokens: true,
+          estimatedCost: true,
+          timeSavedSeconds: true,
+          knowledgeRetrievalCount: true,
           documentsUploaded: true,
+          documentsEmbedded: true,
+          processingFailures: true,
+          contactsCreated: true,
+          organizationsCreated: true,
         },
         _avg: {
           averageConfidence: true,
+          averageLatency: true,
         }
       });
+
+      const actualStorage = await prisma.knowledgeBaseDocument.aggregate({
+        where: { userId, deletedAt: null },
+        _sum: { fileSize: true }
+      });
+      const activeDocsCount = await prisma.knowledgeBaseDocument.count({
+        where: { userId, deletedAt: null }
+      });
+      const storageUsedBytes = actualStorage._sum.fileSize || 0;
 
       if (data.length === 0) {
         res.status(404).json({ error: 'No data to export for this period.' });
@@ -380,39 +422,36 @@ export class AnalyticsController {
 
       csvLines.push(`--- KEY PERFORMANCE INDICATORS ---`);
       csvLines.push(`Metric,Value`);
-      csvLines.push(`Total Emails Received,${aggregate._sum.emailsReceived || 0}`);
-      csvLines.push(`Total Emails Classified,${aggregate._sum.emailsClassified || 0}`);
+      csvLines.push(`Emails Synced,${aggregate._sum.emailsReceived || 0}`);
+      csvLines.push(`Emails Classified,${aggregate._sum.emailsClassified || 0}`);
       csvLines.push(`Drafts Generated,${aggregate._sum.draftsGenerated || 0}`);
       csvLines.push(`Drafts Approved,${aggregate._sum.draftsApproved || 0}`);
-      csvLines.push(`Documents Uploaded,${aggregate._sum.documentsUploaded || 0}`);
+      csvLines.push(`Time Saved (Seconds),${aggregate._sum.timeSavedSeconds || 0}`);
+      csvLines.push(`Total AI Cost (USD),${Number(aggregate._sum.estimatedCost || 0).toFixed(4)}`);
+      csvLines.push(`Documents Uploaded (Active),${activeDocsCount}`);
+      csvLines.push(`Storage Used (Bytes),${storageUsedBytes}`);
+      csvLines.push(`Contacts Created,${aggregate._sum.contactsCreated || 0}`);
       csvLines.push(`Average AI Confidence,${avgConf}%`);
       csvLines.push(``);
 
       csvLines.push(`--- EMAIL VOLUME TRENDS ---`);
-      csvLines.push(`Date,Emails Received`);
+      csvLines.push(`Date,Emails Received,Emails Classified,Emails Replied`);
       data.forEach(row => {
-        csvLines.push(`${row.date.toISOString().split('T')[0]},${row.emailsReceived}`);
+        csvLines.push(`${row.date.toISOString().split('T')[0]},${row.emailsReceived},${row.emailsClassified},${row.emailsReplied}`);
       });
       csvLines.push(``);
 
-      csvLines.push(`--- DRAFT AUTOMATION EFFICIENCY ---`);
-      csvLines.push(`Date,Drafts Generated,Drafts Approved`);
+      csvLines.push(`--- AI AUTOMATION ---`);
+      csvLines.push(`Date,Drafts Generated,Drafts Approved,Estimated Cost,Tokens Used`);
       data.forEach(row => {
-        csvLines.push(`${row.date.toISOString().split('T')[0]},${row.draftsGenerated},${row.draftsApproved}`);
+        csvLines.push(`${row.date.toISOString().split('T')[0]},${row.draftsGenerated},${row.draftsApproved},${Number(row.estimatedCost || 0).toFixed(4)},${(row.totalPromptTokens || 0) + (row.totalCompletionTokens || 0)}`);
       });
       csvLines.push(``);
 
-      csvLines.push(`--- AI CONFIDENCE MATRIX ---`);
-      csvLines.push(`Date,Average AI Confidence`);
+      csvLines.push(`--- KNOWLEDGE & CONTACTS ---`);
+      csvLines.push(`Date,Documents Uploaded,Retrievals,Contacts Created,Orgs Created`);
       data.forEach(row => {
-        csvLines.push(`${row.date.toISOString().split('T')[0]},${(Number(row.averageConfidence) * 100).toFixed(1)}%`);
-      });
-      csvLines.push(``);
-
-      csvLines.push(`--- KNOWLEDGE BASE SCALING ---`);
-      csvLines.push(`Date,Documents Uploaded`);
-      data.forEach(row => {
-        csvLines.push(`${row.date.toISOString().split('T')[0]},${row.documentsUploaded}`);
+        csvLines.push(`${row.date.toISOString().split('T')[0]},${row.documentsUploaded},${row.knowledgeRetrievalCount},${row.contactsCreated},${row.organizationsCreated}`);
       });
       csvLines.push(``);
 
@@ -446,14 +485,36 @@ export class AnalyticsController {
         _sum: {
           emailsReceived: true,
           emailsClassified: true,
+          emailsSummarized: true,
+          emailsReplied: true,
           draftsGenerated: true,
           draftsApproved: true,
+          draftsRejected: true,
+          totalPromptTokens: true,
+          totalCompletionTokens: true,
+          estimatedCost: true,
+          timeSavedSeconds: true,
+          knowledgeRetrievalCount: true,
           documentsUploaded: true,
+          documentsEmbedded: true,
+          processingFailures: true,
+          contactsCreated: true,
+          organizationsCreated: true,
         },
         _avg: {
           averageConfidence: true,
+          averageLatency: true,
         }
       });
+
+      const actualStorage = await prisma.knowledgeBaseDocument.aggregate({
+        where: { userId, deletedAt: null },
+        _sum: { fileSize: true }
+      });
+      const activeDocsCount = await prisma.knowledgeBaseDocument.count({
+        where: { userId, deletedAt: null }
+      });
+      const storageUsedBytes = actualStorage._sum.fileSize || 0;
 
       const activityWhere: any = { userId };
       if (dateFilter) activityWhere.createdAt = dateFilter;
@@ -465,12 +526,11 @@ export class AnalyticsController {
 
       res.json({
         kpis: {
-          emailsReceived: aggregate._sum.emailsReceived || 0,
-          emailsClassified: aggregate._sum.emailsClassified || 0,
-          draftsGenerated: aggregate._sum.draftsGenerated || 0,
-          draftsApproved: aggregate._sum.draftsApproved || 0,
-          documentsUploaded: aggregate._sum.documentsUploaded || 0,
-          averageConfidence: (Number(aggregate._avg.averageConfidence || 0) * 100).toFixed(1)
+          ...aggregate._sum,
+          documentsUploaded: activeDocsCount,
+          storageUsedBytes,
+          averageConfidence: (Number(aggregate._avg.averageConfidence || 0) * 100).toFixed(1),
+          averageLatency: (Number(aggregate._avg.averageLatency || 0)).toFixed(0)
         },
         breakdown: data,
         activities: activities

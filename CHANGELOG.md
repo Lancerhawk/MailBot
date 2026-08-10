@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v1.4.0] - Analytics Dashboard Expansion & Performance Optimizations
+
+### Added
+- **Tabbed Analytics Interface (`src/app/analytics/page.tsx`, `src/components/analytics/*`):** Overhauled the Analytics Dashboard into a Radix UI tabbed interface with 5 distinct sections: Overview, AI Performance, Email Traffic, Knowledge Base, and Contacts.
+- **Lazy-Loaded Query Optimization:** Implemented aggressive lazy-loading for heavy endpoint queries to ensure backend aggregates are only fetched when their specific tab is active.
+
+### Fixed
+- **KPI Accuracy Fixes (`AnalyticsOverview.tsx`, `KnowledgeAnalyticsTab.tsx`):** Fixed misleading KPI labels such as changing 'Total Emails Received' to 'Emails Synced' and surfacing active document counts to prevent historical data confusion.
+- **React Re-rendering Fixes (`ThreadViewer.tsx`, `DraftEditor.tsx`):** Resolved UI stuttering by wrapping DOMPurify sanitization in \`useMemo\`, applying \`React.memo\` to heavy child components, and implementing key remounting for draft state.
+
 ## [Frontend v1.3.0] - Modern Homepage Redesign & Status Heartbeat Polling Optimization
 
 ### Changed

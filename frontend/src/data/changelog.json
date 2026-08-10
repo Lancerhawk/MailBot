@@ -1,12 +1,38 @@
 {
   "versions": [
     {
+      "id": "fe-v1.4.0",
+      "version": "v1.4.0",
+      "date": "2026-08-10",
+      "title": "Analytics Dashboard Expansion & Performance Optimizations",
+      "service": "Frontend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Tabbed Analytics Interface",
+          "description": "Overhauled the Analytics Dashboard into a Radix UI tabbed interface with 5 distinct sections: Overview, AI Performance, Email Traffic, Knowledge Base, and Contacts."
+        },
+        {
+          "title": "Lazy-Loaded Query Optimization",
+          "description": "Implemented aggressive lazy-loading for heavy endpoint queries to ensure backend aggregates are only fetched when their specific tab is active."
+        },
+        {
+          "title": "KPI Accuracy Fixes",
+          "description": "Fixed misleading KPI labels such as changing 'Total Emails Received' to 'Emails Synced' and surfacing active document counts to prevent historical data confusion."
+        },
+        {
+          "title": "React Re-rendering Fixes",
+          "description": "Resolved UI stuttering in ThreadViewer and DraftEditor by wrapping DOMPurify sanitization in useMemo, applying React.memo to heavy child components, and implementing key remounting for draft state."
+        }
+      ]
+    },
+    {
       "id": "fe-v1.3.0",
       "version": "v1.3.0",
       "date": "2026-07-30",
       "title": "Modern Homepage Redesign & Status Heartbeat Polling Optimization",
       "service": "Frontend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Homepage Redesign (src/app/page.tsx)",

@@ -1,13 +1,17 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Calendar, Download, AlertCircle, Loader2, ChevronDown, Info } from 'lucide-react';
 import { useSocket } from '@/providers/SocketProvider';
 import { Button } from '@/components/ui/button';
 import { AnalyticsOverview } from '@/components/analytics/AnalyticsOverview';
 import { AnalyticsCharts } from '@/components/analytics/AnalyticsCharts';
+import { AiAnalyticsTab } from '@/components/analytics/AiAnalyticsTab';
+import { EmailAnalyticsTab } from '@/components/analytics/EmailAnalyticsTab';
+import { KnowledgeAnalyticsTab } from '@/components/analytics/KnowledgeAnalyticsTab';
+import { ContactAnalyticsTab } from '@/components/analytics/ContactAnalyticsTab';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportToPDF } from '@/lib/pdf-export';
 import axios from 'axios';
@@ -18,10 +22,19 @@ const api = axios.create({
   withCredentials: true,
 });
 
+const TABS = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'ai', label: 'AI Performance' },
+  { id: 'email', label: 'Email Traffic' },
+  { id: 'knowledge', label: 'Knowledge Base' },
+  { id: 'contacts', label: 'Contacts' },
+];
+
 export default function AnalyticsPage() {
   const [dateRange, setDateRange] = useState('30d');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
 
   const queryClient = useQueryClient();
   const { socket } = useSocket();
@@ -33,6 +46,10 @@ export default function AnalyticsPage() {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ['analytics-overview'] }),
         queryClient.invalidateQueries({ queryKey: ['analytics-charts'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics-ai'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics-email'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics-knowledge'] }),
+        queryClient.invalidateQueries({ queryKey: ['analytics-contacts'] }),
         queryClient.invalidateQueries({ queryKey: ['analytics-activity'] })
       ]);
       setTimeout(() => setIsManualRefreshing(false), 300);
@@ -74,23 +91,46 @@ export default function AnalyticsPage() {
 
   const isCustomMissingDates = dateRange === 'custom' && (!customStart || !customEnd);
 
+  // Queries - Lazy loaded based on activeTab
   const { data: overview, isLoading: isOverviewLoading, error: overviewError } = useQuery({
     queryKey: ['analytics-overview', dateRange, customStart, customEnd],
-    queryFn: async () => {
-      const res = await api.get('/overview', { params: filterParams });
-      return res.data;
-    },
-    enabled: !isCustomMissingDates,
+    queryFn: async () => (await api.get('/overview', { params: filterParams })).data,
+    enabled: !isCustomMissingDates && activeTab === 'overview',
     refetchInterval: 30000,
   });
 
   const { data: charts, isLoading: isChartsLoading } = useQuery({
     queryKey: ['analytics-charts', dateRange, customStart, customEnd],
-    queryFn: async () => {
-      const res = await api.get('/charts', { params: filterParams });
-      return res.data;
-    },
-    enabled: !isCustomMissingDates,
+    queryFn: async () => (await api.get('/charts', { params: filterParams })).data,
+    enabled: !isCustomMissingDates && activeTab === 'overview',
+    refetchInterval: 30000,
+  });
+
+  const { data: aiData, isLoading: isAiLoading } = useQuery({
+    queryKey: ['analytics-ai', dateRange, customStart, customEnd],
+    queryFn: async () => (await api.get('/ai', { params: filterParams })).data,
+    enabled: !isCustomMissingDates && activeTab === 'ai',
+    refetchInterval: 30000,
+  });
+
+  const { data: emailData, isLoading: isEmailLoading } = useQuery({
+    queryKey: ['analytics-email', dateRange, customStart, customEnd],
+    queryFn: async () => (await api.get('/email', { params: filterParams })).data,
+    enabled: !isCustomMissingDates && activeTab === 'email',
+    refetchInterval: 30000,
+  });
+
+  const { data: knowledgeData, isLoading: isKnowledgeLoading } = useQuery({
+    queryKey: ['analytics-knowledge', dateRange, customStart, customEnd],
+    queryFn: async () => (await api.get('/knowledge', { params: filterParams })).data,
+    enabled: !isCustomMissingDates && activeTab === 'knowledge',
+    refetchInterval: 30000,
+  });
+
+  const { data: contactsData, isLoading: isContactsLoading } = useQuery({
+    queryKey: ['analytics-contacts', dateRange, customStart, customEnd],
+    queryFn: async () => (await api.get('/contacts', { params: filterParams })).data,
+    enabled: !isCustomMissingDates && activeTab === 'contacts',
     refetchInterval: 30000,
   });
 
@@ -129,9 +169,9 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 h-full relative pb-10">
+    <div className="flex flex-col h-full relative pb-10">
 
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 mb-6">
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -199,7 +239,7 @@ export default function AnalyticsPage() {
         </div>
 
         {overviewError && (
-          <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl flex items-start space-x-3 text-red-400">
+          <div className="bg-red-500/10 border border-red-500/30 p-4 rounded-xl flex items-start space-x-3 text-red-400 mb-6">
             <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
             <div>
               <h3 className="font-medium text-red-300">Failed to load analytics</h3>
@@ -208,7 +248,23 @@ export default function AnalyticsPage() {
           </div>
         )}
 
-        <div className="space-y-6">
+        <div className="flex border-b border-zinc-200 dark:border-zinc-800 mb-6 overflow-x-auto hide-scrollbar">
+          {TABS.map(tab => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`px-5 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+                activeTab === tab.id 
+                  ? 'border-orange-500 text-orange-600 dark:text-orange-400' 
+                  : 'border-transparent text-zinc-500 hover:text-zinc-700 dark:text-zinc-400 dark:hover:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-700'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 min-h-[500px]">
           {isCustomMissingDates ? (
             <div className="flex flex-col items-center justify-center py-32 text-zinc-500 border border-zinc-200 dark:border-zinc-800/80 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/20 border-dashed">
               <Calendar className="w-12 h-12 mb-4 opacity-50 text-orange-500" />
@@ -216,12 +272,37 @@ export default function AnalyticsPage() {
               <p className="text-sm mt-1">Please select both a start and end date to view custom analytics.</p>
             </div>
           ) : (
-            <>
-              <AnalyticsOverview data={overview} isLoading={isOverviewLoading || isManualRefreshing} />
-              <div id="pdf-chart-container">
-                <AnalyticsCharts data={charts} isLoading={isChartsLoading || isManualRefreshing} filterParams={filterParams} />
-              </div>
-            </>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                transition={{ duration: 0.15 }}
+                className="h-full"
+              >
+                {activeTab === 'overview' && (
+                  <div className="space-y-6">
+                    <AnalyticsOverview data={overview} isLoading={isOverviewLoading || isManualRefreshing} />
+                    <div id="pdf-chart-container">
+                      <AnalyticsCharts data={charts} isLoading={isChartsLoading || isManualRefreshing} filterParams={filterParams} />
+                    </div>
+                  </div>
+                )}
+                {activeTab === 'ai' && (
+                  <AiAnalyticsTab data={aiData} isLoading={isAiLoading || isManualRefreshing} />
+                )}
+                {activeTab === 'email' && (
+                  <EmailAnalyticsTab data={emailData} isLoading={isEmailLoading || isManualRefreshing} />
+                )}
+                {activeTab === 'knowledge' && (
+                  <KnowledgeAnalyticsTab data={knowledgeData} isLoading={isKnowledgeLoading || isManualRefreshing} />
+                )}
+                {activeTab === 'contacts' && (
+                  <ContactAnalyticsTab data={contactsData} isLoading={isContactsLoading || isManualRefreshing} />
+                )}
+              </motion.div>
+            </AnimatePresence>
           )}
         </div>
 
