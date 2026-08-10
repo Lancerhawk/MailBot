@@ -304,6 +304,12 @@ export class AnalyticsController {
         }
       });
 
+      const totalContacts = await prisma.contact.count({ where: { userId } });
+      const totalOrganizations = await prisma.organization.count({ where: { userId } });
+
+      (aggregate as any)._sum.totalContacts = totalContacts;
+      (aggregate as any)._sum.totalOrganizations = totalOrganizations;
+
       const timeseries = await prisma.analytics.findMany({
         where,
         select: {

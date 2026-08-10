@@ -65,7 +65,7 @@ export function KnowledgeAnalyticsTab({ data, isLoading }: KnowledgeAnalyticsTab
       value: (data?.aggregate?._sum?.knowledgeRetrievalCount || 0).toLocaleString(),
       icon: <SearchCode className="w-5 h-5 text-blue-400" />,
       color: 'bg-blue-500/10 border-blue-500/20',
-      subtitle: 'Knowledge base queries'
+      subtitle: 'Queries in selected period'
     },
     {
       title: 'Processing Failures',

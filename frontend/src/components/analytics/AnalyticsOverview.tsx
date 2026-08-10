@@ -68,7 +68,7 @@ export function AnalyticsOverview({ data, isLoading }: AnalyticsOverviewProps) {
       value: data?._sum?.documentsUploaded || 0,
       icon: <Database className="w-5 h-5 text-indigo-400" />,
       color: 'bg-indigo-500/10 border-indigo-500/20',
-      subtitle: `${data?._sum?.knowledgeRetrievalCount || 0} AI retrievals`
+      subtitle: `${data?._sum?.knowledgeRetrievalCount || 0} queries in period`
     },
     {
       title: 'Average AI Confidence',

@@ -10,6 +10,8 @@ interface ContactAnalyticsData {
     _sum: {
       contactsCreated: number;
       organizationsCreated: number;
+      totalContacts?: number;
+      totalOrganizations?: number;
     };
   };
   timeseries: {
@@ -61,13 +63,11 @@ export function ContactAnalyticsTab({ data, isLoading }: ContactAnalyticsTabProp
       subtitle: 'Total entities added'
     },
     {
-      title: 'Avg. Interactions',
-      value: (data?.aggregate?._sum?.contactsCreated || 0) > 0
-        ? Math.round(((data?.aggregate?._sum?.contactsCreated || 0) + (data?.aggregate?._sum?.organizationsCreated || 0)) / Math.max(1, data?.aggregate?._sum?.contactsCreated || 1))
-        : '0',
-      icon: <ShieldAlert className="w-5 h-5 text-amber-400" />,
+      title: 'Total Directory Size',
+      value: (data?.aggregate?._sum?.totalContacts || 0).toLocaleString(),
+      icon: <Users className="w-5 h-5 text-amber-400" />,
       color: 'bg-amber-500/10 border-amber-500/20',
-      subtitle: 'Entities per contact'
+      subtitle: `${data?.aggregate?._sum?.totalOrganizations || 0} organizations total`
     }
   ];
 
