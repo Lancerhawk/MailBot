@@ -97,6 +97,7 @@ export default function AnalyticsPage() {
     queryFn: async () => (await api.get('/overview', { params: filterParams })).data,
     enabled: !isCustomMissingDates && activeTab === 'overview',
     refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const { data: charts, isLoading: isChartsLoading } = useQuery({
@@ -104,6 +105,7 @@ export default function AnalyticsPage() {
     queryFn: async () => (await api.get('/charts', { params: filterParams })).data,
     enabled: !isCustomMissingDates && activeTab === 'overview',
     refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const { data: aiData, isLoading: isAiLoading } = useQuery({
@@ -111,6 +113,7 @@ export default function AnalyticsPage() {
     queryFn: async () => (await api.get('/ai', { params: filterParams })).data,
     enabled: !isCustomMissingDates && activeTab === 'ai',
     refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const { data: emailData, isLoading: isEmailLoading } = useQuery({
@@ -118,6 +121,7 @@ export default function AnalyticsPage() {
     queryFn: async () => (await api.get('/email', { params: filterParams })).data,
     enabled: !isCustomMissingDates && activeTab === 'email',
     refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const { data: knowledgeData, isLoading: isKnowledgeLoading } = useQuery({
@@ -125,6 +129,7 @@ export default function AnalyticsPage() {
     queryFn: async () => (await api.get('/knowledge', { params: filterParams })).data,
     enabled: !isCustomMissingDates && activeTab === 'knowledge',
     refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const { data: contactsData, isLoading: isContactsLoading } = useQuery({
@@ -132,6 +137,7 @@ export default function AnalyticsPage() {
     queryFn: async () => (await api.get('/contacts', { params: filterParams })).data,
     enabled: !isCustomMissingDates && activeTab === 'contacts',
     refetchInterval: 30000,
+    staleTime: 30000,
   });
 
   const handleExportCSV = async () => {
