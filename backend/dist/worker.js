@@ -6,6 +6,8 @@ const prisma_1 = require("./lib/prisma");
 const local_embedding_service_1 = require("./modules/knowledge/services/local-embedding.service");
 const embedding_worker_1 = require("./modules/jobs/workers/embedding.worker");
 const description_worker_1 = require("./modules/jobs/workers/description.worker");
+const sync_worker_1 = require("./modules/jobs/workers/sync.worker");
+const draft_worker_1 = require("./modules/jobs/workers/draft.worker");
 const job_service_1 = require("./modules/jobs/job.service");
 const worker_manager_1 = require("./modules/jobs/worker-manager");
 const startWorkerService = async () => {
@@ -25,6 +27,8 @@ const startWorkerService = async () => {
         const workerCount = env_1.env.EMBEDDING_WORKERS;
         const workers = [];
         const descWorkers = [];
+        const syncWorkers = [];
+        const draftWorkers = [];
         for (let i = 1; i <= workerCount; i++) {
             const worker = new embedding_worker_1.EmbeddingWorker(i);
             worker.start();
@@ -34,8 +38,16 @@ const startWorkerService = async () => {
             descWorker.start();
             descWorkers.push(descWorker);
             worker_manager_1.WorkerManager.register(descWorker);
+            const syncWorker = new sync_worker_1.SyncWorker(i);
+            syncWorker.start();
+            syncWorkers.push(syncWorker);
+            worker_manager_1.WorkerManager.register(syncWorker);
+            const draftWorker = new draft_worker_1.DraftWorker(i);
+            draftWorker.start();
+            draftWorkers.push(draftWorker);
+            worker_manager_1.WorkerManager.register(draftWorker);
         }
-        logger_1.logger.info(`[Worker Microservice] Successfully booted ${workerCount} EmbeddingWorkers and ${workerCount} DescriptionWorkers.`);
+        logger_1.logger.info(`[Worker Microservice] Successfully booted ${workerCount} EmbeddingWorkers, DescriptionWorkers, SyncWorkers, and DraftWorkers.`);
         logger_1.logger.info(`[Worker Microservice] Polling ProcessingJob table. Mode: ${env_1.env.WORKER_MODE} (Callback URL: ${env_1.env.API_SERVER_URL})`);
         const recoveryInterval = setInterval(() => {
             job_service_1.jobService.recoverStaleJobs().catch((e) => logger_1.logger.error({ err: e }, 'Failed to recover stale jobs'));

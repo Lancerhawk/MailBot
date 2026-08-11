@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import api from "@/lib/api";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 import { ThreadViewer } from "./ThreadViewer";
 import { Search, Mail, Inbox as InboxIcon, Filter, Loader2 } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
@@ -128,7 +128,10 @@ const ThreadCard = React.memo(function ThreadCard({
               </span>
             )}
           </p>
-          <span className={`shrink-0 text-[11px] ${isUnread ? "font-semibold text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}`}>
+          <span 
+            className={`shrink-0 text-[11px] ${isUnread ? "font-semibold text-zinc-700 dark:text-zinc-300" : "text-zinc-400 dark:text-zinc-500"}`}
+            title={format(new Date(thread.lastMessageAt), "PPp")}
+          >
             {formatDistanceToNow(new Date(thread.lastMessageAt), { addSuffix: false })}
           </span>
         </div>

@@ -5,7 +5,8 @@ const draft_service_1 = require("./draft.service");
 const draft_db_service_1 = require("./draft.db.service");
 const ApiError_1 = require("../../utils/ApiError");
 const analytics_event_service_1 = require("../analytics/services/analytics-event.service");
-const logger_1 = require("../../config/logger");
+const job_service_1 = require("../jobs/job.service");
+const client_1 = require("@prisma/client");
 const draftService = new draft_service_1.DraftService();
 const draftDbService = new draft_db_service_1.DraftDbService();
 class DraftController {
@@ -34,9 +35,7 @@ class DraftController {
             if (await draftService.isGenerating(emailId)) {
                 throw new ApiError_1.ApiError(409, 'Draft generation already in progress for this email');
             }
-            draftService.generateDraft(userId, emailId, true).catch(err => {
-                logger_1.logger.error({ err, emailId }, 'Background draft regeneration failed');
-            });
+            await job_service_1.jobService.createJob(userId, client_1.JobType.DRAFT_GENERATION, client_1.ProcessingEntityType.EMAIL, emailId);
             res.status(202).json({ status: 'success', message: 'Draft regeneration started' });
         }
         catch (error) {

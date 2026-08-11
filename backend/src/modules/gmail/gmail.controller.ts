@@ -9,6 +9,8 @@ import { ApiError } from "../../utils/ApiError";
 import { WatchRenewalService } from "./services/watch-renewal.service";
 import { logger } from "../../config/logger";
 import { prisma } from "../../lib/prisma";
+import { jobService } from "../jobs/job.service";
+import { JobType, ProcessingEntityType } from "@prisma/client";
 
 export class GmailController {
   private syncService = new GmailSyncService();
@@ -109,9 +111,12 @@ export class GmailController {
         });
       }
 
-      this.syncService.startSync(userId).catch(err => {
-        logger.error({ err, userId }, "Background sync failed");
-      });
+      await jobService.createJob(
+        userId,
+        JobType.EMAIL_SYNC,
+        ProcessingEntityType.EMAIL,
+        userId
+      );
 
       res.status(202).json({
         status: "success",

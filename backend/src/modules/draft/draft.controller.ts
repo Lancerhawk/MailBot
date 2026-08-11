@@ -4,6 +4,8 @@ import { DraftDbService } from './draft.db.service';
 import { ApiError } from '../../utils/ApiError';
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
 import { logger } from '../../config/logger';
+import { jobService } from '../jobs/job.service';
+import { JobType, ProcessingEntityType } from '@prisma/client';
 
 const draftService = new DraftService();
 const draftDbService = new DraftDbService();
@@ -39,9 +41,12 @@ export class DraftController {
         throw new ApiError(409, 'Draft generation already in progress for this email');
       }
 
-      draftService.generateDraft(userId, emailId, true).catch(err => {
-        logger.error({ err, emailId }, 'Background draft regeneration failed');
-      });
+      await jobService.createJob(
+        userId,
+        JobType.DRAFT_GENERATION,
+        ProcessingEntityType.EMAIL,
+        emailId
+      );
 
       res.status(202).json({ status: 'success', message: 'Draft regeneration started' });
     } catch (error) {

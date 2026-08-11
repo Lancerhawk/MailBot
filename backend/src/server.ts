@@ -7,6 +7,8 @@ import { initSocket } from './socket';
 import { localEmbeddingService } from './modules/knowledge/services/local-embedding.service';
 import { EmbeddingWorker } from './modules/jobs/workers/embedding.worker';
 import { DescriptionWorker } from './modules/jobs/workers/description.worker';
+import { SyncWorker } from './modules/jobs/workers/sync.worker';
+import { DraftWorker } from './modules/jobs/workers/draft.worker';
 import { jobService } from './modules/jobs/job.service';
 import { WatchRenewalService } from './modules/gmail/services/watch-renewal.service';
 import { WorkerManager } from './modules/jobs/worker-manager';
@@ -42,6 +44,9 @@ const startServer = async () => {
       const workerCount = env.EMBEDDING_WORKERS;
       const workers: EmbeddingWorker[] = [];
       const descWorkers: DescriptionWorker[] = [];
+      const syncWorkers: SyncWorker[] = [];
+      const draftWorkers: DraftWorker[] = [];
+
       for (let i = 1; i <= workerCount; i++) {
         const worker = new EmbeddingWorker(i);
         worker.start();
@@ -52,6 +57,16 @@ const startServer = async () => {
         descWorker.start();
         descWorkers.push(descWorker);
         WorkerManager.register(descWorker);
+
+        const syncWorker = new SyncWorker(i);
+        syncWorker.start();
+        syncWorkers.push(syncWorker);
+        WorkerManager.register(syncWorker);
+
+        const draftWorker = new DraftWorker(i);
+        draftWorker.start();
+        draftWorkers.push(draftWorker);
+        WorkerManager.register(draftWorker);
       }
 
       const recoveryInterval = setInterval(() => {

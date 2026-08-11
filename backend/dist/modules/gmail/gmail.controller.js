@@ -11,6 +11,8 @@ const ApiError_1 = require("../../utils/ApiError");
 const watch_renewal_service_1 = require("./services/watch-renewal.service");
 const logger_1 = require("../../config/logger");
 const prisma_1 = require("../../lib/prisma");
+const job_service_1 = require("../jobs/job.service");
+const client_1 = require("@prisma/client");
 class GmailController {
     syncService = new gmail_sync_service_1.GmailSyncService();
     dbService = new gmail_db_service_1.GmailDbService();
@@ -97,9 +99,7 @@ class GmailController {
                     data: await this.syncService.getSyncStatus(userId)
                 });
             }
-            this.syncService.startSync(userId).catch(err => {
-                logger_1.logger.error({ err, userId }, "Background sync failed");
-            });
+            await job_service_1.jobService.createJob(userId, client_1.JobType.EMAIL_SYNC, client_1.ProcessingEntityType.EMAIL, userId);
             res.status(202).json({
                 status: "success",
                 message: "Synchronization started",
