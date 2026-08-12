@@ -3,7 +3,6 @@ import { DraftService } from './draft.service';
 import { DraftDbService } from './draft.db.service';
 import { ApiError } from '../../utils/ApiError';
 import { AnalyticsEventService, AnalyticsEventType } from '../analytics/services/analytics-event.service';
-import { logger } from '../../config/logger';
 import { jobService } from '../jobs/job.service';
 import { JobType, ProcessingEntityType } from '@prisma/client';
 
