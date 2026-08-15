@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useSocket } from "@/providers/SocketProvider";
 import { Button } from "../ui/button";
-import { Sparkles, Send, Loader2, RefreshCw, Trash2 } from "lucide-react";
+import { Sparkles, Send, Loader2, RefreshCw, Trash2, Copy, Check } from "lucide-react";
 import { toast } from "@/lib/toast";
 
 export interface Draft {
@@ -22,6 +22,7 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
   const [isManualReply, setIsManualReply] = useState(false);
   const [blockedUntil, setBlockedUntil] = useState<number | null>(null);
   const [timeLeft, setTimeLeft] = useState<number>(0);
+  const [isCopied, setIsCopied] = useState(false);
   const { socket } = useSocket();
 
   useEffect(() => {
@@ -163,6 +164,13 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
     }
   };
 
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    toast.success("Copied to clipboard");
+    setTimeout(() => setIsCopied(false), 2000);
+  };
+
   if (isGenerating) {
     return (
       <div className="mt-4 animate-fade-in rounded-xl border border-orange-200 bg-orange-50/50 p-6 flex flex-col items-center justify-center gap-3 dark:border-orange-500/20 dark:bg-orange-500/5">
@@ -195,6 +203,10 @@ export function DraftEditor({ emailId, initialDraft, onSent, isProcessing }: { e
             <Button variant="ghost" size="sm" onClick={handleRegenerate} disabled={isGenerating || isSending || !!blockedUntil} className="text-orange-700 dark:text-orange-300 hover:bg-orange-100 dark:hover:bg-orange-900/50">
               {isGenerating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="mr-2 h-4 w-4" />}
               {blockedUntil ? `Wait ${Math.floor(timeLeft / 60)}m ${timeLeft % 60}s` : 'Regenerate'}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleCopy} className="text-zinc-600 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:bg-zinc-800">
+              {isCopied ? <Check className="mr-1.5 h-3.5 w-3.5 text-emerald-500" /> : <Copy className="mr-1.5 h-3.5 w-3.5" />}
+              {isCopied ? "Copied" : "Copy"}
             </Button>
             <Button variant="ghost" size="sm" onClick={handleDiscard} className="text-red-600 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-500/10">
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
