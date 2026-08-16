@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -17,6 +18,11 @@ import {
   Trash2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ResizeHandle } from "@/components/ui/ResizeHandle";
+
+const SIDEBAR_MIN = 200;
+const SIDEBAR_MAX = 400;
+const SIDEBAR_DEFAULT = 256;
 
 const navigation = [
   { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -138,6 +144,22 @@ function SidebarContent({ pathname, setMobileOpen }: { pathname: string, setMobi
 export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
   const pathname = usePathname();
 
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("sidebar-width");
+      return saved ? Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, Number(saved))) : SIDEBAR_DEFAULT;
+    }
+    return SIDEBAR_DEFAULT;
+  });
+
+  const handleResize = useCallback((delta: number) => {
+    setSidebarWidth((prev: number) => {
+      const next = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, prev + delta));
+      localStorage.setItem("sidebar-width", String(next));
+      return next;
+    });
+  }, []);
+
   return (
     <>
       <AnimatePresence>
@@ -163,8 +185,14 @@ export function Sidebar({ mobileOpen, setMobileOpen }: SidebarProps) {
         )}
       </AnimatePresence>
 
-      <div className="hidden border-r border-zinc-200 bg-stone-50 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 lg:block lg:w-64 lg:shrink-0 lg:flex-col">
+      <div
+        className="hidden border-r border-zinc-200 bg-stone-50 transition-colors duration-300 dark:border-zinc-800 dark:bg-zinc-950 lg:flex lg:shrink-0 lg:flex-col"
+        style={{ width: sidebarWidth }}
+      >
         <SidebarContent pathname={pathname} />
+      </div>
+      <div className="hidden lg:block">
+        <ResizeHandle onResize={handleResize} />
       </div>
     </>
   );

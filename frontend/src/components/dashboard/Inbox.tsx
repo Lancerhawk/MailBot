@@ -6,6 +6,7 @@ import { formatDistanceToNow, format } from "date-fns";
 import { ThreadViewer } from "./ThreadViewer";
 import { Search, Mail, Inbox as InboxIcon, Filter, Loader2 } from "lucide-react";
 import { Skeleton } from "../ui/skeleton";
+import { ResizeHandle } from "../ui/ResizeHandle";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -156,6 +157,22 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
   const [filter, setFilter] = useState("all");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isSyncing, setIsSyncing] = useState(false);
+
+  const [listWidth, setListWidth] = useState(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("inbox-list-width");
+      return saved ? Math.max(280, Math.min(600, Number(saved))) : 380;
+    }
+    return 380;
+  });
+
+  const handleListResize = useCallback((delta: number) => {
+    setListWidth((prev: number) => {
+      const next = Math.max(280, Math.min(600, prev + delta));
+      localStorage.setItem("inbox-list-width", String(next));
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -384,7 +401,10 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
 
   return (
     <div className="flex h-full min-h-0 flex-1 overflow-hidden relative">
-      <div className={`flex w-full flex-col border-r border-zinc-200 dark:border-zinc-800 xl:w-[380px] 2xl:w-[440px] shrink-0 ${selectedThreadId ? 'hidden xl:flex' : 'flex'}`}>
+      <div
+        className={`flex flex-col border-r border-zinc-200 dark:border-zinc-800 shrink-0 ${selectedThreadId ? 'hidden xl:flex' : 'flex w-full xl:flex'}`}
+        style={{ width: selectedThreadId ? listWidth : undefined }}
+      >
         <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800 flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
@@ -466,6 +486,11 @@ export function Inbox({ mode = "inbox" }: { mode?: "inbox" | "spam" | "trash" | 
             </div>
           )}
         </div>
+      </div>
+
+      {/* Resize handle between list and reader */}
+      <div className={`hidden ${selectedThreadId ? 'xl:block' : ''}`}>
+        <ResizeHandle onResize={handleListResize} />
       </div>
 
       <div className={`flex-1 ${selectedThreadId ? 'flex absolute inset-0 z-10 bg-white dark:bg-zinc-950 xl:relative xl:inset-auto xl:z-auto' : 'hidden xl:flex'}`}>
