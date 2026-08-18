@@ -5,6 +5,7 @@ import { ThemeProvider } from "./ThemeProvider";
 import { AuthProvider } from "./AuthProvider";
 import { SocketProvider } from "./SocketProvider";
 import { ThreadCacheProvider } from "./ThreadCacheProvider";
+import { KeyboardShortcutsProvider } from "./KeyboardShortcutsProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
@@ -28,7 +29,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         <AuthProvider>
           <SocketProvider>
             <ThreadCacheProvider>
-              {children}
+              <KeyboardShortcutsProvider>
+                {children}
+              </KeyboardShortcutsProvider>
             </ThreadCacheProvider>
           </SocketProvider>
         </AuthProvider>
@@ -36,3 +39,4 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     </QueryClientProvider>
   );
 }
+

@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/providers/AuthProvider";
 import { SyncIndicator } from "@/components/dashboard/SyncIndicator";
 import { ComposeModal } from "@/components/dashboard/ComposeModal";
+import { useKeyboardShortcuts } from "@/providers/KeyboardShortcutsProvider";
 import { Edit } from "lucide-react";
 import Image from "next/image";
 interface HeaderProps {
@@ -23,7 +24,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
   const { user, logout } = useAuth();
   const router = useRouter();
   const [mounted, setMounted] = React.useState(false);
-  const [isComposeOpen, setIsComposeOpen] = React.useState(false);
+  const { isComposeOpen, setIsComposeOpen } = useKeyboardShortcuts();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
