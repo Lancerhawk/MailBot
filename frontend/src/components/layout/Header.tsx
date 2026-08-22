@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Menu, Moon, Sun, RefreshCw, ChevronDown, LogOut } from "lucide-react";
+import { Menu, Moon, Sun, RefreshCw, ChevronDown, LogOut, Search } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTheme } from "next-themes";
 import { useRouter } from "next/navigation";
@@ -48,15 +48,8 @@ export function Header({ setSidebarOpen }: HeaderProps) {
 
   const handleRefreshClick = () => {
     setIsRefreshing(true);
-    
-    // This triggers router.refresh() (Next.js server-side reload)
     router.refresh();
-    
-    // This triggers our custom event that tells client components like Inbox and ThreadViewer
-    // to call api.get() directly and bypass the cache.
     window.dispatchEvent(new Event('refresh-data'));
-    
-    // Stop spinning after 1 second for visual feedback
     setTimeout(() => setIsRefreshing(false), 1000);
   };
 
@@ -78,6 +71,14 @@ export function Header({ setSidebarOpen }: HeaderProps) {
 
       <div className="flex flex-1 items-center self-stretch lg:gap-x-6 min-w-0">
         <div className="flex flex-1 items-center justify-end gap-x-1 sm:gap-x-2 lg:gap-x-6 min-w-0">
+          <button
+            onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+            className="hidden lg:flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-1.5 text-sm text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-300 cursor-pointer"
+          >
+            <Search className="h-3.5 w-3.5" />
+            <span className="mr-6">Search...</span>
+            <kbd className="inline-flex h-5 items-center rounded border border-zinc-300 bg-zinc-100 px-1.5 text-[10px] font-medium text-zinc-500 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-400">⌘K</kbd>
+          </button>
           <Button
             variant="outline"
             size="icon"
@@ -139,7 +140,7 @@ export function Header({ setSidebarOpen }: HeaderProps) {
 
             <AnimatePresence>
               {menuOpen && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: -10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -10, scale: 0.95 }}
