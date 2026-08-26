@@ -149,7 +149,7 @@ export function KeyboardShortcutsProvider({ children }: { children: React.ReactN
             className="w-full max-w-lg rounded-2xl border border-zinc-200 bg-white p-6 shadow-2xl dark:border-zinc-800 dark:bg-zinc-900"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-3">
               <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">Keyboard Shortcuts</h2>
               <button
                 onClick={() => setShowShortcutsHelp(false)}
@@ -160,11 +160,11 @@ export function KeyboardShortcutsProvider({ children }: { children: React.ReactN
             </div>
 
             {["Actions", "Navigation", "Help"].map((section) => (
-              <div key={section} className="mb-4">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-2">{section}</h3>
-                <div className="space-y-1.5">
+              <div key={section} className="mb-3">
+                <h3 className="text-[10px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500 mb-1.5">{section}</h3>
+                <div className="space-y-0.5">
                   {SHORTCUTS.filter(s => s.section === section).map((shortcut) => (
-                    <div key={shortcut.key} className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
+                    <div key={shortcut.key} className="flex items-center justify-between py-1 px-2 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
                       <span className="text-sm text-zinc-700 dark:text-zinc-300">{shortcut.label}</span>
                       <div className="flex items-center gap-1">
                         {shortcut.key.split(" then ").map((k, i) => (
