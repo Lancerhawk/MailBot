@@ -3,3 +3,4 @@ node_modules/
 .DS_Store
 run-smee.js
 ideas.md
+AUDIT_MINI_FIXES.md
