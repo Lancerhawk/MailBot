@@ -27,9 +27,14 @@ export const errorHandler = (err: any, req: Request, res: Response, _next: NextF
     error = new ApiError(statusCode, message, false, err.stack);
   }
 
+  const message =
+    env.NODE_ENV === 'production' && error.statusCode >= 500
+      ? 'Internal Server Error'
+      : error.message;
+
   const response = {
     success: false,
-    message: error.message,
+    message,
     ...(env.NODE_ENV === 'development' && error.statusCode >= 500 && { stack: error.stack }),
     ...(err instanceof ZodError && { errors: err.errors }),
   };
