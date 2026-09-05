@@ -197,14 +197,15 @@ export class AiPipelineService {
       }
 
       const draftService = new DraftService();
-      await draftService.generateDraft(userId, emailId).catch(err => {
+      try {
+        await draftService.generateDraft(userId, emailId);
+        await prisma.email.update({
+          where: { id: emailId },
+          data: { replyStatus: 'DRAFTED' }
+        });
+      } catch (err) {
         logger.error({ err, emailId }, 'Automatic draft generation failed');
-      });
-
-      await prisma.email.update({
-        where: { id: emailId },
-        data: { replyStatus: 'DRAFTED' }
-      });
+      }
 
     } catch (error) {
       logger.error({ error, emailId }, 'AI analysis failed and exhausted retries');
