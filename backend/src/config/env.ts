@@ -36,7 +36,9 @@ const envSchema = z.object({
   MODEL_CACHE_DIRECTORY: z.string().default('.cache/models'),
 
   WORKER_MODE: z.enum(['local', 'remote']).default('local'),
-  INTERNAL_WORKER_SECRET: z.string().default('internal-worker-secret-dev'),
+  INTERNAL_WORKER_SECRET: z.string().min(16, 'INTERNAL_WORKER_SECRET must be at least 16 characters in production').default(
+    process.env.NODE_ENV === 'production' ? undefined as unknown as string : 'internal-worker-secret-dev'
+  ),
   API_SERVER_URL: z.string().default('http://localhost:5000'),
 });
 
