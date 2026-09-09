@@ -41,7 +41,7 @@ function enqueueTask<T>(userId: string, taskFn: () => Promise<T>): Promise<T> {
 
 export class GroqService {
   async analyzeConversation(userId: string, contextText: string): Promise<AiAnalysisResult> {
-    const prompt = `You are an AI assistant analyzing an email conversation.
+    const systemPrompt = `You are an AI assistant analyzing an email conversation.
 Read the conversation history and the latest email, then return a strict JSON object with your analysis of the newest message in the context of the whole thread.
 
 CRITICAL: Determine if the latest email actually requires a human response. If it is a newsletter, a marketing ad, a cold sales pitch, a generic company announcement, an automated receipt, a system notification, a social media/LinkedIn connection invite or update, a simple "thank you" message, or otherwise does not require a reply, you MUST set "needsReply": false.
@@ -71,14 +71,14 @@ Explicitly enforce the following hierarchy:
 - Contact Context is for personalization only and must never override facts from the conversation.
 - Knowledge Base is for factual reference only.
 - If Contact Context and Knowledge Base conflict, use Contact Context for style/tone and Knowledge Base for facts.
-- Never merge conflicting facts. Prefer Conversation first, then newest Knowledge Base.
-
-Conversation Context (including optional Contact Context):
-${contextText}`;
+- Never merge conflicting facts. Prefer Conversation first, then newest Knowledge Base.`;
 
     return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: `<email_data>\n${contextText}\n</email_data>` },
+        ],
         model: 'llama-3.1-8b-instant',
         temperature: 0.1,
         response_format: { type: 'json_object' },
@@ -116,7 +116,7 @@ ${sampledText}`;
   }
 
   async generateDraftReply(userId: string, contextText: string, isRegeneration = false): Promise<DraftReplyResult> {
-    const prompt = `You are an AI assistant writing a reply to an email conversation.
+    const draftSystemPrompt = `You are an AI assistant writing a reply to an email conversation.
 Read the conversation history and the latest email carefully. Write a polite, appropriate reply that directly answers the latest email.
 ${isRegeneration ? '\nIMPORTANT: The user rejected the previous draft. Please provide a fresh, alternative phrasing or a completely different approach to this reply.' : ''}
 
@@ -178,12 +178,14 @@ Output format MUST be EXACTLY this JSON structure and absolutely nothing else:
   "confidence": 0.0 to 1.0
 }
 
-Conversation Context:
-${contextText}`;
+Conversation Context will be provided in the user message wrapped in <email_data> tags.`;
 
     return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
-        messages: [{ role: 'user', content: prompt }],
+        messages: [
+          { role: 'system', content: draftSystemPrompt },
+          { role: 'user', content: `<email_data>\n${contextText}\n</email_data>` },
+        ],
         model: 'llama-3.1-8b-instant',
         temperature: isRegeneration ? 0.6 : 0.3,
         response_format: { type: 'json_object' },
