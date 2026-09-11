@@ -39,6 +39,15 @@ function enqueueTask<T>(userId: string, taskFn: () => Promise<T>): Promise<T> {
   return groqQueue.enqueueTask(userId, taskFn);
 }
 
+function safeJsonParse<T>(text: string, fallback: T): T {
+  try {
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/i, '').trim();
+    return JSON.parse(cleaned) as T;
+  } catch {
+    return fallback;
+  }
+}
+
 export class GroqService {
   async analyzeConversation(userId: string, contextText: string): Promise<AiAnalysisResult> {
     const systemPrompt = `You are an AI assistant analyzing an email conversation.
@@ -85,7 +94,14 @@ Explicitly enforce the following hierarchy:
       });
 
       const responseText = completion.choices[0]?.message?.content || '{}';
-      return JSON.parse(responseText) as AiAnalysisResult;
+      return safeJsonParse<AiAnalysisResult>(responseText, {
+        summary: '',
+        sentiment: 'NEUTRAL',
+        intent: 'OTHER',
+        needsReply: false,
+        priority: 'NORMAL',
+        confidence: 0,
+      });
     });
   }
 
@@ -110,7 +126,7 @@ ${sampledText}`;
       });
 
       const responseText = completion.choices[0]?.message?.content || '{}';
-      const parsed = JSON.parse(responseText);
+      const parsed = safeJsonParse<{ summary?: string }>(responseText, {});
       return parsed.summary || '';
     });
   }
@@ -192,7 +208,7 @@ Conversation Context will be provided in the user message wrapped in <email_data
       });
 
       const responseText = completion.choices[0]?.message?.content || '{}';
-      const parsed = JSON.parse(responseText);
+      const parsed = safeJsonParse<{ replyText?: string; confidence?: number }>(responseText, {});
       const usage = completion.usage;
 
       return {
