@@ -252,6 +252,10 @@ export class GmailController {
         throw new ApiError(400, "threadIds must be an array");
       }
 
+      if (threadIds.length > 100) {
+        throw new ApiError(400, "Maximum of 100 thread IDs allowed per bulk request");
+      }
+
       const threads = await this.dbService.getThreadsBulk(userId, threadIds);
       res.json({ status: "success", data: threads });
     } catch (error) {
