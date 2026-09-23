@@ -29,8 +29,9 @@ const getStore = (prefix: string) => {
 };
 
 const getClientIp = (req: any): string => {
-  if (!req.ip) return 'unknown';
-  return req.ip.replace(/^::ffff:/, '');
+  const ip = req.ip || req.socket?.remoteAddress;
+  if (!ip) return req.session?.userId || 'unknown';
+  return ip.replace(/^::ffff:/, '');
 };
 
 export const apiLimiter = rateLimit({
