@@ -16,7 +16,10 @@ function AuthCallbackContent() {
       
       if (success === "true") {
         await refreshAuth();
-        const redirectTo = sessionStorage.getItem("mailbot_redirect") || "/dashboard";
+        const rawRedirect = sessionStorage.getItem("mailbot_redirect");
+        const redirectTo = (rawRedirect && rawRedirect.startsWith('/') && !rawRedirect.startsWith('//') && !rawRedirect.includes('\\'))
+          ? rawRedirect
+          : "/dashboard";
         sessionStorage.removeItem("mailbot_redirect");
         router.push(redirectTo);
       } else {
