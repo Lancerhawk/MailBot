@@ -7,13 +7,15 @@ import { encryptToken } from '../utils/encryption';
 import { ApiError } from '../utils/ApiError';
 import { logger } from '../config/logger';
 
-const oauth2Client = new OAuth2Client(
-  env.GOOGLE_CLIENT_ID,
-  env.GOOGLE_CLIENT_SECRET,
-  `${env.API_URL}/api/v1/auth/google/callback`
-);
-
 export class AuthService {
+  private static getOAuth2Client() {
+    return new OAuth2Client(
+      env.GOOGLE_CLIENT_ID,
+      env.GOOGLE_CLIENT_SECRET,
+      `${env.API_URL}/api/v1/auth/google/callback`
+    );
+  }
+
   static generateAuthUrl(state: string) {
     const scopes = [
       'openid',
@@ -22,7 +24,7 @@ export class AuthService {
       'https://www.googleapis.com/auth/gmail.modify',
     ];
 
-    return oauth2Client.generateAuthUrl({
+    return this.getOAuth2Client().generateAuthUrl({
       access_type: 'offline',
       prompt: 'consent',
       scope: scopes,
@@ -37,14 +39,15 @@ export class AuthService {
 
   static async handleGoogleCallback(code: string, ipAddress?: string, userAgent?: string) {
     try {
-      const { tokens } = await oauth2Client.getToken(code);
-      oauth2Client.setCredentials(tokens);
+      const client = this.getOAuth2Client();
+      const { tokens } = await client.getToken(code);
+      client.setCredentials(tokens);
 
       if (!tokens.access_token || !tokens.id_token) {
         throw new ApiError(400, 'Invalid tokens received from Google');
       }
 
-      const ticket = await oauth2Client.verifyIdToken({
+      const ticket = await client.verifyIdToken({
         idToken: tokens.id_token,
         audience: env.GOOGLE_CLIENT_ID,
       });
@@ -140,6 +143,7 @@ export class AuthService {
 
       return user!;
     } catch (error: any) {
+      if (error instanceof ApiError) throw error;
       logger.error({ err: error }, 'Google callback error');
       throw new ApiError(500, 'Authentication failed during Google OAuth callback');
     }

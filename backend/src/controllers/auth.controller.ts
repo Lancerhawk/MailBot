@@ -110,6 +110,11 @@ export const logout = catchAsync(async (req: Request, res: Response) => {
     });
   });
 
-  res.clearCookie('connect.sid');
+  res.clearCookie('connect.sid', {
+    path: '/',
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
+  });
   res.status(200).json({ status: 'success', message: 'Logged out successfully' });
 });

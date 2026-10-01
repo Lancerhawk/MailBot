@@ -6,6 +6,13 @@ import { ChevronDown } from "lucide-react";
 import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import DOMPurify from "isomorphic-dompurify";
+
+DOMPurify.addHook('afterSanitizeAttributes', (node) => {
+  if (node.tagName === 'A') {
+    node.setAttribute('target', '_blank');
+    node.setAttribute('rel', 'noopener noreferrer');
+  }
+});
 import { Button } from "../ui/button";
 import { Skeleton } from "../ui/skeleton";
 import { useSocket } from "@/providers/SocketProvider";

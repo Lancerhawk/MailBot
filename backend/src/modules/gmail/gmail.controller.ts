@@ -216,7 +216,7 @@ export class GmailController {
     try {
       const userId = req.session.userId!;
       const page = parseInt(req.query.page as string) || 1;
-      const limit = parseInt(req.query.limit as string) || 20;
+      const limit = Math.min(Math.max(parseInt(req.query.limit as string) || 20, 1), 100);
 
       const filter = req.query.filter as string;
       const search = req.query.search as string;
@@ -250,6 +250,10 @@ export class GmailController {
 
       if (!Array.isArray(threadIds)) {
         throw new ApiError(400, "threadIds must be an array");
+      }
+
+      if (threadIds.length > 100) {
+        throw new ApiError(400, "Maximum of 100 thread IDs allowed per bulk request");
       }
 
       const threads = await this.dbService.getThreadsBulk(userId, threadIds);

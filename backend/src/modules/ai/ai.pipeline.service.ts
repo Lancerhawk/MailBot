@@ -27,15 +27,19 @@ export class AiPipelineService {
         await new Promise(r => setTimeout(r, 1000));
         acquired = await cacheService.acquireLock(lockKey, 120);
       }
+
+      if (!acquired) {
+        logger.warn({ userId, emailId }, 'Could not acquire AI processing lock, skipping duplicate execution');
+        return;
+      }
+
       try {
         await this.processEmail(userId, emailId);
       } catch (err: unknown) {
         const error = err as Error;
         logger.error({ error: error.message || error, stack: error.stack, emailId }, 'AI Pipeline uncaught exception during scheduleAnalysis');
       } finally {
-        if (acquired) {
-          await cacheService.releaseLock(lockKey);
-        }
+        await cacheService.releaseLock(lockKey);
       }
     };
 
@@ -197,14 +201,15 @@ export class AiPipelineService {
       }
 
       const draftService = new DraftService();
-      await draftService.generateDraft(userId, emailId).catch(err => {
+      try {
+        await draftService.generateDraft(userId, emailId);
+        await prisma.email.update({
+          where: { id: emailId },
+          data: { replyStatus: 'DRAFTED' }
+        });
+      } catch (err) {
         logger.error({ err, emailId }, 'Automatic draft generation failed');
-      });
-
-      await prisma.email.update({
-        where: { id: emailId },
-        data: { replyStatus: 'DRAFTED' }
-      });
+      }
 
     } catch (error) {
       logger.error({ error, emailId }, 'AI analysis failed and exhausted retries');

@@ -414,9 +414,14 @@ export class AnalyticsController {
       }
 
       const csvLines: string[] = [];
-      const generatedAt = new Date().toLocaleString();
+      const csvSanitize = (val: string | number): string => {
+        const str = String(val);
+        if (/^[=+\-@\t\r]/.test(str)) return `'${str}`;
+        return str.includes(',') ? `"${str.replace(/"/g, '""')}"` : str;
+      };
+      const generatedAt = csvSanitize(new Date().toLocaleString());
       const dateRangeStr = req.query.startDate && req.query.endDate
-        ? `${req.query.startDate} to ${req.query.endDate}`
+        ? csvSanitize(`${req.query.startDate} to ${req.query.endDate}`)
         : 'All Time';
 
       const avgConf = (Number(aggregate._avg.averageConfidence || 0) * 100).toFixed(1);

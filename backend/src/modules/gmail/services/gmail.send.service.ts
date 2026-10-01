@@ -27,32 +27,47 @@ interface SendEmailParams {
 }
 
 export class GmailSendService {
-  private validateComposePayload(to: string[], subject: string, body: string) {
+  private validateComposePayload(to: string[], subject: string, body: string, cc?: string[], bcc?: string[]) {
     if (!to || to.length === 0) throw new ApiError(400, 'At least one recipient is required in To field');
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    for (const email of to) {
-      const match = email.match(/<([^>]+)>/);
-      const emailToTest = match ? match[1] : email;
-      if (!emailRegex.test(emailToTest.trim())) throw new ApiError(400, `Invalid email format: ${email}`);
-    }
+    const checkEmails = (list?: string[], name = 'Recipient') => {
+      if (!list) return;
+      for (const email of list) {
+        if (/[\r\n]/.test(email)) throw new ApiError(400, `${name} contains invalid newline characters`);
+        const match = email.match(/<([^>]+)>/);
+        const emailToTest = match ? match[1] : email;
+        if (!emailRegex.test(emailToTest.trim())) throw new ApiError(400, `Invalid email format: ${email}`);
+      }
+    };
+
+    checkEmails(to, 'To');
+    checkEmails(cc, 'Cc');
+    checkEmails(bcc, 'Bcc');
 
     if (!body || body.trim().length === 0) throw new ApiError(400, 'Email body cannot be empty');
-    if (subject && subject.length > 998) throw new ApiError(400, 'Subject is too long');
+    if (subject) {
+      if (/[\r\n]/.test(subject)) throw new ApiError(400, 'Subject contains invalid newline characters');
+      if (subject.length > 998) throw new ApiError(400, 'Subject is too long');
+    }
   }
 
   private buildMimeMessage(params: SendEmailParams): string {
     const boundary = `----=_Part_${Date.now()}`;
 
-    let message = `To: ${params.to.join(', ')}\r\n`;
-    if (params.cc && params.cc.length > 0) message += `Cc: ${params.cc.join(', ')}\r\n`;
-    if (params.bcc && params.bcc.length > 0) message += `Bcc: ${params.bcc.join(', ')}\r\n`;
+    let message = `To: ${params.to.map(e => e.replace(/[\r\n]/g, '')).join(', ')}\r\n`;
+    if (params.cc && params.cc.length > 0) message += `Cc: ${params.cc.map(e => e.replace(/[\r\n]/g, '')).join(', ')}\r\n`;
+    if (params.bcc && params.bcc.length > 0) message += `Bcc: ${params.bcc.map(e => e.replace(/[\r\n]/g, '')).join(', ')}\r\n`;
 
-    message += `Subject: ${params.subject}\r\n`;
+    const cleanSubject = (params.subject || '').replace(/[\r\n]/g, ' ');
+    const encodedSubject = /[^\x20-\x7E]/.test(cleanSubject)
+      ? `=?UTF-8?B?${Buffer.from(cleanSubject).toString('base64')}?=`
+      : cleanSubject;
+    message += `Subject: ${encodedSubject}\r\n`;
 
-    if (params.inReplyTo) message += `In-Reply-To: ${params.inReplyTo}\r\n`;
+    if (params.inReplyTo) message += `In-Reply-To: ${params.inReplyTo.replace(/[\r\n]/g, '')}\r\n`;
     if (params.references && params.references.length > 0) {
-      message += `References: ${params.references.join(' ')}\r\n`;
+      message += `References: ${params.references.map(r => r.replace(/[\r\n]/g, '')).join(' ')}\r\n`;
     }
 
     message += `MIME-Version: 1.0\r\n`;
@@ -236,7 +251,7 @@ export class GmailSendService {
   }
 
   async sendCompose(userId: string, payload: { to: string[], cc?: string[], bcc?: string[], subject: string, body: string }) {
-    this.validateComposePayload(payload.to, payload.subject, payload.body);
+    this.validateComposePayload(payload.to, payload.subject, payload.body, payload.cc, payload.bcc);
 
     const connection = await gmailClientService.getConnection(userId);
     if (!connection) throw new ApiError(400, 'No active Gmail connection found');

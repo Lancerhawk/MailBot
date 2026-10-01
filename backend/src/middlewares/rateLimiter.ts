@@ -29,8 +29,9 @@ const getStore = (prefix: string) => {
 };
 
 const getClientIp = (req: any): string => {
-  if (!req.ip) return 'unknown';
-  return req.ip.replace(/^::ffff:/, '');
+  const ip = req.ip || req.socket?.remoteAddress;
+  if (!ip) return req.session?.userId || 'unknown';
+  return ip.replace(/^::ffff:/, '');
 };
 
 export const apiLimiter = rateLimit({
@@ -38,7 +39,7 @@ export const apiLimiter = rateLimit({
   limit: 300,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: 'Too many requests from this IP, please try again after 1 minute',
+  message: { success: false, message: 'Too many requests from this IP, please try again after 1 minute' },
   passOnStoreError: true,
   keyGenerator: getClientIp,
   skip: (req) => req.path.includes('/status'),
@@ -50,7 +51,7 @@ export const authLimiter = rateLimit({
   limit: 20,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: 'Too many login attempts from this IP, please try again after 15 minutes',
+  message: { success: false, message: 'Too many login attempts from this IP, please try again after 15 minutes' },
   passOnStoreError: true,
   keyGenerator: getClientIp,
   ...(isRedisStore && { store: getStore('auth') }),
@@ -61,7 +62,7 @@ export const refreshRateLimiter = rateLimit({
   limit: 10,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: 'Please wait 1 minute before refreshing again.',
+  message: { success: false, message: 'Please wait 1 minute before refreshing again.' },
   passOnStoreError: true,
   keyGenerator: getClientIp,
   skip: (req) => req.query.refresh !== 'true',
@@ -73,7 +74,7 @@ export const regenerateLimiter = rateLimit({
   limit: 2,
   standardHeaders: 'draft-7',
   legacyHeaders: false,
-  message: 'Rate limit exceeded for regeneration. Please wait 5 minutes.',
+  message: { success: false, message: 'Rate limit exceeded for regeneration. Please wait 5 minutes.' },
   passOnStoreError: true,
   keyGenerator: getClientIp,
   ...(isRedisStore && { store: getStore('regenerate') }),

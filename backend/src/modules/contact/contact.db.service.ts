@@ -167,7 +167,7 @@ export class ContactDbService {
 
   async updateContact(userId: string, contactId: string, data: UpdateContactData) {
     return prisma.contact.update({
-      where: { id: contactId, userId },
+      where: { id: contactId },
       data,
       include: {
         organization: {
@@ -178,14 +178,14 @@ export class ContactDbService {
   }
 
   async softDeleteContact(userId: string, contactId: string) {
-    return prisma.contact.update({
+    return prisma.contact.updateMany({
       where: { id: contactId, userId },
       data: { deletedAt: new Date() },
     });
   }
 
   async restoreContact(userId: string, contactId: string) {
-    return prisma.contact.update({
+    return prisma.contact.updateMany({
       where: { id: contactId, userId },
       data: { deletedAt: null },
     });
