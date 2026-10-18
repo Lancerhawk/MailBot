@@ -126,7 +126,7 @@ class DraftService {
                 userId,
                 generatedText: groqResult.replyText,
                 provider: 'GROQ',
-                modelName: 'llama-3.1-8b-instant',
+                modelName: groq_service_1.GROQ_MODEL,
                 temperature: 0.3,
                 promptTokens: groqResult.promptTokens,
                 completionTokens: groqResult.completionTokens,
@@ -135,7 +135,7 @@ class DraftService {
                 confidence: groqResult.confidence,
                 isFinal: true
             });
-            const estCost = pricing_config_1.PricingConfig.calculateCost(client_1.AiProvider.GROQ, 'llama-3.1-8b-instant', groqResult.promptTokens || 0, groqResult.completionTokens || 0);
+            const estCost = pricing_config_1.PricingConfig.calculateCost(client_1.AiProvider.GROQ, groq_service_1.GROQ_MODEL, groqResult.promptTokens || 0, groqResult.completionTokens || 0);
             analytics_event_service_1.AnalyticsEventService.recordEvent(userId, analytics_event_service_1.AnalyticsEventType.DRAFT_GENERATED, {
                 latency: generationLatencyMs,
                 promptTokens: groqResult.promptTokens,
