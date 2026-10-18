@@ -171,17 +171,24 @@ export class GmailSendService {
           subject: replySubject,
           body: bodyText,
           inReplyTo: email.internetMessageId || undefined,
-          references: email.referencesHeader ? [email.referencesHeader, email.internetMessageId].filter(Boolean) as string[] : (email.internetMessageId ? [email.internetMessageId] : undefined),
+          references: [...(email.referencesHeader || []), email.internetMessageId].filter(Boolean) as string[],
           providerThreadId: email.thread?.providerThreadId
         });
         sentMessageId = result.id!;
       } catch (sendError: any) {
+        console.timeEnd(`Gmail-Send-${emailId}`);
         activeSends.delete(sendLockId);
         if (draft) {
-          await prisma.sentReply.create({
-            data: {
+          await prisma.sentReply.upsert({
+            where: { draftId: draft.id },
+            create: {
               draftId: draft.id,
               originalEmailId: email.id,
+              deliveryStatus: 'FAILED',
+              failureReason: sendError.message,
+              providerMessageId: 'failed'
+            },
+            update: {
               deliveryStatus: 'FAILED',
               failureReason: sendError.message,
               providerMessageId: 'failed'
@@ -208,11 +215,18 @@ export class GmailSendService {
             where: { id: draft.id },
             data: { approvalStatus: 'APPROVED', deletedAt: new Date() }
           }),
-          prisma.sentReply.create({
-            data: {
+          prisma.sentReply.upsert({
+            where: { draftId: draft.id },
+            create: {
               draftId: draft.id,
               originalEmailId: email.id,
               deliveryStatus: 'DELIVERED',
+              providerMessageId: sentMessageId,
+              sentAt: new Date()
+            },
+            update: {
+              deliveryStatus: 'DELIVERED',
+              failureReason: null,
               providerMessageId: sentMessageId,
               sentAt: new Date()
             }

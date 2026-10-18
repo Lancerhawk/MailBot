@@ -174,18 +174,25 @@ class GmailSendService {
                     subject: replySubject,
                     body: bodyText,
                     inReplyTo: email.internetMessageId || undefined,
-                    references: email.referencesHeader ? [email.referencesHeader, email.internetMessageId].filter(Boolean) : (email.internetMessageId ? [email.internetMessageId] : undefined),
+                    references: [...(email.referencesHeader || []), email.internetMessageId].filter(Boolean),
                     providerThreadId: email.thread?.providerThreadId
                 });
                 sentMessageId = result.id;
             }
             catch (sendError) {
+                console.timeEnd(`Gmail-Send-${emailId}`);
                 activeSends.delete(sendLockId);
                 if (draft) {
-                    await prisma_1.prisma.sentReply.create({
-                        data: {
+                    await prisma_1.prisma.sentReply.upsert({
+                        where: { draftId: draft.id },
+                        create: {
                             draftId: draft.id,
                             originalEmailId: email.id,
+                            deliveryStatus: 'FAILED',
+                            failureReason: sendError.message,
+                            providerMessageId: 'failed'
+                        },
+                        update: {
                             deliveryStatus: 'FAILED',
                             failureReason: sendError.message,
                             providerMessageId: 'failed'
@@ -207,11 +214,18 @@ class GmailSendService {
                 txns.push(prisma_1.prisma.aiDraftReply.update({
                     where: { id: draft.id },
                     data: { approvalStatus: 'APPROVED', deletedAt: new Date() }
-                }), prisma_1.prisma.sentReply.create({
-                    data: {
+                }), prisma_1.prisma.sentReply.upsert({
+                    where: { draftId: draft.id },
+                    create: {
                         draftId: draft.id,
                         originalEmailId: email.id,
                         deliveryStatus: 'DELIVERED',
+                        providerMessageId: sentMessageId,
+                        sentAt: new Date()
+                    },
+                    update: {
+                        deliveryStatus: 'DELIVERED',
+                        failureReason: null,
                         providerMessageId: sentMessageId,
                         sentAt: new Date()
                     }
