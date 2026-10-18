@@ -1,12 +1,124 @@
 {
   "versions": [
     {
+      "id": "fe-v1.4.1",
+      "version": "v1.4.1",
+      "date": "2026-10-19",
+      "title": "Command Palette, Keyboard Shortcuts, Resizable Panes & Security Fixes",
+      "service": "Frontend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Command Palette",
+          "description": "Added a global command palette opened with Ctrl+K / Cmd+K, plus a search button in the dashboard header to discover it."
+        },
+        {
+          "title": "Global Keyboard Shortcuts",
+          "description": "Added app-wide shortcuts (C to compose, G + key to navigate, ? to open help) with a keyboard shortcuts help modal."
+        },
+        {
+          "title": "Resizable Sidebar & Inbox Pane",
+          "description": "Added drag handles to resize the sidebar and the inbox list pane."
+        },
+        {
+          "title": "Copy AI Draft to Clipboard",
+          "description": "Added a copy button to AI draft replies."
+        },
+        {
+          "title": "Exact Timestamp Tooltips",
+          "description": "Hovering an email's relative time now shows the exact date and time."
+        },
+        {
+          "title": "Logged-In Homepage CTA",
+          "description": "Redesigned the homepage call-to-action buttons for signed-in users to show the user's avatar."
+        },
+        {
+          "title": "OAuth Callback Open Redirect Prevention",
+          "description": "Validated the post-login redirect target so the OAuth callback can no longer redirect users to external sites."
+        },
+        {
+          "title": "Reverse Tabnabbing Prevention",
+          "description": "Enforced rel=\"noopener noreferrer\" on all links in sanitized email bodies."
+        },
+        {
+          "title": "Analytics KPI Accuracy",
+          "description": "Replaced the hardcoded 'Data Quality: 98.5%' KPI with a real 'Avg. Interactions' metric, added a 'Total Directory Size' contacts metric, corrected the storage subtitle to 'Active document files', and labelled retrieval KPIs as 'in selected period' so they match the active date filter."
+        },
+        {
+          "title": "Theme Toggle Fixes",
+          "description": "Fixed the theme toggle needing two clicks on first use and a theme toggle hydration mismatch."
+        },
+        {
+          "title": "Analytics Tab Caching",
+          "description": "Added staleTime to analytics tab queries to prevent redundant network calls when switching tabs."
+        }
+      ]
+    },
+    {
+      "id": "be-v1.8.1",
+      "version": "v1.8.1",
+      "date": "2026-10-19",
+      "title": "Security Hardening, Analytics Endpoints, Background Jobs & Reply Sending Fixes",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Reply Sending Fix (src/modules/gmail/services/gmail.send.service.ts)",
+          "description": "Fixed replies failing with 'r.replace is not a function' by flattening the stored References header array, and switched sent reply records to upserts so a failed send can be retried."
+        },
+        {
+          "title": "Groq Model Migration (src/modules/ai/groq.service.ts)",
+          "description": "Replaced the retired llama-3.1-8b-instant model with openai/gpt-oss-20b and centralized the model name in a single GROQ_MODEL constant."
+        },
+        {
+          "title": "Email & Prompt Injection Prevention",
+          "description": "Stripped CR/LF characters from outgoing email headers, MIME-encoded non-ASCII subjects, and separated system instructions from user email content in all Groq prompts."
+        },
+        {
+          "title": "Authentication & CSRF Hardening",
+          "description": "Enforced exact hostname matching in the CSRF origin check, compared the internal worker secret in constant time, required a strong INTERNAL_WORKER_SECRET in production, and created a new OAuth2 client per request to remove a token race condition."
+        },
+        {
+          "title": "Request Size & Volume Limits",
+          "description": "Added a 5MB request body limit, capped thread listing at 100, limited bulk thread operations to 100 IDs, and added hard row limits to analytics exports."
+        },
+        {
+          "title": "Data Exposure Fixes",
+          "description": "Unhandled server error messages are no longer exposed in production, and analytics CSV exports are sanitized against spreadsheet formula injection."
+        },
+        {
+          "title": "Rate Limiter Improvements (src/middlewares/rateLimiter.ts)",
+          "description": "Rate limiters now identify clients by socket address with a session fallback and return JSON error objects instead of plain text."
+        },
+        {
+          "title": "Domain-Specific Analytics Endpoints (src/modules/analytics/analytics.controller.ts)",
+          "description": "Added time-series endpoints for AI performance, email traffic, knowledge base and contacts, with 5-minute Redis caching and row limits."
+        },
+        {
+          "title": "Background Job Workers (src/modules/jobs/workers)",
+          "description": "Moved email sync and AI draft generation onto background job queue workers."
+        },
+        {
+          "title": "AI Pipeline Reliability (src/modules/ai/ai.pipeline.service.ts)",
+          "description": "Emails are only marked as drafted when draft generation succeeds, failed lock acquisition no longer allows concurrent processing, and malformed LLM JSON responses no longer crash workers."
+        },
+        {
+          "title": "Validation & Contact Fixes",
+          "description": "Replaced manual validation with zod middleware in draft and contact routes, assigned sanitized zod output back to the request, and aligned contact updates with Prisma unique constraints and tenant isolation."
+        },
+        {
+          "title": "Session, Gmail & Shutdown Fixes",
+          "description": "Reliably cleared the session cookie on logout, returned a DISCONNECTED status instead of 404 for unlinked Gmail accounts, validated GMAIL_PUBSUB_TOPIC at startup, fixed trailing slashes in the webhook OIDC audience, and closed the PostgreSQL session pool on shutdown."
+        }
+      ]
+    },
+    {
       "id": "fe-v1.4.0",
       "version": "v1.4.0",
       "date": "2026-08-10",
       "title": "Analytics Dashboard Expansion & Performance Optimizations",
       "service": "Frontend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Tabbed Analytics Interface",
@@ -50,7 +162,7 @@
       "date": "2026-07-30",
       "title": "Distributed Queue, Gmail Sync Reliability, Webhook AI Draft Guarding & Apache 2.0 Licensing",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Gmail API 404 Watermark Lock Resolution (src/modules/gmail/services/gmail.sync.service.ts)",

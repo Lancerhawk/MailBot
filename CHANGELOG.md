@@ -5,6 +5,64 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Frontend v1.4.1] - Command Palette, Keyboard Shortcuts, Resizable Panes & Security Fixes
+
+### Added
+- **Command Palette (`src/components/common/CommandPalette.tsx`, `src/app/(dashboard)/layout.tsx`):** Added a global command palette opened with `Ctrl+K` / `Cmd+K`, built on `cmdk`.
+- **Command Palette Search Trigger (`src/components/layout/Header.tsx`):** Added a search button in the dashboard header so the command palette can be discovered without knowing the shortcut.
+- **Global Keyboard Shortcuts (`src/providers/KeyboardShortcutsProvider.tsx`, `src/providers/AppProviders.tsx`):** Added app-wide shortcuts (`C` to compose, `G` + key to navigate, `?` to open help) with a keyboard shortcuts help modal.
+- **Resizable Sidebar & Inbox Pane (`src/components/ui/ResizeHandle.tsx`, `src/components/layout/Sidebar.tsx`, `src/components/dashboard/Inbox.tsx`):** Added drag handles to resize the sidebar and the inbox list pane.
+- **Copy AI Draft to Clipboard (`src/components/dashboard/DraftEditor.tsx`):** Added a copy button to AI draft replies.
+- **Exact Timestamp Tooltips (`src/components/dashboard/Inbox.tsx`):** Hovering an email's relative time now shows the exact date and time.
+- **Logged-In Homepage CTA (`src/app/page.tsx`):** Redesigned the homepage call-to-action buttons for signed-in users to show the user's avatar.
+
+### Security
+- **OAuth Callback Open Redirect Prevention (`src/app/auth/callback/page.tsx`):** Validated the post-login redirect target so the OAuth callback can no longer redirect users to external sites.
+- **Reverse Tabnabbing Prevention (`src/components/dashboard/ThreadViewer.tsx`):** Enforced `rel="noopener noreferrer"` on all links in sanitized email bodies.
+
+### Fixed
+- **Analytics KPI Accuracy (`src/components/analytics/ContactAnalyticsTab.tsx`, `KnowledgeAnalyticsTab.tsx`, `AnalyticsOverview.tsx`):** Replaced the hardcoded 'Data Quality: 98.5%' KPI with a real 'Avg. Interactions' metric, added a 'Total Directory Size' contacts metric, corrected the storage subtitle to 'Active document files', and labelled retrieval KPIs as 'in selected period' so they match the active date filter.
+- **Theme Toggle (`src/components/layout/Header.tsx`, `src/components/layout/LandingNavbar.tsx`, `src/providers/AppProviders.tsx`):** Fixed the theme toggle needing two clicks on first use by checking `resolvedTheme` and defaulting to dark mode, and fixed a theme toggle hydration mismatch.
+
+### Performance
+- **Analytics Tab Caching (`src/app/(dashboard)/analytics/page.tsx`):** Added `staleTime` to analytics tab queries to prevent redundant network calls when switching tabs.
+
+## [Backend v1.8.1] - Security Hardening, Analytics Endpoints, Background Jobs & Reply Sending Fixes
+
+### Security
+- **Constant-Time Worker Secret Check (`src/routes/v1/internal.route.ts`):** Compared the internal worker secret using constant-time buffer comparison to prevent timing attacks.
+- **Strict CSRF Origin Validation (`src/middlewares/auth.middleware.ts`):** Enforced exact hostname matching in the CSRF origin check to prevent domain substring bypasses.
+- **Required Worker Secret in Production (`src/config/env.ts`):** `INTERNAL_WORKER_SECRET` now has no default and must be a strong value in production.
+- **Email Header Injection Prevention (`src/modules/gmail/services/gmail.send.service.ts`):** Stripped CR/LF characters from outgoing email headers and MIME-encoded non-ASCII subjects.
+- **Prompt Injection Mitigation (`src/modules/ai/groq.service.ts`):** Separated system instructions from user-supplied email content into distinct system and user roles in all Groq prompts.
+- **Production Error Sanitization (`src/middlewares/error.middleware.ts`):** Unhandled server error messages are no longer exposed to clients in production.
+- **CSV Formula Injection Prevention (`src/modules/analytics/analytics.controller.ts`):** Sanitized analytics CSV export values to prevent spreadsheet formula injection.
+- **Request Size & Volume Limits (`src/app.ts`, `src/modules/gmail/gmail.controller.ts`, `src/modules/analytics/analytics.controller.ts`):** Added a 5MB request body limit, capped the thread listing `limit` parameter at 100, limited bulk thread operations to 100 IDs per request, and added a hard row limit to analytics export queries.
+- **Rate Limiter Client Identification (`src/middlewares/rateLimiter.ts`):** Rate limiters now identify clients by socket address with a session fallback.
+
+### Added
+- **Domain-Specific Analytics Endpoints (`src/modules/analytics/analytics.controller.ts`):** Added time-series analytics endpoints for AI performance, email traffic, knowledge base and contacts to power the Frontend v1.4.x analytics tabs, including a lifetime 'Total Directory Size' contacts count.
+- **Background Job Workers (`src/modules/jobs/workers/sync.worker.ts`, `src/modules/jobs/workers/draft.worker.ts`, `src/server.ts`, `src/worker.ts`):** Moved email sync and AI draft generation onto background job queue workers.
+
+### Changed
+- **Groq Model Migration (`src/modules/ai/groq.service.ts`, `src/modules/draft/draft.service.ts`, `src/modules/analytics/services/pricing.config.ts`):** Replaced the retired `llama-3.1-8b-instant` model with `openai/gpt-oss-20b`, centralized the model name in a single `GROQ_MODEL` constant, and added its pricing entry.
+- **Zod Request Validation (`src/modules/draft/draft.route.ts`, `src/modules/contact/contact.route.ts`):** Replaced manual request validation with zod validation middleware in draft and contact routes.
+
+### Fixed
+- **Reply Sending (`src/modules/gmail/services/gmail.send.service.ts`):** Fixed replies failing with `r.replace is not a function` by flattening the stored `References` header array, and switched sent reply records to upserts so a failed send can be retried without a `draftId` unique constraint error.
+- **OAuth Token Race Condition (`src/services/auth.service.ts`):** Created a new OAuth2 client per request so concurrent logins no longer share token state.
+- **Logout Session Removal (`src/controllers/auth.controller.ts`):** Matched cookie attributes in `clearCookie` so the session cookie is reliably removed on logout.
+- **Validated Payload Assignment (`src/middlewares/validate.middleware.ts`):** Assigned the sanitized and transformed zod output back to the request object.
+- **Contact Updates (`src/modules/contact/contact.db.service.ts`):** Aligned contact update operations with Prisma unique constraints and tenant isolation.
+- **AI Pipeline Reliability (`src/modules/ai/ai.pipeline.service.ts`, `src/modules/ai/groq.service.ts`):** Emails are only marked as drafted when draft generation succeeds, failed lock acquisition no longer allows concurrent processing, and malformed LLM JSON responses no longer crash workers.
+- **Rate Limiter Responses (`src/middlewares/rateLimiter.ts`):** Rate limiters now return JSON error objects instead of plain text.
+- **Gmail Status for Unlinked Accounts (`src/modules/gmail/gmail.controller.ts`):** Returned `200 OK` with a `DISCONNECTED` status instead of `404` for accounts without Gmail linked.
+- **Gmail Configuration Checks (`src/config/env.ts`, `src/modules/gmail/services/watch-renewal.service.ts`, `src/modules/gmail/gmail.controller.ts`):** Validated `GMAIL_PUBSUB_TOPIC` in the env schema with a startup warning when missing, and stripped trailing slashes from `API_URL` in the webhook OIDC audience fallback.
+- **Graceful Shutdown (`src/server.ts`, `src/app.ts`):** Explicitly closed the PostgreSQL session pool on shutdown.
+
+### Performance
+- **Analytics Caching (`src/modules/analytics/analytics.controller.ts`):** Added 5-minute Redis caching and row limits to the analytics dashboard and domain-specific analytics queries.
+
 ## [Frontend v1.4.0] - Analytics Dashboard Expansion & Performance Optimizations
 
 ### Added
