@@ -37,8 +37,8 @@ else {
     }));
 }
 app.use((0, helmet_1.default)());
-app.use(express_1.default.json());
-app.use(express_1.default.urlencoded({ extended: true }));
+app.use(express_1.default.json({ limit: '5mb' }));
+app.use(express_1.default.urlencoded({ extended: true, limit: '5mb' }));
 app.use((0, cookie_parser_1.default)());
 exports.sessionMiddleware = (0, express_session_1.default)({
     store: new PgStore({

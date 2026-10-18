@@ -24,7 +24,8 @@ const validateCsrfOrigin = (req) => {
         const allowedFrontend = env_1.env.FRONTEND_URL.replace(/\/$/, '');
         const allowedApi = env_1.env.API_URL.replace(/\/$/, '');
         if (env_1.env.NODE_ENV !== 'production') {
-            if (requestOrigin.includes('localhost') || requestOrigin.includes('127.0.0.1')) {
+            const originHostname = new URL(headerValue.startsWith('http') ? headerValue : `http://${headerValue}`).hostname;
+            if (originHostname === 'localhost' || originHostname === '127.0.0.1') {
                 return { valid: true };
             }
         }

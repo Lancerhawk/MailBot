@@ -38,7 +38,7 @@ const envSchema = zod_1.z.object({
     PROCESSING_JOB_TIMEOUT: zod_1.z.coerce.number().default(600000), // 10 minutes
     MODEL_CACHE_DIRECTORY: zod_1.z.string().default('.cache/models'),
     WORKER_MODE: zod_1.z.enum(['local', 'remote']).default('local'),
-    INTERNAL_WORKER_SECRET: zod_1.z.string().default('internal-worker-secret-dev'),
+    INTERNAL_WORKER_SECRET: zod_1.z.string().min(16, 'INTERNAL_WORKER_SECRET must be at least 16 characters in production').default(process.env.NODE_ENV === 'production' ? undefined : 'internal-worker-secret-dev'),
     API_SERVER_URL: zod_1.z.string().default('http://localhost:5000'),
 });
 const _env = envSchema.safeParse(process.env);

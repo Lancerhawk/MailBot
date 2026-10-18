@@ -24,9 +24,12 @@ const errorHandler = (err, req, res, _next) => {
         }
         error = new ApiError_1.ApiError(statusCode, message, false, err.stack);
     }
+    const message = env_1.env.NODE_ENV === 'production' && error.statusCode >= 500
+        ? 'Internal Server Error'
+        : error.message;
     const response = {
         success: false,
-        message: error.message,
+        message,
         ...(env_1.env.NODE_ENV === 'development' && error.statusCode >= 500 && { stack: error.stack }),
         ...(err instanceof zod_1.ZodError && { errors: err.errors }),
     };

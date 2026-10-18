@@ -1,13 +1,27 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
+const crypto_1 = __importDefault(require("crypto"));
 const env_1 = require("../../config/env");
 const logger_1 = require("../../config/logger");
 const socket_1 = require("../../socket");
 const router = (0, express_1.Router)();
 router.post('/jobs/callback', (req, res) => {
-    const secret = req.headers['x-internal-secret'];
-    if (!secret || secret !== env_1.env.INTERNAL_WORKER_SECRET) {
+    const secretHeader = req.headers['x-internal-secret'];
+    const secret = Array.isArray(secretHeader) ? secretHeader[0] : secretHeader;
+    const isSecretValid = () => {
+        if (!secret || typeof secret !== 'string')
+            return false;
+        const secretBuffer = Buffer.from(secret);
+        const expectedBuffer = Buffer.from(env_1.env.INTERNAL_WORKER_SECRET);
+        if (secretBuffer.length !== expectedBuffer.length)
+            return false;
+        return crypto_1.default.timingSafeEqual(secretBuffer, expectedBuffer);
+    };
+    if (!isSecretValid()) {
         logger_1.logger.warn('[SECURITY WARNING] Rejected unauthorized call to /api/v1/internal/jobs/callback');
         res.status(403).json({ error: 'Forbidden: Invalid internal worker secret' });
         return;
