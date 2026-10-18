@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.GroqService = void 0;
+exports.GroqService = exports.GROQ_MODEL = void 0;
 const groq_sdk_1 = __importDefault(require("groq-sdk"));
 const env_1 = require("../../config/env");
 const user_queue_1 = require("../../utils/user-queue");
@@ -11,6 +11,7 @@ const cache_service_1 = require("../../lib/cache.service");
 const groq = new groq_sdk_1.default({
     apiKey: env_1.env.GROQ_API_KEY || 'dummy-key-will-fail',
 });
+exports.GROQ_MODEL = 'openai/gpt-oss-20b';
 const MAX_GLOBAL_CONCURRENCY = parseInt(process.env.GROQ_CONCURRENCY_LIMIT || '2', 10);
 const MAX_PENDING_PER_USER = 100;
 const REQUEST_TIMEOUT_MS = 60000;
@@ -66,7 +67,7 @@ Explicitly enforce the following hierarchy:
                     { role: 'system', content: systemPrompt },
                     { role: 'user', content: `<email_data>\n${contextText}\n</email_data>` },
                 ],
-                model: 'llama-3.1-8b-instant',
+                model: exports.GROQ_MODEL,
                 temperature: 0.1,
                 response_format: { type: 'json_object' },
             });
@@ -95,7 +96,7 @@ ${sampledText}`;
         return enqueueTask(userId, async () => {
             const completion = await groq.chat.completions.create({
                 messages: [{ role: 'user', content: prompt }],
-                model: 'llama-3.1-8b-instant',
+                model: exports.GROQ_MODEL,
                 temperature: 0.1,
                 response_format: { type: 'json_object' },
             });
@@ -174,7 +175,7 @@ Conversation Context will be provided in the user message wrapped in <email_data
                     { role: 'system', content: draftSystemPrompt },
                     { role: 'user', content: `<email_data>\n${contextText}\n</email_data>` },
                 ],
-                model: 'llama-3.1-8b-instant',
+                model: exports.GROQ_MODEL,
                 temperature: isRegeneration ? 0.6 : 0.3,
                 response_format: { type: 'json_object' },
             });
@@ -194,7 +195,7 @@ Conversation Context will be provided in the user message wrapped in <email_data
         return enqueueTask(userId, async () => {
             const completion = await groq.chat.completions.create({
                 messages: [{ role: 'user', content: prompt }],
-                model: 'llama-3.1-8b-instant',
+                model: exports.GROQ_MODEL,
                 temperature: 0.1,
                 response_format: { type: 'json_object' },
             });

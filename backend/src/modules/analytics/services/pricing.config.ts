@@ -8,6 +8,10 @@ export interface PricingTier {
 export class PricingConfig {
   private static pricingRates: Record<AiProvider, Record<string, PricingTier>> = {
     [AiProvider.GROQ]: {
+      'openai/gpt-oss-20b': {
+        promptTokenCostPer1k: 0.000075,
+        completionTokenCostPer1k: 0.0003,
+      },
       'llama3-8b-8192': {
         promptTokenCostPer1k: 0.00005,
         completionTokenCostPer1k: 0.00008,

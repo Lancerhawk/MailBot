@@ -24,6 +24,8 @@ export interface DraftReplyResult {
   totalTokens: number;
 }
 
+export const GROQ_MODEL = 'openai/gpt-oss-20b';
+
 const MAX_GLOBAL_CONCURRENCY = parseInt(process.env.GROQ_CONCURRENCY_LIMIT || '2', 10);
 const MAX_PENDING_PER_USER = 100;
 const REQUEST_TIMEOUT_MS = 60000;
@@ -88,7 +90,7 @@ Explicitly enforce the following hierarchy:
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `<email_data>\n${contextText}\n</email_data>` },
         ],
-        model: 'llama-3.1-8b-instant',
+        model: GROQ_MODEL,
         temperature: 0.1,
         response_format: { type: 'json_object' },
       });
@@ -120,7 +122,7 @@ ${sampledText}`;
     return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.1-8b-instant',
+        model: GROQ_MODEL,
         temperature: 0.1,
         response_format: { type: 'json_object' },
       });
@@ -202,7 +204,7 @@ Conversation Context will be provided in the user message wrapped in <email_data
           { role: 'system', content: draftSystemPrompt },
           { role: 'user', content: `<email_data>\n${contextText}\n</email_data>` },
         ],
-        model: 'llama-3.1-8b-instant',
+        model: GROQ_MODEL,
         temperature: isRegeneration ? 0.6 : 0.3,
         response_format: { type: 'json_object' },
       });
@@ -225,7 +227,7 @@ Conversation Context will be provided in the user message wrapped in <email_data
     return enqueueTask(userId, async () => {
       const completion = await groq.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
-        model: 'llama-3.1-8b-instant',
+        model: GROQ_MODEL,
         temperature: 0.1,
         response_format: { type: 'json_object' },
       });

@@ -1,5 +1,5 @@
 import { DraftDbService } from './draft.db.service';
-import { GroqService } from '../ai/groq.service';
+import { GroqService, GROQ_MODEL } from '../ai/groq.service';
 import { GmailDbService } from '../gmail/services/gmail.db.service';
 import { KnowledgeDbService } from '../knowledge/knowledge.db.service';
 import { RetrievalService } from '../knowledge/services/retrieval.service';
@@ -147,7 +147,7 @@ export class DraftService {
         userId,
         generatedText: groqResult.replyText,
         provider: 'GROQ',
-        modelName: 'llama-3.1-8b-instant',
+        modelName: GROQ_MODEL,
         temperature: 0.3,
         promptTokens: groqResult.promptTokens,
         completionTokens: groqResult.completionTokens,
@@ -157,7 +157,7 @@ export class DraftService {
         isFinal: true
       });
 
-      const estCost = PricingConfig.calculateCost(AiProvider.GROQ, 'llama-3.1-8b-instant', groqResult.promptTokens || 0, groqResult.completionTokens || 0);
+      const estCost = PricingConfig.calculateCost(AiProvider.GROQ, GROQ_MODEL, groqResult.promptTokens || 0, groqResult.completionTokens || 0);
 
       AnalyticsEventService.recordEvent(userId, AnalyticsEventType.DRAFT_GENERATED, {
         latency: generationLatencyMs,
