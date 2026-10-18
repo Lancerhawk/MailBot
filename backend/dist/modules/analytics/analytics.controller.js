@@ -373,9 +373,15 @@ class AnalyticsController {
                 return;
             }
             const csvLines = [];
-            const generatedAt = new Date().toLocaleString();
+            const csvSanitize = (val) => {
+                const str = String(val);
+                if (/^[=+\-@\t\r]/.test(str))
+                    return `'${str}`;
+                return str.includes(',') ? `"${str.replace(/"/g, '""')}"` : str;
+            };
+            const generatedAt = csvSanitize(new Date().toLocaleString());
             const dateRangeStr = req.query.startDate && req.query.endDate
-                ? `${req.query.startDate} to ${req.query.endDate}`
+                ? csvSanitize(`${req.query.startDate} to ${req.query.endDate}`)
                 : 'All Time';
             const avgConf = (Number(aggregate._avg.averageConfidence || 0) * 100).toFixed(1);
             csvLines.push(`Report,MailBot Executive Data Export`);
