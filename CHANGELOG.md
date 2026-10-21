@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.8.2] - Stop Leaking OAuth Tokens in API Responses
+
+### Security
+- **OAuth Token Leak Fix (`src/modules/gmail/services/gmail.db.service.ts`, `src/modules/gmail/gmail.controller.ts`):** `GET /api/v1/gmail/emails/:id` no longer returns `encryptedAccessToken` / `encryptedRefreshToken`. The browser-facing query now selects only safe connection fields (`id`, `emailAddress`); full connection data stays on server-only send/action/draft paths.
+- **Auth `/me` Connection Select (`src/controllers/auth.controller.ts`):** Stopped loading full Gmail connections (including encrypted tokens) when computing `hasGmailAccess`; only `scope` is selected.
+
 ## [Frontend v1.4.1] - Command Palette, Keyboard Shortcuts, Resizable Panes & Security Fixes
 
 ### Added

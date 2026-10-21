@@ -74,7 +74,12 @@ import { prisma } from '../lib/prisma';
 export const getCurrentUser = catchAsync(async (req: Request, res: Response) => {
   const userWithConnections = await prisma.user.findUnique({
     where: { id: req.user!.id },
-    include: { connections: true, settings: true }
+    include: {
+      connections: {
+        select: { scope: true },
+      },
+      settings: true,
+    },
   });
 
   const connection = userWithConnections?.connections[0];
