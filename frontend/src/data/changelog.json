@@ -1,12 +1,26 @@
 {
   "versions": [
     {
+      "id": "be-v1.8.3",
+      "version": "v1.8.3",
+      "date": "2026-10-22",
+      "title": "Page Through Gmail History in Incremental Sync",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Gmail History Pagination",
+          "description": "Incremental sync now loops history.list while nextPageToken exists and only advances the lastHistoryId watermark after every page is collected and processed, so changes beyond the first page are no longer silently dropped."
+        }
+      ]
+    },
+    {
       "id": "be-v1.8.2",
       "version": "v1.8.2",
       "date": "2026-10-21",
       "title": "Stop Leaking OAuth Tokens in API Responses",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "OAuth Token Leak Fix",
