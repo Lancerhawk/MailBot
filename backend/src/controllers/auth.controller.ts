@@ -47,6 +47,17 @@ export const googleCallback = catchAsync(async (req: Request, res: Response) => 
   try {
     const user = await AuthService.handleGoogleCallback(code, ipAddress, userAgent);
 
+    // Regenerate the session ID after login to prevent session fixation.
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((err) => {
+        if (err) {
+          logger.error({ err }, "Session regenerate error in callback");
+          return reject(new ApiError(500, 'Failed to regenerate authenticated session'));
+        }
+        resolve();
+      });
+    });
+
     req.session.userId = user.id;
 
     await new Promise<void>((resolve, reject) => {
