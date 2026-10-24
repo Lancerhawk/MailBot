@@ -1,8 +1,8 @@
 import { Router, Request, Response } from 'express';
-import crypto from 'crypto';
 import { env } from '../../config/env';
 import { logger } from '../../config/logger';
 import { emitToUser } from '../../socket';
+import { timingSafeEqualString } from '../../utils/timingSafeEqual';
 
 const router = Router();
 
@@ -12,10 +12,7 @@ router.post('/jobs/callback', (req: Request, res: Response) => {
 
   const isSecretValid = (): boolean => {
     if (!secret || typeof secret !== 'string') return false;
-    const secretBuffer = Buffer.from(secret);
-    const expectedBuffer = Buffer.from(env.INTERNAL_WORKER_SECRET);
-    if (secretBuffer.length !== expectedBuffer.length) return false;
-    return crypto.timingSafeEqual(secretBuffer, expectedBuffer);
+    return timingSafeEqualString(secret, env.INTERNAL_WORKER_SECRET);
   };
 
   if (!isSecretValid()) {

@@ -6,6 +6,7 @@ import { GmailDbService } from "./services/gmail.db.service";
 import { GmailActionsService } from "./services/gmail.actions.service";
 import { GmailSendService } from "./services/gmail.send.service";
 import { ApiError } from "../../utils/ApiError";
+import { timingSafeEqualString } from "../../utils/timingSafeEqual";
 import { WatchRenewalService } from "./services/watch-renewal.service";
 import { logger } from "../../config/logger";
 import { prisma } from "../../lib/prisma";
@@ -44,9 +45,10 @@ export class GmailController {
     }
 
     if (env.GMAIL_WEBHOOK_SECRET) {
-      const channelToken = req.headers['x-goog-channel-token'] || req.headers['x-webhook-secret'];
-      if (channelToken) {
-        return channelToken === env.GMAIL_WEBHOOK_SECRET;
+      const channelTokenHeader = req.headers['x-goog-channel-token'] || req.headers['x-webhook-secret'];
+      const channelToken = Array.isArray(channelTokenHeader) ? channelTokenHeader[0] : channelTokenHeader;
+      if (channelToken && typeof channelToken === 'string') {
+        return timingSafeEqualString(channelToken, env.GMAIL_WEBHOOK_SECRET);
       }
     }
 

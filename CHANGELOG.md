@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.8.5] - Constant-Time Gmail Webhook Secret Compare
+
+### Security
+- **Webhook Secret Timing-Safe Compare (`src/modules/gmail/gmail.controller.ts`, `src/utils/timingSafeEqual.ts`):** Replaced `===` when checking `GMAIL_WEBHOOK_SECRET` with a shared `timingSafeEqualString` helper (also used by the internal worker callback), so secret validation is constant-time.
+
 ## [Backend v1.8.4] - Regenerate Session on Login
 
 ### Security

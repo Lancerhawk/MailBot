@@ -1,12 +1,26 @@
 {
   "versions": [
     {
+      "id": "be-v1.8.5",
+      "version": "v1.8.5",
+      "date": "2026-10-24",
+      "title": "Constant-Time Gmail Webhook Secret Compare",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Webhook Secret Timing-Safe Compare",
+          "description": "Replaced === when checking GMAIL_WEBHOOK_SECRET with a shared timingSafeEqualString helper (also used by the internal worker callback), so secret validation is constant-time."
+        }
+      ]
+    },
+    {
       "id": "be-v1.8.4",
       "version": "v1.8.4",
       "date": "2026-10-23",
       "title": "Regenerate Session on Login",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Session Fixation Fix",
