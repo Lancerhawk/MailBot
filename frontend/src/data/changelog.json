@@ -1,12 +1,30 @@
 {
   "versions": [
     {
+      "id": "be-v1.8.2",
+      "version": "v1.8.2",
+      "date": "2026-10-21",
+      "title": "Stop Leaking OAuth Tokens in API Responses",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "OAuth Token Leak Fix",
+          "description": "GET /api/v1/gmail/emails/:id no longer returns encrypted OAuth tokens. Browser responses only include safe connection fields (id, emailAddress); full connection data stays on server-only send/action/draft paths."
+        },
+        {
+          "title": "Auth /me Connection Select",
+          "description": "Stopped loading full Gmail connections (including encrypted tokens) when computing hasGmailAccess; only scope is selected."
+        }
+      ]
+    },
+    {
       "id": "fe-v1.4.1",
       "version": "v1.4.1",
       "date": "2026-10-19",
       "title": "Command Palette, Keyboard Shortcuts, Resizable Panes & Security Fixes",
       "service": "Frontend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Command Palette",
@@ -60,7 +78,7 @@
       "date": "2026-10-19",
       "title": "Security Hardening, Analytics Endpoints, Background Jobs & Reply Sending Fixes",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Reply Sending Fix (src/modules/gmail/services/gmail.send.service.ts)",
