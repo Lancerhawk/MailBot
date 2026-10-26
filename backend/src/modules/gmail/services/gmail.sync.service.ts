@@ -202,9 +202,28 @@ export class GmailSyncService {
     const deletedMessageIds = new Set<string>();
 
     try {
-      const res = await gmail.users.history.list({ userId: "me", startHistoryId });
+      // Page through the full history list before advancing the watermark.
+      // A single call can return nextPageToken; skipping later pages silently drops changes.
+      const historyRecords: gmail_v1.Schema$History[] = [];
+      let pageToken: string | undefined;
+      let latestHistoryId: string | undefined;
 
-      const historyRecords = res.data.history || [];
+      do {
+        const res = await gmail.users.history.list({
+          userId: "me",
+          startHistoryId,
+          ...(pageToken ? { pageToken } : {}),
+        });
+
+        if (res.data.history?.length) {
+          historyRecords.push(...res.data.history);
+        }
+        if (res.data.historyId) {
+          latestHistoryId = res.data.historyId;
+        }
+        pageToken = res.data.nextPageToken || undefined;
+      } while (pageToken);
+
       const threadsToProcess = new Map<string, Set<string>>();
 
       for (const record of historyRecords) {
@@ -258,8 +277,8 @@ export class GmailSyncService {
       }
 
       if (threadsToProcess.size === 0) {
-        if (res.data.historyId) {
-          await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
+        if (latestHistoryId) {
+          await this.dbService.updateLastHistoryId(userId, BigInt(latestHistoryId));
         }
         await new Promise(resolve => setTimeout(resolve, 800));
         state.currentStage = "Up to date";
@@ -324,8 +343,8 @@ export class GmailSyncService {
         }
       }
 
-      if (res.data.historyId && !state.stopRequested && !hasErrors) {
-        await this.dbService.updateLastHistoryId(userId, BigInt(res.data.historyId));
+      if (latestHistoryId && !state.stopRequested && !hasErrors) {
+        await this.dbService.updateLastHistoryId(userId, BigInt(latestHistoryId));
       } else if (hasErrors) {
         logger.warn({ userId }, 'One or more threads failed during incremental sync; not advancing historyId watermark so failed threads can be retried.');
       }

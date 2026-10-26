@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.8.3] - Page Through Gmail History in Incremental Sync
+
+### Fixed
+- **Gmail History Pagination (`src/modules/gmail/services/gmail.sync.service.ts`):** Incremental sync now loops `history.list` while `nextPageToken` exists and only advances the `lastHistoryId` watermark after every page is collected and processed, so changes beyond the first page are no longer silently dropped.
+
 ## [Backend v1.8.2] - Stop Leaking OAuth Tokens in API Responses
 
 ### Security
