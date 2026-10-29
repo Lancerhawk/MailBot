@@ -1,12 +1,26 @@
 {
   "versions": [
     {
+      "id": "be-v1.8.4",
+      "version": "v1.8.4",
+      "date": "2026-10-23",
+      "title": "Regenerate Session on Login",
+      "service": "Backend",
+      "isCurrent": true,
+      "features": [
+        {
+          "title": "Session Fixation Fix",
+          "description": "Google OAuth callback now calls req.session.regenerate() before setting userId and saving, so a pre-login session ID cannot be reused after authentication."
+        }
+      ]
+    },
+    {
       "id": "be-v1.8.3",
       "version": "v1.8.3",
       "date": "2026-10-22",
       "title": "Page Through Gmail History in Incremental Sync",
       "service": "Backend",
-      "isCurrent": true,
+      "isCurrent": false,
       "features": [
         {
           "title": "Gmail History Pagination",
