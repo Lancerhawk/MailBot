@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Backend v1.8.6] - Vitest Test Runner Setup
+
+### Added
+- **Backend Test Runner (`package.json`, `vitest.config.ts`):** Added Vitest and Supertest as backend dev dependencies with `"test": "vitest run"`, and converted `tests/distributed-queue.test.ts` to Vitest `describe`/`it`/`expect` suites (Redis-backed cases skip cleanly when Redis is unavailable).
+
 ## [Backend v1.8.5] - Constant-Time Gmail Webhook Secret Compare
 
 ### Security
