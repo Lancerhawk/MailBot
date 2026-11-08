@@ -268,7 +268,7 @@ export class GmailController {
       const userId = req.session.userId!;
       const emailId = req.params.id;
 
-      const email = await this.dbService.getEmailByIdWithConnection(userId, emailId);
+      const email = await this.dbService.getEmailById(userId, emailId);
       if (!email) {
         throw new ApiError(404, "Email not found");
       }

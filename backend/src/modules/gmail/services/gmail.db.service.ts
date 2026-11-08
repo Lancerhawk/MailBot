@@ -213,6 +213,24 @@ export class GmailDbService {
     });
   }
 
+  async getEmailById(userId: string, emailId: string) {
+    return prisma.email.findFirst({
+      where: { id: emailId, userId },
+      include: {
+        connection: {
+          select: {
+            id: true,
+            emailAddress: true,
+          },
+        },
+        thread: true,
+        participants: true,
+        labels: true,
+      },
+    });
+  }
+
+  /** Full connection including encrypted tokens — server-side only (send/actions/drafts). Never return this from an API response. */
   async getEmailByIdWithConnection(userId: string, emailId: string) {
     return prisma.email.findFirst({
       where: { id: emailId, userId },
